@@ -1,0 +1,15 @@
+.MuiDataGrid-columnHeader[data-field="status"] .MuiDataGrid-columnHeaderTitleContainer,
+.MuiDataGrid-columnHeader[data-field="access"] .MuiDataGrid-columnHeaderTitleContainer {
+    display: flex;
+    justify-content: center;
+}
+
+.MuiDataGrid-columnHeader:not([data-field]) .MuiDataGrid-columnHeaderTitleContainer {
+    display: flex;
+    justify-content: center;
+  }
+
+   .action-column--cell {
+    display: flex;
+    justify-content: center !important;
+   }
