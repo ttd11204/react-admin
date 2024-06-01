@@ -7,7 +7,7 @@ import { useTheme } from "@mui/material";
 
 
 
-const Contacts = () => {
+const Courts = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -104,4 +104,4 @@ const Contacts = () => {
   );
 };
 
-export default Contacts;
+export default Courts;
