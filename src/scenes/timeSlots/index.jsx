@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme } from '@mui/material';
+import { Box, Button, Typography, useTheme, Modal, TextField } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { tokens } from '../../theme';
-import { fetchTimeSlots } from '../../api/timeSlotApi';
+import { fetchTimeSlots, createTimeSlot } from '../../api/timeSlotApi'; // Import hàm createTimeSlot mới
 import Header from '../../components/Header';
 
 const TimeSlots = () => {
@@ -10,6 +10,15 @@ const TimeSlots = () => {
   const colors = tokens(theme.palette.mode);
   const [timeSlotsData, setTimeSlotsData] = useState([]);
   const [error, setError] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [newSlot, setNewSlot] = useState({
+    slotId: '',
+    courtId: '',
+    slotDate: '',
+    slotStartTime: '',
+    slotEndTime: '',
+    isAvailable: true,
+  });
 
   useEffect(() => {
     const getTimeSlotsData = async () => {
@@ -31,6 +40,23 @@ const TimeSlots = () => {
   const handleDelete = (id) => {
     // Logic for delete action
     console.log(`Delete time slot with id: ${id}`);
+  };
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleChange = (e) => {
+    setNewSlot({ ...newSlot, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const addedSlot = await createTimeSlot(newSlot);
+      setTimeSlotsData([...timeSlotsData, addedSlot]);
+      handleClose();
+    } catch (error) {
+      console.error('Failed to create time slot:', error);
+    }
   };
 
   const columns = [
@@ -94,6 +120,11 @@ const TimeSlots = () => {
   return (
     <Box m="20px">
       <Header title="TIME SLOTS" subtitle="List of Time Slots" />
+      <Box display="flex" justifyContent="flex-end" m="20px 0">
+        <Button variant="contained" color="primary" onClick={handleOpen}>
+          Create New Slot
+        </Button>
+      </Box>
       {error ? (
         <Typography color="error" variant="h6">{error}</Typography>
       ) : (
@@ -126,6 +157,27 @@ const TimeSlots = () => {
           />
         </Box>
       )}
+
+      <Modal open={open} onClose={handleClose}>
+        <Box 
+          display="flex" 
+          flexDirection="column" 
+          p="20px" 
+          m="20px auto" 
+          bgcolor="background.paper" 
+          boxShadow={24} 
+          width={400} 
+          borderRadius={4}
+        >
+          <Typography variant="h6" mb="20px">Create New Slot</Typography>
+          <TextField label="Slot ID" name="slotId" value={newSlot.slotId} onChange={handleChange} fullWidth margin="normal" />
+          <TextField label="Court ID" name="courtId" value={newSlot.courtId} onChange={handleChange} fullWidth margin="normal" />
+          <TextField label="Slot Date" name="slotDate" value={newSlot.slotDate} onChange={handleChange} fullWidth margin="normal" />
+          <TextField label="Start Time" name="slotStartTime" value={newSlot.slotStartTime} onChange={handleChange} fullWidth margin="normal" />
+          <TextField label="End Time" name="slotEndTime" value={newSlot.slotEndTime} onChange={handleChange} fullWidth margin="normal" />
+          <Button variant="contained" color="primary" onClick={handleSubmit} fullWidth>Create</Button>
+        </Box>
+      </Modal>
     </Box>
   );
 };

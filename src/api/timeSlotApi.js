@@ -11,3 +11,13 @@ export const fetchTimeSlots = async () => {
     throw error;
   }
 };
+
+export const createTimeSlot = async (newSlot) => {
+  try {
+    const response = await axios.post(`${url}/TimeSlots`, newSlot);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating time slot:', error);
+    throw error;
+  }
+};
