@@ -1,4 +1,3 @@
-// team.js
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Typography, useTheme } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
@@ -17,26 +16,12 @@ const Team = () => {
     const getTeamData = async () => {
       try {
         const data = await fetchTeamData();
-        // Filter out unwanted fields and add ban status
-        const filteredData = data.map(({ 
-          id, 
-          userName, 
-          email, 
-          emailConfirmed, 
-          phoneNumber, 
-          phoneNumberConfirmed, 
-          twoFactorEnabled 
-        }) => ({
-          id, 
-          userName, 
-          email, 
-          emailConfirmed, 
-          phoneNumber, 
-          phoneNumberConfirmed, 
-          twoFactorEnabled,
-          banned: false // Add ban status
+        // Thêm số thứ tự cho từng hàng
+        const numberedData = data.map((item, index) => ({
+          ...item,
+          rowNumber: index + 1 // Số thứ tự bắt đầu từ 1
         }));
-        setTeamData(filteredData);
+        setTeamData(numberedData);
       } catch (err) {
         setError('Failed to fetch team data');
       }
@@ -69,6 +54,7 @@ const Team = () => {
   };
 
   const columns = [
+    { field: 'rowNumber', headerName: 'ID', flex: 1 }, // Thêm cột số thứ tự
     { field: 'userName', headerName: 'User Name', flex: 1 },
     { field: 'email', headerName: 'Email', flex: 1 },
     { 
@@ -187,6 +173,7 @@ const Team = () => {
           <DataGrid
             rows={teamData}
             columns={columns}
+            getRowId={(row) => row.id}
             getRowClassName={(params) => params.row.banned ? 'banned' : ''}
           />
         </Box>
