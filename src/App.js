@@ -15,6 +15,8 @@ import Pie from "./scenes/pie";
 import Line from "./scenes/line";
 import Geography from "./scenes/geography";
 import Review from "./scenes/reviews/reviews";
+import Branches from "./scenes/branches";
+import TimeSlots from "./scenes/timeSlots";
 
 
 function App() {
@@ -34,6 +36,8 @@ function App() {
               <Route path="/courts" element={<Courts/>} />
               <Route path="/payments" element={<Payments/>} />
               <Route path="/reviews" element={<Review/>} />
+              <Route path="/branches" element={<Branches/>} />
+              <Route path="/timeSlots" element={<TimeSlots/>} />
               <Route path="/form" element={<Form/>} />
               <Route path="/calendar" element={<Calendar/>} />
               <Route path="/faq" element={<FAQ/>} />

@@ -2,48 +2,60 @@ import React, { useEffect, useState } from 'react';
 import { Box, Button, Typography, useTheme } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { tokens } from '../../theme';
-import { fetchReviews } from '../../api/reviewApi';
+import { fetchTimeSlots } from '../../api/timeSlotApi';
 import Header from '../../components/Header';
 
-const Reviews = () => {
+const TimeSlots = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [reviewsData, setReviewsData] = useState([]);
+  const [timeSlotsData, setTimeSlotsData] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const getReviewsData = async () => {
+    const getTimeSlotsData = async () => {
       try {
-        const data = await fetchReviews();
-        setReviewsData(data);
+        const data = await fetchTimeSlots();
+        setTimeSlotsData(data);
       } catch (err) {
-        setError('Failed to fetch reviews data');
+        setError('Failed to fetch time slots data');
       }
     };
-    getReviewsData();
+    getTimeSlotsData();
   }, []);
 
   const handleEdit = (id) => {
     // Logic for edit action
-    console.log(`Edit review with id: ${id}`);
+    console.log(`Edit time slot with id: ${id}`);
   };
 
   const handleDelete = (id) => {
     // Logic for delete action
-    console.log(`Delete review with id: ${id}`);
+    console.log(`Delete time slot with id: ${id}`);
   };
 
   const columns = [
+    { field: 'slotId', headerName: 'Slot ID', flex: 1 },
     { field: 'courtId', headerName: 'Court ID', flex: 1 },
-    { field: 'reviewText', headerName: 'Review Text', flex: 2 },
-    { field: 'reviewDate', headerName: 'Review Date', flex: 1,
+    { field: 'slotDate', headerName: 'Slot Date', flex: 1,
       renderCell: ({ row }) => (
-        <Typography>{new Date(row.reviewDate).toLocaleDateString()}</Typography>
+        <Typography>{new Date(row.slotDate).toLocaleDateString()}</Typography>
       )
     },
-    { field: 'rating', headerName: 'Rating', flex: 0.5 },
-    { field: 'user.userName', headerName: 'User Name', flex: 1,
-      valueGetter: (params) => params.row.user ? params.row.user.userName : 'N/A'
+    { field: 'slotStartTime', headerName: 'Start Time', flex: 1 },
+    { field: 'slotEndTime', headerName: 'End Time', flex: 1 },
+    { field: 'isAvailable', headerName: 'Availability', flex: 1,
+      renderCell: ({ row }) => (
+        <Typography>{row.isAvailable ? 'Available' : 'Unavailable'}</Typography>
+      )
+    },
+    { field: 'paymentStatus', headerName: 'Payment Status', flex: 1,
+      valueGetter: (params) => params.row.bookings && params.row.bookings.length > 0 ? params.row.bookings[0].payments[0].paymentStatus : 'N/A'
+    },
+    { field: 'userName', headerName: 'User Name', flex: 1,
+      valueGetter: (params) => params.row.bookings && params.row.bookings.length > 0 ? params.row.bookings[0].user.userName : 'N/A'
+    },
+    { field: 'email', headerName: 'Email', flex: 1,
+      valueGetter: (params) => params.row.bookings && params.row.bookings.length > 0 ? params.row.bookings[0].user.email : 'N/A'
     },
     {
       field: 'action',
@@ -52,7 +64,7 @@ const Reviews = () => {
       renderCell: ({ row }) => (
         <Box display="flex" justifyContent="center" alignItems="center" width="100%">
           <Button 
-            onClick={() => handleEdit(row.reviewId)} 
+            onClick={() => handleEdit(row.slotId)} 
             variant="contained" 
             size="small" 
             style={{ 
@@ -64,7 +76,7 @@ const Reviews = () => {
             Edit
           </Button>
           <Button 
-            onClick={() => handleDelete(row.reviewId)} 
+            onClick={() => handleDelete(row.slotId)} 
             variant="contained" 
             size="small" 
             style={{ 
@@ -81,7 +93,7 @@ const Reviews = () => {
 
   return (
     <Box m="20px">
-      <Header title="REVIEWS" subtitle="List of Reviews" />
+      <Header title="TIME SLOTS" subtitle="List of Time Slots" />
       {error ? (
         <Typography color="error" variant="h6">{error}</Typography>
       ) : (
@@ -108,9 +120,9 @@ const Reviews = () => {
           }
         }}>
           <DataGrid
-            rows={reviewsData}
+            rows={timeSlotsData}
             columns={columns}
-            getRowId={(row) => row.reviewId}
+            getRowId={(row) => row.slotId}
           />
         </Box>
       )}
@@ -118,4 +130,4 @@ const Reviews = () => {
   );
 };
 
-export default Reviews;
+export default TimeSlots;
