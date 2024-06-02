@@ -88,7 +88,7 @@ const Team = () => {
 
   return (
     <Box m="20px">
-      <Header title="TEAM" subtitle="Managing the team Members" />
+      <Header title="USER" subtitle="Managing Users" />
       {error ? (
         <Typography color="error" variant="h6">{error}</Typography>
       ) : (
