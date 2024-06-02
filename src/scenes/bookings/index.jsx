@@ -3,7 +3,7 @@ import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableCo
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from "../../theme";
-import { fetchBookings } from "../../api/bookingApi";
+import { fetchBookings, deleteBooking } from "../../api/bookingApi";
 import Header from "../../components/Header";
 
 const useQuery = () => {
@@ -67,8 +67,15 @@ const Bookings = () => {
     console.log(`Edit booking with id: ${id}`);
   };
 
-  const handleDelete = (id) => {
-    console.log(`Delete booking with id: ${id}`);
+  const handleDelete = async (id) => {
+    try {
+      await deleteBooking(id);
+      setBookingsData(prevData => prevData.filter(booking => booking.bookingId !== id));
+      console.log(`Booking with id ${id} deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete booking with id ${id}:`, error);
+      setError(`Failed to delete booking with id ${id}: ${error.message}`);
+    }
   };
 
   return (
@@ -82,13 +89,13 @@ const Bookings = () => {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
-                  <TableCell>ID</TableCell>
+                  <TableCell>Booking ID</TableCell>
                   <TableCell>Booking Date</TableCell>
+                  <TableCell>Booking Time</TableCell>
+                  <TableCell>Check</TableCell>
                   <TableCell>Payment Amount</TableCell>
-                  <TableCell>User Name</TableCell>
-                  <TableCell>Court Name</TableCell>
-                  <TableCell>Slot Start Time</TableCell>
-                  <TableCell>Slot End Time</TableCell>
+                  <TableCell>User ID</TableCell>
+                  <TableCell>Slot ID</TableCell>
                   <TableCell>Action</TableCell>
                 </TableRow>
               </TableHead>
@@ -96,13 +103,13 @@ const Bookings = () => {
                 {bookingsData.length > 0 ? (
                   bookingsData.map((row) => (
                     <TableRow key={row.bookingId}>
-                      <TableCell>{row.rowNumber}</TableCell>
+                      <TableCell>{row.bookingId}</TableCell> {/* Thêm cột bookingId */}
                       <TableCell>{new Date(row.bookingDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(row.bookingDate).toLocaleTimeString()}</TableCell> {/* Hiển thị thời gian đặt */}
+                      <TableCell>{row.check ? 'Yes' : 'No'}</TableCell>
                       <TableCell>{row.paymentAmount}</TableCell>
-                      <TableCell>{row.user ? row.user.userName : 'N/A'}</TableCell>
-                      <TableCell>{row.timeSlot && row.timeSlot.court ? row.timeSlot.court.courtName : 'N/A'}</TableCell>
-                      <TableCell>{row.timeSlot ? row.timeSlot.slotStartTime : 'N/A'}</TableCell>
-                      <TableCell>{row.timeSlot ? row.timeSlot.slotEndTime : 'N/A'}</TableCell>
+                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{row.slotId || 'N/A'}</TableCell>
                       <TableCell>
                         <Button 
                           onClick={() => handleEdit(row.bookingId)} 

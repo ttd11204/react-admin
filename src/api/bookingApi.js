@@ -30,3 +30,13 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
     throw error;
   }
 };
+
+export const deleteBooking = async (id) => {
+  try {
+    await axios.delete(`${url}/Bookings/${id}`);
+    console.log(`Booking with id ${id} deleted successfully`);
+  } catch (error) {
+    console.error(`Failed to delete booking with id ${id}:`, error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
