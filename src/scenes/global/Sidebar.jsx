@@ -134,7 +134,7 @@ const Sidebar = () => {
             </Typography>
             <Item
               title="User"
-              to="/team"
+              to="/Users"
               icon={<PeopleOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -142,7 +142,7 @@ const Sidebar = () => {
 
             <Item
               title="Branches"
-              to="/branches"
+              to="/Branches"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -150,7 +150,7 @@ const Sidebar = () => {
 
             <Item
               title="Courts"
-              to="/courts"
+              to="/Courts"
               icon={<ContactsOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -158,7 +158,15 @@ const Sidebar = () => {
 
             <Item
               title="Time Slots"
-              to="/timeSlots"
+              to="/TimeSlots"
+              icon={<ContactsOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Bookings"
+              to="/Bookings"
               icon={<ContactsOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -166,14 +174,14 @@ const Sidebar = () => {
 
             <Item
               title="Payments"
-              to="/payments"
+              to="/Payments"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Reviews"
-              to="/reviews"
+              to="/Reviews"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}

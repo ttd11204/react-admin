@@ -17,6 +17,7 @@ import Geography from "./scenes/geography";
 import Review from "./scenes/reviews/reviews";
 import Branches from "./scenes/branches";
 import TimeSlots from "./scenes/timeSlots";
+import Bookings from "./scenes/bookings";
 
 
 function App() {
@@ -32,12 +33,13 @@ function App() {
               <Topbar/>
               <Routes>
               <Route path="/" element={<Dashboard/>} />
-              <Route path="/team" element={<Team/>} />
-              <Route path="/courts" element={<Courts/>} />
-              <Route path="/payments" element={<Payments/>} />
-              <Route path="/reviews" element={<Review/>} />
-              <Route path="/branches" element={<Branches/>} />
-              <Route path="/timeSlots" element={<TimeSlots/>} />
+              <Route path="/Users" element={<Team/>} />
+              <Route path="/Courts" element={<Courts/>} />
+              <Route path="/Payments" element={<Payments/>} />
+              <Route path="/Reviews" element={<Review/>} />
+              <Route path="/Branches" element={<Branches/>} />
+              <Route path="/TimeSlots" element={<TimeSlots/>} />
+              <Route path="/Bookings" element={<Bookings/>} />
               <Route path="/form" element={<Form/>} />
               <Route path="/calendar" element={<Calendar/>} />
               <Route path="/faq" element={<FAQ/>} />

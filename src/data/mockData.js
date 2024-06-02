@@ -1,5 +1,22 @@
 import { tokens } from "../theme";
 
+export const mockBookings = Array.from({ length: 100 }).map((_, index) => ({
+  bookingId: `B${index + 1}`,
+  bookingDate: `2024-06-02T10:27:35.697Z`,
+  paymentAmount: Math.floor(Math.random() * 1000),
+  user: {
+    userName: `User${index + 1}`
+  },
+  timeSlot: {
+    slotStartTime: '08:00',
+    slotEndTime: '09:00',
+    court: {
+      courtName: `Court${index + 1}`
+    }
+  }
+}));
+
+
 export const mockDataTeam = [
   {
     id: 1,

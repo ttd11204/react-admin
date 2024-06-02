@@ -1,20 +1,28 @@
-.MuiDataGrid-columnHeader[data-field="action"] .MuiDataGrid-columnHeaderTitleContainer {
-    display: flex;
-    justify-content: center;
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  list-style: none;
 }
 
-.MuiDataGrid-columnHeader[data-field="access"] .MuiDataGrid-columnHeaderTitleContainer {
-    display: flex;
-    justify-content: center;
-}  
+.pagination li {
+  margin: 0 5px;
+  cursor: pointer;
+  list-style: none; /* Thêm dòng này để loại bỏ dấu chấm bullet */
+}
 
-  .banned {
-    background-color: #f8d7da !important; /* Màu đỏ nhạt cho hàng bị ban */
-    color: #000 !important; /* Đảm bảo văn bản dễ đọc */
-  }
+.pagination li a {
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #007bff;
+}
 
-.action-column--cell{
-    display: flex;
-    justify-content: center !important;
-    align-items: center;
+.pagination li.active a {
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+}
+
+.pagination li.disabled a {
+  color: #ccc;
 }
