@@ -14,7 +14,7 @@ export const fetchBranches = async (pageNumber = 1, pageSize = 10) => {
 
     if (Array.isArray(response.data)) {
       const items = response.data;
-      const totalCount = items.length; // Tổng số bản ghi chính xác dựa trên số lượng dữ liệu thực tế
+      const totalCount = parseInt(response.headers['x-total-count'], 10) || items.length; // Tổng số bản ghi chính xác dựa trên số lượng dữ liệu thực tế hoặc header nếu có
 
       return {
         items,

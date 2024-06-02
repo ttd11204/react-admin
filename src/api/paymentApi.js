@@ -2,12 +2,31 @@ import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
 
-export const fetchPayments = async () => {
+export const fetchPayments = async (pageNumber = 1, pageSize = 10) => {
   try {
-    const response = await axios.get(`${url}/Payments`);
-    return response.data;
+    const response = await axios.get(`${url}/Payments`, {
+      params: {
+        pageNumber,
+        pageSize
+      }
+    });
+
+    console.log('API response full data:', response.data); // In ra toàn bộ dữ liệu phản hồi từ API
+
+    // Giả sử API trả về một mảng
+    if (Array.isArray(response.data)) {
+      const items = response.data;
+      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100; // Giả định tổng số bản ghi là 100 nếu không có header
+
+      return {
+        items,
+        totalCount
+      };
+    } else {
+      throw new Error('Invalid API response structure');
+    }
   } catch (error) {
-    console.error('Error fetching payment data:', error);
+    console.error('Error fetching payment data:', error.response ? error.response.data : error.message);
     throw error;
   }
 };

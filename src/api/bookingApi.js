@@ -10,9 +10,23 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
         pageSize
       }
     });
-    return response.data;
+
+    console.log('API response full data:', response.data); // In ra toàn bộ dữ liệu phản hồi từ API
+
+    // Giả sử API trả về một mảng
+    if (Array.isArray(response.data)) {
+      const items = response.data;
+      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100; // Giả định tổng số bản ghi là 100 nếu không có header
+
+      return {
+        items,
+        totalCount
+      };
+    } else {
+      throw new Error('Invalid API response structure');
+    }
   } catch (error) {
-    console.error('Error fetching bookings data:', error);
+    console.error('Error fetching bookings data:', error.response ? error.response.data : error.message);
     throw error;
   }
 };
