@@ -11,12 +11,11 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
       }
     });
 
-    console.log('API response full data:', response.data); // In ra toàn bộ dữ liệu phản hồi từ API
+    console.log('API response full data:', response.data);
 
-    // Giả sử API trả về một mảng
     if (Array.isArray(response.data)) {
       const items = response.data;
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100; // Giả định tổng số bản ghi là 100 nếu không có header
+      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
 
       return {
         items,
@@ -31,10 +30,20 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
   }
 };
 
+export const updateBookingStatus = async (bookingId, active) => {
+  try {
+    const response = await axios.put(`${url}/Bookings/${bookingId}/check`, { check: active });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating booking status:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
 export const deleteBooking = async (id) => {
   try {
-    await axios.delete(`${url}/Bookings/${id}`);
-    console.log(`Booking with id ${id} deleted successfully`);
+    const response = await axios.delete(`${url}/Bookings/${id}`);
+    return response.data;
   } catch (error) {
     console.error(`Failed to delete booking with id ${id}:`, error.response ? error.response.data : error.message);
     throw error;

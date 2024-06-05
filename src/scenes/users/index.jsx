@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem } from '@mui/material';
+import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, TextField } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchTeamData, updateUserBanStatus } from '../../api/userApi';
+import { fetchTeamData, updateUserBanStatus, updateUserDetail } from '../../api/userApi';
 import Header from '../../components/Header';
-import './style.css'; // Đảm bảo bạn đã nhập đúng file CSS của mình
+import './style.css';
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -17,25 +17,27 @@ const Users = () => {
   const [teamData, setTeamData] = useState([]);
   const query = useQuery();
   const navigate = useNavigate();
-  
+
   const pageQuery = parseInt(query.get('pageNumber')) || 1;
   const sizeQuery = parseInt(query.get('pageSize')) || 10;
 
-  const [page, setPage] = useState(pageQuery - 1); // Chuyển đổi chỉ số trang sang 0-based cho ReactPaginate
+  const [page, setPage] = useState(pageQuery - 1);
   const [pageSize, setPageSize] = useState(sizeQuery);
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
+  const [editMode, setEditMode] = useState({});
 
   useEffect(() => {
     const getTeamData = async () => {
       try {
-        const data = await fetchTeamData(page + 1, pageSize); // Chuyển đổi chỉ số trang sang 1-based
-        console.log('Fetched team data:', data); // In ra dữ liệu trả về từ API
+        const data = await fetchTeamData(page + 1, pageSize);
+        console.log('Fetched team data:', data);
 
         if (data.items && Array.isArray(data.items)) {
           const numberedData = data.items.map((item, index) => ({
             ...item,
-            rowNumber: index + 1 + page * pageSize
+            rowNumber: index + 1 + page * pageSize,
+            banned: item.lockoutEnabled === false
           }));
           setTeamData(numberedData);
           setRowCount(data.totalCount);
@@ -47,27 +49,105 @@ const Users = () => {
       }
     };
     getTeamData();
-  }, [page, pageSize]); // Lắng nghe sự thay đổi của page và pageSize
+  }, [page, pageSize]);
 
   const handlePageClick = (event) => {
-    console.log('Page change:', event.selected); // In ra chỉ số trang mới
+    console.log('Page change:', event.selected);
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`); // Cập nhật URL
+    navigate(`/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
   };
 
   const handlePageSizeChange = (event) => {
-    console.log('Page size change:', event.target.value); // In ra kích thước trang mới
+    console.log('Page size change:', event.target.value);
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
-    setPage(0); // Reset to first page when pageSize changes
-    navigate(`/Users?pageNumber=1&pageSize=${newSize}`); // Cập nhật URL
+    setPage(0);
+    navigate(`/Users?pageNumber=1&pageSize=${newSize}`);
   };
 
-  const handleUpdate = (id) => {
-    console.log(`Update user with id: ${id}`);
+  const handleEditToggle = (id) => {
+    setEditMode((prevState) => ({
+      ...prevState,
+      [id]: !prevState[id]
+    }));
   };
 
+  const handleFieldChange = (id, field, value) => {
+    setTeamData((prevData) =>
+      prevData.map((user) =>
+        user.id === id ? { ...user, [field]: value } : user
+      )
+    );
+  };
+
+  const handleSave = async (id) => {
+    const user = teamData.find((user) => user.id === id);
+    console.log('User data:', user);  // Log dữ liệu người dùng để kiểm tra
+  
+    if (user) {
+      // Tạm thời gán userDetailId nếu thiếu
+      if (!user.userDetailId) {
+        user.userDetailId = user.id;  // Gán userDetailId bằng id của user, thay đổi tùy theo yêu cầu của backend
+      }
+  
+      try {
+        const userDetails = {
+          userDetailId: user.userDetailId,  // Sử dụng ID của userDetail đúng cách
+          balance: user.balance || 0,
+          fullName: user.fullName || '',
+          status: user.status !== undefined ? user.status : true,
+          user: {
+            id: user.id,
+            userName: user.userName,
+            normalizedUserName: user.normalizedUserName || '',
+            email: user.email,
+            normalizedEmail: user.normalizedEmail || '',
+            emailConfirmed: user.emailConfirmed,
+            passwordHash: user.passwordHash || '',
+            securityStamp: user.securityStamp || '',
+            concurrencyStamp: user.concurrencyStamp || '',
+            phoneNumber: user.phoneNumber || '',
+            phoneNumberConfirmed: user.phoneNumberConfirmed || false,
+            twoFactorEnabled: user.twoFactorEnabled || false,
+            lockoutEnd: user.lockoutEnd || null,
+            lockoutEnabled: user.lockoutEnabled || false,
+            accessFailedCount: user.accessFailedCount || 0
+          }
+        };
+  
+        console.log('Updating user details:', userDetails);  // Log dữ liệu gửi đi
+        const response = await updateUserDetail(userDetails.userDetailId, userDetails);
+        console.log('Update response:', response);  // Log phản hồi từ API
+  
+        // Cập nhật trạng thái hiển thị dữ liệu sau khi cập nhật thành công
+        if (response || response === '') {
+          setTeamData((prevData) =>
+            prevData.map((u) => (u.id === id ? { ...u, ...userDetails } : u))
+          );
+          setEditMode((prevState) => ({
+            ...prevState,
+            [id]: false
+          }));
+          console.log('Update successful');
+        } else {
+          console.error('Update failed with no response');
+          setError('Update failed with no response');
+        }
+      } catch (error) {
+        console.error('Failed to update user detail:', error);
+        setError(`Failed to update user detail: ${error.message}`);
+      }
+    } else {
+      console.error('userDetailId is missing for user:', id);
+      setError('userDetailId is missing.');
+    }
+  };
+  
+  
+  
+  
+  
   const handleBanToggle = async (id, currentStatus) => {
     try {
       const updatedStatus = !currentStatus;
@@ -109,34 +189,79 @@ const Users = () => {
                   teamData.map((row) => (
                     <TableRow key={row.id} style={row.banned ? { backgroundColor: colors.redAccent[100] } : null}>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.rowNumber}</TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.userName}</TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.email}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
+                        {editMode[row.id] ? (
+                          <TextField
+                            value={row.userName}
+                            onChange={(e) => handleFieldChange(row.id, 'userName', e.target.value)}
+                            size="small"
+                          />
+                        ) : (
+                          row.userName
+                        )}
+                      </TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
+                        {editMode[row.id] ? (
+                          <TextField
+                            value={row.email}
+                            onChange={(e) => handleFieldChange(row.id, 'email', e.target.value)}
+                            size="small"
+                          />
+                        ) : (
+                          row.email
+                        )}
+                      </TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.emailConfirmed ? 'Yes' : 'No'}</TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumber || 'N/A'}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
+                        {editMode[row.id] ? (
+                          <TextField
+                            value={row.phoneNumber || ''}
+                            onChange={(e) => handleFieldChange(row.id, 'phoneNumber', e.target.value)}
+                            size="small"
+                          />
+                        ) : (
+                          row.phoneNumber || 'N/A'
+                        )}
+                      </TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
                       <TableCell align="center">
-                        <Button 
-                          onClick={() => handleUpdate(row.id)} 
-                          variant="contained" 
-                          size="small" 
-                          style={{ 
-                            marginLeft: 8,
-                            backgroundColor: colors.greenAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          Edit
-                        </Button>
+                        {editMode[row.id] ? (
+                          <Button
+                            onClick={() => handleSave(row.id)}
+                            variant="contained"
+                            size="small"
+                            style={{
+                              marginLeft: 8,
+                              backgroundColor: colors.greenAccent[400],
+                              color: colors.primary[900]
+                            }}
+                          >
+                            Save
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => handleEditToggle(row.id)}
+                            variant="contained"
+                            size="small"
+                            style={{
+                              marginLeft: 8,
+                              backgroundColor: colors.greenAccent[400],
+                              color: colors.primary[900]
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        )}
                       </TableCell>
                       <TableCell align="center">
-                        <Button 
-                          onClick={() => handleBanToggle(row.id, row.banned)} 
-                          variant="contained" 
-                          size="small" 
-                          style={{ 
+                        <Button
+                          onClick={() => handleBanToggle(row.id, row.banned)}
+                          variant="contained"
+                          size="small"
+                          style={{
                             marginLeft: 8,
-                            backgroundColor: row.banned 
+                            backgroundColor: row.banned
                               ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400])
                               : (theme.palette.mode === 'dark' ? colors.greenAccent[600] : colors.greenAccent[400]),
                             color: colors.primary[900]
@@ -174,7 +299,7 @@ const Users = () => {
               nextLabel="next >"
               onPageChange={handlePageClick}
               pageRangeDisplayed={5}
-              pageCount={Math.ceil(rowCount / pageSize)} // Tính toán số trang dựa trên số lượng bản ghi thực tế
+              pageCount={Math.ceil(rowCount / pageSize)}
               previousLabel="< previous"
               renderOnZeroPageCount={null}
               containerClassName={"pagination"}

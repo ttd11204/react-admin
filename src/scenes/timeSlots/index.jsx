@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Modal, TextField } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import { useLocation } from 'react-router-dom';
+import { Box, Button, Typography, useTheme, Modal, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { tokens } from '../../theme';
-import { fetchTimeSlots, createTimeSlot } from '../../api/timeSlotApi'; // Import hàm createTimeSlot mới
+import { fetchTimeSlots, createTimeSlot } from '../../api/timeSlotApi';
 import Header from '../../components/Header';
+
+const useQuery = () => {
+  return new URLSearchParams(useLocation().search);
+};
 
 const TimeSlots = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const query = useQuery();
+  const courtIdQuery = query.get('courtId');
   const [timeSlotsData, setTimeSlotsData] = useState([]);
   const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
   const [newSlot, setNewSlot] = useState({
     slotId: '',
-    courtId: '',
+    courtId: courtIdQuery,
     slotDate: '',
     slotStartTime: '',
     slotEndTime: '',
@@ -24,13 +30,14 @@ const TimeSlots = () => {
     const getTimeSlotsData = async () => {
       try {
         const data = await fetchTimeSlots();
-        setTimeSlotsData(data);
+        const filteredData = data.filter(slot => slot.courtId === courtIdQuery);
+        setTimeSlotsData(filteredData);
       } catch (err) {
         setError('Failed to fetch time slots data');
       }
     };
     getTimeSlotsData();
-  }, []);
+  }, [courtIdQuery]);
 
   const handleEdit = (id) => {
     // Logic for edit action
@@ -59,67 +66,9 @@ const TimeSlots = () => {
     }
   };
 
-  const columns = [
-    { field: 'slotId', headerName: 'Slot ID', flex: 1 },
-    { field: 'courtId', headerName: 'Court ID', flex: 1 },
-    { field: 'slotDate', headerName: 'Slot Date', flex: 1,
-      renderCell: ({ row }) => (
-        <Typography>{new Date(row.slotDate).toLocaleDateString()}</Typography>
-      )
-    },
-    { field: 'slotStartTime', headerName: 'Start Time', flex: 1 },
-    { field: 'slotEndTime', headerName: 'End Time', flex: 1 },
-    { field: 'isAvailable', headerName: 'Availability', flex: 1,
-      renderCell: ({ row }) => (
-        <Typography>{row.isAvailable ? 'Available' : 'Unavailable'}</Typography>
-      )
-    },
-    { field: 'paymentStatus', headerName: 'Payment Status', flex: 1,
-      valueGetter: (params) => params.row.bookings && params.row.bookings.length > 0 ? params.row.bookings[0].payments[0].paymentStatus : 'N/A'
-    },
-    { field: 'userName', headerName: 'User Name', flex: 1,
-      valueGetter: (params) => params.row.bookings && params.row.bookings.length > 0 ? params.row.bookings[0].user.userName : 'N/A'
-    },
-    { field: 'email', headerName: 'Email', flex: 1,
-      valueGetter: (params) => params.row.bookings && params.row.bookings.length > 0 ? params.row.bookings[0].user.email : 'N/A'
-    },
-    {
-      field: 'action',
-      headerName: 'Action',
-      flex: 1,
-      renderCell: ({ row }) => (
-        <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-          <Button 
-            onClick={() => handleEdit(row.slotId)} 
-            variant="contained" 
-            size="small" 
-            style={{ 
-              marginRight: 8,
-              backgroundColor: colors.greenAccent[400],
-              color: colors.primary[900]
-            }}
-          >
-            Edit
-          </Button>
-          <Button 
-            onClick={() => handleDelete(row.slotId)} 
-            variant="contained" 
-            size="small" 
-            style={{ 
-              backgroundColor: colors.redAccent[400],
-              color: colors.primary[900]
-            }}
-          >
-            Delete
-          </Button>
-        </Box>
-      )
-    }
-  ];
-
   return (
     <Box m="20px">
-      <Header title="TIME SLOTS" subtitle="List of Time Slots" />
+      <Header title="TIME SLOTS" subtitle={`List of Time Slots for Court ${courtIdQuery}`} />
       <Box display="flex" justifyContent="flex-end" m="20px 0">
         <Button variant="contained" color="primary" onClick={handleOpen}>
           Create New Slot
@@ -128,33 +77,69 @@ const TimeSlots = () => {
       {error ? (
         <Typography color="error" variant="h6">{error}</Typography>
       ) : (
-        <Box m="40px 0 0 0" height="75vh" sx={{
-          "& .MuiDataGrid-root": {
-            border: "none",
-          },
-          "& .MuiDataGrid-cell": {
-            borderBottom: "none"
-          },
-          "& .name-column--cell": {
-            color: colors.greenAccent[300]
-          },
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.blueAccent[700],
-            borderBottom: "none"
-          },
-          "& .MuiDataGrid-virtualScroller": {
-            backgroundColor: colors.primary[400]
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "none",
-            backgroundColor: colors.blueAccent[700]
-          }
-        }}>
-          <DataGrid
-            rows={timeSlotsData}
-            columns={columns}
-            getRowId={(row) => row.slotId}
-          />
+        <Box m="40px 0 0 0" height="75vh">
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
+                  <TableCell>Slot ID</TableCell>
+                  <TableCell>Court ID</TableCell>
+                  <TableCell>Slot Date</TableCell>
+                  <TableCell>Start Time</TableCell>
+                  <TableCell>End Time</TableCell>
+                  <TableCell>Availability</TableCell>
+                  <TableCell align="center">Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {timeSlotsData.length > 0 ? (
+                  timeSlotsData.map((row) => (
+                    <TableRow key={row.slotId}>
+                      <TableCell>{row.slotId}</TableCell>
+                      <TableCell>{row.courtId}</TableCell>
+                      <TableCell>{new Date(row.slotDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{row.slotStartTime}</TableCell>
+                      <TableCell>{row.slotEndTime}</TableCell>
+                      <TableCell>{row.isAvailable ? 'Available' : 'Unavailable'}</TableCell>
+                      <TableCell align="center">
+                        <Box display="flex" justifyContent="center" alignItems="center">
+                          <Button 
+                            onClick={() => handleEdit(row.slotId)} 
+                            variant="contained" 
+                            size="small" 
+                            style={{ 
+                              marginRight: 8,
+                              backgroundColor: colors.greenAccent[400],
+                              color: colors.primary[900]
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            onClick={() => handleDelete(row.slotId)} 
+                            variant="contained" 
+                            size="small" 
+                            style={{ 
+                              backgroundColor: colors.redAccent[400],
+                              color: colors.primary[900]
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      No data available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       )}
 

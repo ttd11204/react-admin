@@ -1,10 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem } from '@mui/material';
-import ReactPaginate from 'react-paginate';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { tokens } from '../../theme';
-import { fetchCourts } from '../../api/courtApi';
-import Header from '../../components/Header';
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Typography,
+  useTheme,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import ReactPaginate from "react-paginate";
+import { useLocation, useNavigate } from "react-router-dom";
+import { tokens } from "../../theme";
+import { fetchCourts } from "../../api/courtApi";
+import Header from "../../components/Header";
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -16,9 +30,10 @@ const Courts = () => {
   const [courtsData, setCourtsData] = useState([]);
   const query = useQuery();
   const navigate = useNavigate();
-  
-  const pageQuery = parseInt(query.get('pageNumber')) || 1;
-  const sizeQuery = parseInt(query.get('pageSize')) || 10;
+
+  const pageQuery = parseInt(query.get("pageNumber")) || 1;
+  const sizeQuery = parseInt(query.get("pageSize")) || 10;
+  const branchIdQuery = query.get("branchId");
 
   const [page, setPage] = useState(pageQuery - 1); // Convert page index to 0-based for ReactPaginate
   const [pageSize, setPageSize] = useState(sizeQuery);
@@ -26,41 +41,53 @@ const Courts = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!branchIdQuery) {
+      setError("Branch ID is required to view courts.");
+      return;
+    }
+
     const getCourtsData = async () => {
       try {
         const data = await fetchCourts(page + 1, pageSize); // Convert page index to 1-based
-        console.log('Fetched courts data:', data); // Log fetched data
-
-        if (data.items && Array.isArray(data.items)) {
-          const numberedData = data.items.map((item, index) => ({
-            ...item,
-            rowNumber: index + 1 + page * pageSize
-          }));
-          setCourtsData(numberedData);
-          setRowCount(data.totalCount);
-        } else {
-          throw new Error('Invalid data structure');
-        }
+        const filteredData = data.items.filter(
+          (court) => court.branchId === branchIdQuery
+        );
+        const numberedData = filteredData.map((item, index) => ({
+          ...item,
+          rowNumber: index + 1 + page * pageSize,
+        }));
+        setCourtsData(numberedData);
+        setRowCount(filteredData.length);
       } catch (err) {
         setError(`Failed to fetch courts data: ${err.message}`);
       }
     };
     getCourtsData();
-  }, [page, pageSize]);
+  }, [page, pageSize, branchIdQuery]);
 
   const handlePageClick = (event) => {
-    console.log('Page change:', event.selected); // Log new page index
+    console.log("Page change:", event.selected); // Log new page index
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Courts?pageNumber=${newPage + 1}&pageSize=${pageSize}`); // Update URL
+    navigate(
+      `/Courts?pageNumber=${
+        newPage + 1
+      }&pageSize=${pageSize}&branchId=${branchIdQuery}`
+    ); // Update URL
   };
 
   const handlePageSizeChange = (event) => {
-    console.log('Page size change:', event.target.value); // Log new page size
+    console.log("Page size change:", event.target.value); // Log new page size
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0); // Reset to first page when pageSize changes
-    navigate(`/Courts?pageNumber=1&pageSize=${newSize}`); // Update URL
+    navigate(
+      `/Courts?pageNumber=1&pageSize=${newSize}&branchId=${branchIdQuery}`
+    ); // Update URL
+  };
+
+  const handleView = (courtId) => {
+    navigate(`/TimeSlots?courtId=${courtId}`);
   };
 
   const handleEdit = (id) => {
@@ -73,9 +100,14 @@ const Courts = () => {
 
   return (
     <Box m="20px">
-      <Header title="COURTS" subtitle="List of Courts" />
+      <Header
+        title="COURTS"
+        subtitle={`List of Courts for Branch ${branchIdQuery}`}
+      />
       {error ? (
-        <Typography color="error" variant="h6">{error}</Typography>
+        <Typography color="error" variant="h6">
+          {error}
+        </Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
           <TableContainer component={Paper}>
@@ -84,10 +116,11 @@ const Courts = () => {
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
                   <TableCell>ID</TableCell>
                   <TableCell>Branch ID</TableCell>
+                  <TableCell>Court ID</TableCell>
                   <TableCell>Court Name</TableCell>
                   <TableCell>Address</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>Action</TableCell>
+                  <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -96,40 +129,60 @@ const Courts = () => {
                     <TableRow key={row.courtId}>
                       <TableCell>{row.rowNumber}</TableCell>
                       <TableCell>{row.branchId}</TableCell>
+                      <TableCell>{row.courtId}</TableCell>
                       <TableCell>{row.courtName}</TableCell>
-                      <TableCell>{row.branch?.address || 'N/A'}</TableCell>
-                      <TableCell>{row.status ? 'Active' : 'Inactive'}</TableCell>
+                      <TableCell>{row.branch?.address || "N/A"}</TableCell>
                       <TableCell>
-                        <Button 
-                          onClick={() => handleEdit(row.courtId)} 
-                          variant="contained" 
-                          size="small" 
-                          style={{ 
-                            marginLeft: 8,
-                            backgroundColor: colors.greenAccent[400],
-                            color: colors.primary[900]
-                          }}
+                        {row.status ? "Active" : "Inactive"}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Box
+                          display="flex"
+                          justifyContent="center"
+                          alignItems="center"
                         >
-                          Edit
-                        </Button>
-                        <Button 
-                          onClick={() => handleDelete(row.courtId)} 
-                          variant="contained" 
-                          size="small" 
-                          style={{ 
-                            marginLeft: 8,
-                            backgroundColor: colors.redAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          Delete
-                        </Button>
+                          <Button
+                            onClick={() => handleView(row.courtId)}
+                            variant="contained"
+                            size="small"
+                            style={{
+                              marginRight: 8,
+                              backgroundColor: colors.greenAccent[400],
+                              color: colors.primary[900],
+                            }}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            onClick={() => handleEdit(row.courtId)}
+                            variant="contained"
+                            size="small"
+                            style={{
+                              marginRight: 8,
+                              backgroundColor: colors.greenAccent[400],
+                              color: colors.primary[900],
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(row.courtId)}
+                            variant="contained"
+                            size="small"
+                            style={{
+                              backgroundColor: colors.redAccent[400],
+                              color: colors.primary[900],
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={7} align="center">
                       No data available
                     </TableCell>
                   </TableRow>
@@ -137,12 +190,14 @@ const Courts = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mt="20px">
-            <Select
-              value={pageSize}
-              onChange={handlePageSizeChange}
-            >
-              {[10, 15, 20, 25, 50].map(size => (
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mt="20px"
+          >
+            <Select value={pageSize} onChange={handlePageSizeChange}>
+              {[10, 15, 20, 25, 50].map((size) => (
                 <MenuItem key={size} value={size}>
                   {size}
                 </MenuItem>

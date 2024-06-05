@@ -89,7 +89,7 @@ const Payments = () => {
                   <TableCell>Payment Status</TableCell>
                   <TableCell>Payment Signature</TableCell>
                   <TableCell>Booking</TableCell>
-                  <TableCell>Action</TableCell>
+                  <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -104,6 +104,8 @@ const Payments = () => {
                       <TableCell>{row.paymentSignature}</TableCell>
                       <TableCell>{row.booking}</TableCell>
                       <TableCell>
+                        <Box display="flex" justifyContent="center" alignItems="center">
+
                         <Button 
                           onClick={() => handleEdit(row.paymentId)} 
                           variant="contained" 
@@ -128,6 +130,7 @@ const Payments = () => {
                         >
                           Delete
                         </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))

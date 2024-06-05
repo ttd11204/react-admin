@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem } from '@mui/material';
+import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Button } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
@@ -54,6 +54,14 @@ const Branches = () => {
     navigate(`/Branches?pageNumber=1&pageSize=${newSize}`); // Cập nhật URL
   };
 
+  const handleView = (branchId) => {
+    navigate(`/Courts?branchId=${branchId}`);
+  };
+
+  const handleEdit = (branchId) => {
+    navigate(`/Branches/edit/${branchId}`);
+  };
+
   return (
     <Box m="20px">
       <Header title="BRANCHES" subtitle="List of Branches" />
@@ -72,6 +80,7 @@ const Branches = () => {
                   <TableCell>Close Time</TableCell>
                   <TableCell>Open Day</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -85,11 +94,29 @@ const Branches = () => {
                       <TableCell>{branch.closeTime}</TableCell>
                       <TableCell>{branch.openDay}</TableCell>
                       <TableCell>{branch.status ? 'Active' : 'Inactive'}</TableCell>
+                      <TableCell align="center">
+                        <Box display="flex" justifyContent="center" alignItems="center">
+                          <Button
+                            variant="contained"
+                            style={{ backgroundColor: colors.greenAccent[500], color: 'black' }}
+                            onClick={() => handleView(branch.branchId)}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="contained"
+                            style={{ backgroundColor: colors.greenAccent[500], color: 'black', marginLeft: '8px' }}
+                            onClick={() => handleEdit(branch.branchId)}
+                          >
+                            Edit
+                          </Button>
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={8} align="center">
                       No data available
                     </TableCell>
                   </TableRow>
