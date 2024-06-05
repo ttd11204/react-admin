@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
 import { fetchBranches } from '../../api/branchApi';
 import Header from '../../components/Header';
-import '../../scenes/team/style.css'; // Đảm bảo bạn đã nhập đúng file CSS của mình
+import '../users/style.css'; // Đảm bảo bạn đã nhập đúng file CSS của mình
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);

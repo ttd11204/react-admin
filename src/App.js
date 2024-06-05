@@ -4,7 +4,6 @@ import { CssBaseline, ThemeProvider } from "@mui/material";
 import { Route, Routes } from "react-router-dom";
 import Sidebar from "./scenes/global/Sidebar";
 import Dashboard from "./scenes/dashboard";
-import Team from "./scenes/team";
 import Courts from "./scenes/courts";
 import Payments from "./scenes/payments";
 import Form from "./scenes/form";
@@ -18,6 +17,7 @@ import Review from "./scenes/reviews/reviews";
 import Branches from "./scenes/branches";
 import TimeSlots from "./scenes/timeSlots";
 import Bookings from "./scenes/bookings";
+import Users from "./scenes/users";
 
 
 function App() {
@@ -33,7 +33,7 @@ function App() {
               <Topbar/>
               <Routes>
               <Route path="/" element={<Dashboard/>} />
-              <Route path="/Users" element={<Team/>} />
+              <Route path="/Users" element={<Users/>} />
               <Route path="/Courts" element={<Courts/>} />
               <Route path="/Payments" element={<Payments/>} />
               <Route path="/Reviews" element={<Review/>} />

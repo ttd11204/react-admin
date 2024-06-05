@@ -5,13 +5,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
 import { fetchTeamData, updateUserBanStatus } from '../../api/userApi';
 import Header from '../../components/Header';
-import '../../scenes/team/style.css'; // Đảm bảo bạn đã nhập đúng file CSS của mình
+import './style.css'; // Đảm bảo bạn đã nhập đúng file CSS của mình
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
 };
 
-const Team = () => {
+const Users = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [teamData, setTeamData] = useState([]);
@@ -68,10 +68,6 @@ const Team = () => {
     console.log(`Update user with id: ${id}`);
   };
 
-  const handleDelete = (id) => {
-    console.log(`Delete user with id: ${id}`);
-  };
-
   const handleBanToggle = async (id, currentStatus) => {
     try {
       const updatedStatus = !currentStatus;
@@ -97,29 +93,29 @@ const Team = () => {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
-                  <TableCell>ID</TableCell>
-                  <TableCell>User Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Email Confirmed</TableCell>
-                  <TableCell>Phone Number</TableCell>
-                  <TableCell>Phone Confirmed</TableCell>
-                  <TableCell>2FA Enabled</TableCell>
-                  <TableCell>Action</TableCell>
-                  <TableCell>Access</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>ID</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>User Name</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Email</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Email Confirmed</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Phone Number</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Phone Confirmed</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>2FA Enabled</TableCell>
+                  <TableCell align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Action</TableCell>
+                  <TableCell align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Access</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {teamData.length > 0 ? (
                   teamData.map((row) => (
                     <TableRow key={row.id} style={row.banned ? { backgroundColor: colors.redAccent[100] } : null}>
-                      <TableCell>{row.rowNumber}</TableCell>
-                      <TableCell>{row.userName}</TableCell>
-                      <TableCell>{row.email}</TableCell>
-                      <TableCell>{row.emailConfirmed ? 'Yes' : 'No'}</TableCell>
-                      <TableCell>{row.phoneNumber || 'N/A'}</TableCell>
-                      <TableCell>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
-                      <TableCell>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
-                      <TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.rowNumber}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.userName}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.email}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.emailConfirmed ? 'Yes' : 'No'}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumber || 'N/A'}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
+                      <TableCell align="center">
                         <Button 
                           onClick={() => handleUpdate(row.id)} 
                           variant="contained" 
@@ -132,27 +128,17 @@ const Team = () => {
                         >
                           Edit
                         </Button>
-                        <Button 
-                          onClick={() => handleDelete(row.id)} 
-                          variant="contained" 
-                          size="small" 
-                          style={{ 
-                            marginLeft: 8,
-                            backgroundColor: colors.redAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          Delete
-                        </Button>
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="center">
                         <Button 
                           onClick={() => handleBanToggle(row.id, row.banned)} 
                           variant="contained" 
                           size="small" 
                           style={{ 
                             marginLeft: 8,
-                            backgroundColor: row.banned ? colors.redAccent[600] : colors.greenAccent[600],
+                            backgroundColor: row.banned 
+                              ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400])
+                              : (theme.palette.mode === 'dark' ? colors.greenAccent[600] : colors.greenAccent[400]),
                             color: colors.primary[900]
                           }}
                         >
@@ -163,7 +149,7 @@ const Team = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">
+                    <TableCell colSpan={9} align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>
                       No data available
                     </TableCell>
                   </TableRow>
@@ -175,6 +161,7 @@ const Team = () => {
             <Select
               value={pageSize}
               onChange={handlePageSizeChange}
+              style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}
             >
               {[10, 15, 20, 25, 50].map(size => (
                 <MenuItem key={size} value={size}>
@@ -200,4 +187,4 @@ const Team = () => {
   );
 };
 
-export default Team;
+export default Users;

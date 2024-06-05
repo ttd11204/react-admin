@@ -1,4 +1,5 @@
-import { Box, useTheme } from "@mui/material";
+import React, { useState } from 'react';
+import { Box, useTheme, TextField, Button } from "@mui/material";
 import Header from "../../components/Header";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
@@ -10,6 +11,31 @@ import { tokens } from "../../theme";
 const FAQ = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [comments, setComments] = useState({
+    1: '',
+    2: '',
+    3: '',
+    4: '',
+    5: '',
+  });
+
+  const handleCommentChange = (id, value) => {
+    setComments(prevComments => ({
+      ...prevComments,
+      [id]: value,
+    }));
+  };
+
+  const handleSendComment = (id) => {
+    // Xử lý logic gửi comment ở đây
+    console.log(`Comment for ${id}:`, comments[id]);
+    setComments(prevComments => ({
+      ...prevComments,
+      [id]: '',
+    }));
+  };
+
   return (
     <Box m="20px">
       <Header title="FAQ" subtitle="Frequently Asked Questions Page" />
@@ -17,66 +43,150 @@ const FAQ = () => {
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography color={colors.greenAccent[500]} variant="h5">
-            An Important Question
+            Username 1
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            Lovely Court
           </Typography>
+          <Box display="flex" alignItems="center" mt={2}>
+            <TextField
+              label="Reply box"
+              variant="outlined"
+              fullWidth
+              value={comments[1]}
+              onChange={(e) => handleCommentChange(1, e.target.value)}
+              sx={{ mr: 1 }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleSendComment(1)}
+            >
+              Send
+            </Button>
+          </Box>
         </AccordionDetails>
       </Accordion>
+
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography color={colors.greenAccent[500]} variant="h5">
-            Another Important Question
+            Username 2
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            I really like it
           </Typography>
+          <Box display="flex" alignItems="center" mt={2}>
+            <TextField
+              label="Reply box"
+              variant="outlined"
+              fullWidth
+              value={comments[2]}
+              onChange={(e) => handleCommentChange(2, e.target.value)}
+              sx={{ mr: 1 }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleSendComment(2)}
+            >
+              Send
+            </Button>
+          </Box>
         </AccordionDetails>
       </Accordion>
+
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography color={colors.greenAccent[500]} variant="h5">
-            Your Favorite Question
+            Username 3
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            This will be my favorite website
           </Typography>
+          <Box display="flex" alignItems="center" mt={2}>
+            <TextField
+              label="Reply box"
+              variant="outlined"
+              fullWidth
+              value={comments[3]}
+              onChange={(e) => handleCommentChange(3, e.target.value)}
+              sx={{ mr: 1 }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleSendComment(3)}
+            >
+              Send
+            </Button>
+          </Box>
         </AccordionDetails>
       </Accordion>
+
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography color={colors.greenAccent[500]} variant="h5">
-            Some Random Question
+            Username 4
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            Good
           </Typography>
+          <Box display="flex" alignItems="center" mt={2}>
+            <TextField
+              label="Reply box"
+              variant="outlined"
+              fullWidth
+              value={comments[4]}
+              onChange={(e) => handleCommentChange(4, e.target.value)}
+              sx={{ mr: 1 }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleSendComment(4)}
+            >
+              Send
+            </Button>
+          </Box>
         </AccordionDetails>
       </Accordion>
+
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography color={colors.greenAccent[500]} variant="h5">
-            The Final Question
+            Jack 5tr
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            hahahahaha
           </Typography>
+          <Box display="flex" alignItems="center" mt={2}>
+            <TextField
+              label="Reply box"
+              variant="outlined"
+              fullWidth
+              value={comments[5]}
+              onChange={(e) => handleCommentChange(5, e.target.value)}
+              sx={{ mr: 1 }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleSendComment(5)}
+            >
+              Send
+            </Button>
+          </Box>
         </AccordionDetails>
       </Accordion>
     </Box>
