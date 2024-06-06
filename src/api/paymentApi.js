@@ -30,3 +30,15 @@ export const fetchPayments = async (pageNumber = 1, pageSize = 10) => {
     throw error;
   }
 };
+
+export const updatePaymentStatus = async (paymentId, newStatus) => {
+  try {
+    const response = await axios.patch(`${url}/Payments/${paymentId}`, {
+      paymentStatus: newStatus
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating payment status:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};

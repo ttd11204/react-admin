@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, TextField } from '@mui/material';
+import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, TextField, IconButton, InputBase } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
 import { fetchTeamData, updateUserBanStatus, updateUserDetail } from '../../api/userApi';
 import Header from '../../components/Header';
+import SearchIcon from "@mui/icons-material/Search";
 import './style.css';
 
 const useQuery = () => {
@@ -26,6 +27,7 @@ const Users = () => {
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState({});
+  const [searchQuery, setSearchQuery] = useState(query.get('search') || "");
 
   useEffect(() => {
     const getTeamData = async () => {
@@ -144,10 +146,6 @@ const Users = () => {
     }
   };
   
-  
-  
-  
-  
   const handleBanToggle = async (id, currentStatus) => {
     try {
       const updatedStatus = !currentStatus;
@@ -162,6 +160,33 @@ const Users = () => {
     }
   };
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleSearchSubmit = async () => {
+    setPage(0);
+    navigate(`/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
+    try {
+      const data = await fetchTeamData(1, pageSize, searchQuery.trim());
+      console.log('Fetched team data:', data);
+
+      if (data.items && Array.isArray(data.items)) {
+        const numberedData = data.items.map((item, index) => ({
+          ...item,
+          rowNumber: index + 1,
+          banned: item.lockoutEnabled === false
+        }));
+        setTeamData(numberedData);
+        setRowCount(data.totalCount);
+      } else {
+        throw new Error('Invalid data structure');
+      }
+    } catch (err) {
+      setError(`Failed to fetch team data: ${err.message}`);
+    }
+  };
+
   return (
     <Box m="20px">
       <Header title="USER" subtitle="Managing Users" />
@@ -169,6 +194,20 @@ const Users = () => {
         <Typography color="error" variant="h6">{error}</Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
+              <InputBase
+                sx={{ ml: 2, flex: 1 }}
+                placeholder="Search by User ID"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit() }}
+              />
+              <IconButton type="button" sx={{ p: 1 }} onClick={handleSearchSubmit}>
+                <SearchIcon />
+              </IconButton>
+            </Box>
+          </Box>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>

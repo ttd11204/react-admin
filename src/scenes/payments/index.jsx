@@ -4,7 +4,7 @@ import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from "../../theme";
 import Header from "../../components/Header";
-import { fetchPayments } from '../../api/paymentApi';
+import { fetchPayments, updatePaymentStatus } from '../../api/paymentApi';
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -67,9 +67,20 @@ const Payments = () => {
     console.log(`Edit payment with id: ${id}`);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     console.log(`Delete payment with id: ${id}`);
+    try {
+      await updatePaymentStatus(id, 'pending');
+      // Optionally, refetch the data to update the UI or remove the deleted item from the state
+      const updatedPaymentsData = paymentsData.map(payment => 
+        payment.paymentId === id ? { ...payment, paymentStatus: 'pending' } : payment
+      );
+      setPaymentsData(updatedPaymentsData);
+    } catch (error) {
+      setError(`Failed to update payment status: ${error.message}`);
+    }
   };
+  
 
   return (
     <Box m="20px">
