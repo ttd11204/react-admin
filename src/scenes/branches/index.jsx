@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Button } from '@mui/material';
+import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Button, InputBase, IconButton } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
 import { fetchBranches } from '../../api/branchApi';
 import Header from '../../components/Header';
 import '../users/style.css'; // Đảm bảo bạn đã nhập đúng file CSS của mình
-
+import SearchIcon from '@mui/icons-material/Search';
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
 };
@@ -69,6 +69,18 @@ const Branches = () => {
         <Typography color="error" variant="h6">{error}</Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
+              <InputBase
+                sx={{ ml: 2, flex: 1 }}
+                placeholder="Search"
+                
+              />
+              <IconButton type="button" sx={{ p: 1 }}>
+                <SearchIcon />
+              </IconButton>
+            </Box>
+          </Box>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>

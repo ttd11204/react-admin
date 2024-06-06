@@ -13,12 +13,15 @@ import {
   Paper,
   Select,
   MenuItem,
+  IconButton,
+  InputBase,
 } from "@mui/material";
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
 import { fetchBookings, deleteBooking } from "../../api/bookingApi";
 import Header from "../../components/Header";
+import SearchIcon from "@mui/icons-material/Search";
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -103,6 +106,18 @@ const Bookings = () => {
         </Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
+              <InputBase
+                sx={{ ml: 2, flex: 1 }}
+                placeholder="Search"
+                
+              />
+              <IconButton type="button" sx={{ p: 1 }}>
+                <SearchIcon />
+              </IconButton>
+            </Box>
+          </Box>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   Button,
@@ -13,6 +14,8 @@ import {
   Paper,
   Select,
   MenuItem,
+  InputBase,
+  IconButton,
 } from "@mui/material";
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -94,6 +97,18 @@ const Reviews = () => {
         </Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
+            <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
+              <InputBase
+                sx={{ ml: 2, flex: 1 }}
+                placeholder="Search"
+              />
+              <IconButton type="button" sx={{ p: 1 }}>
+                <SearchIcon />
+              </IconButton>
+            </Box>
+          </Box>
+
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
