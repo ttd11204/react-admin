@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, TextField, IconButton, InputBase } from '@mui/material';
+import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchTeamData, updateUserBanStatus, updateUserDetail } from '../../api/userApi';
+import { fetchTeamData, updateUserBanStatus } from '../../api/userApi';
 import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
 import './style.css';
@@ -26,7 +26,6 @@ const Users = () => {
   const [pageSize, setPageSize] = useState(sizeQuery);
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
-  const [editMode, setEditMode] = useState({});
   const [searchQuery, setSearchQuery] = useState(query.get('search') || "");
 
   useEffect(() => {
@@ -68,84 +67,6 @@ const Users = () => {
     navigate(`/Users?pageNumber=1&pageSize=${newSize}`);
   };
 
-  const handleEditToggle = (id) => {
-    setEditMode((prevState) => ({
-      ...prevState,
-      [id]: !prevState[id]
-    }));
-  };
-
-  const handleFieldChange = (id, field, value) => {
-    setTeamData((prevData) =>
-      prevData.map((user) =>
-        user.id === id ? { ...user, [field]: value } : user
-      )
-    );
-  };
-
-  const handleSave = async (id) => {
-    const user = teamData.find((user) => user.id === id);
-    console.log('User data:', user);  // Log dữ liệu người dùng để kiểm tra
-  
-    if (user) {
-      // Tạm thời gán userDetailId nếu thiếu
-      if (!user.userDetailId) {
-        user.userDetailId = user.id;  // Gán userDetailId bằng id của user, thay đổi tùy theo yêu cầu của backend
-      }
-  
-      try {
-        const userDetails = {
-          userDetailId: user.userDetailId,  // Sử dụng ID của userDetail đúng cách
-          balance: user.balance || 0,
-          fullName: user.fullName || '',
-          status: user.status !== undefined ? user.status : true,
-          user: {
-            id: user.id,
-            userName: user.userName,
-            normalizedUserName: user.normalizedUserName || '',
-            email: user.email,
-            normalizedEmail: user.normalizedEmail || '',
-            emailConfirmed: user.emailConfirmed,
-            passwordHash: user.passwordHash || '',
-            securityStamp: user.securityStamp || '',
-            concurrencyStamp: user.concurrencyStamp || '',
-            phoneNumber: user.phoneNumber || '',
-            phoneNumberConfirmed: user.phoneNumberConfirmed || false,
-            twoFactorEnabled: user.twoFactorEnabled || false,
-            lockoutEnd: user.lockoutEnd || null,
-            lockoutEnabled: user.lockoutEnabled || false,
-            accessFailedCount: user.accessFailedCount || 0
-          }
-        };
-  
-        console.log('Updating user details:', userDetails);  // Log dữ liệu gửi đi
-        const response = await updateUserDetail(userDetails.userDetailId, userDetails);
-        console.log('Update response:', response);  // Log phản hồi từ API
-  
-        // Cập nhật trạng thái hiển thị dữ liệu sau khi cập nhật thành công
-        if (response || response === '') {
-          setTeamData((prevData) =>
-            prevData.map((u) => (u.id === id ? { ...u, ...userDetails } : u))
-          );
-          setEditMode((prevState) => ({
-            ...prevState,
-            [id]: false
-          }));
-          console.log('Update successful');
-        } else {
-          console.error('Update failed with no response');
-          setError('Update failed with no response');
-        }
-      } catch (error) {
-        console.error('Failed to update user detail:', error);
-        setError(`Failed to update user detail: ${error.message}`);
-      }
-    } else {
-      console.error('userDetailId is missing for user:', id);
-      setError('userDetailId is missing.');
-    }
-  };
-  
   const handleBanToggle = async (id, currentStatus) => {
     try {
       const updatedStatus = !currentStatus;
@@ -187,6 +108,14 @@ const Users = () => {
     }
   };
 
+  const handleCreateNew = () => {
+    navigate("/form");
+  };
+
+  const handleViewUser = (id) => {
+    navigate(`/Users/${id}`);
+  };
+
   return (
     <Box m="20px">
       <Header title="USER" subtitle="Managing Users" />
@@ -207,6 +136,17 @@ const Users = () => {
                 <SearchIcon />
               </IconButton>
             </Box>
+            <Button
+              variant="contained"
+              style={{
+                marginLeft: 8,
+                backgroundColor: colors.greenAccent[400],
+                color: colors.primary[900],
+              }}
+              onClick={handleCreateNew}
+            >
+              Create New
+            </Button>
           </Box>
           <TableContainer component={Paper}>
             <Table>
@@ -229,69 +169,30 @@ const Users = () => {
                     <TableRow key={row.id} style={row.banned ? { backgroundColor: colors.redAccent[100] } : null}>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.rowNumber}</TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
-                        {editMode[row.id] ? (
-                          <TextField
-                            value={row.userName}
-                            onChange={(e) => handleFieldChange(row.id, 'userName', e.target.value)}
-                            size="small"
-                          />
-                        ) : (
-                          row.userName
-                        )}
+                        {row.userName}
                       </TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
-                        {editMode[row.id] ? (
-                          <TextField
-                            value={row.email}
-                            onChange={(e) => handleFieldChange(row.id, 'email', e.target.value)}
-                            size="small"
-                          />
-                        ) : (
-                          row.email
-                        )}
+                        {row.email}
                       </TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.emailConfirmed ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
-                        {editMode[row.id] ? (
-                          <TextField
-                            value={row.phoneNumber || ''}
-                            onChange={(e) => handleFieldChange(row.id, 'phoneNumber', e.target.value)}
-                            size="small"
-                          />
-                        ) : (
-                          row.phoneNumber || 'N/A'
-                        )}
+                        {row.phoneNumber || 'N/A'}
                       </TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
                       <TableCell align="center">
-                        {editMode[row.id] ? (
-                          <Button
-                            onClick={() => handleSave(row.id)}
-                            variant="contained"
-                            size="small"
-                            style={{
-                              marginLeft: 8,
-                              backgroundColor: colors.greenAccent[400],
-                              color: colors.primary[900]
-                            }}
-                          >
-                            Save
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={() => handleEditToggle(row.id)}
-                            variant="contained"
-                            size="small"
-                            style={{
-                              marginLeft: 8,
-                              backgroundColor: colors.greenAccent[400],
-                              color: colors.primary[900]
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        )}
+                        <Button
+                          onClick={() => handleViewUser(row.id)}
+                          variant="contained"
+                          size="small"
+                          style={{
+                            marginLeft: 8,
+                            backgroundColor: colors.greenAccent[400],
+                            color: colors.primary[900]
+                          }}
+                        >
+                          View
+                        </Button>
                       </TableCell>
                       <TableCell align="center">
                         <Button

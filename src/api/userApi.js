@@ -67,3 +67,12 @@ export const updateUserDetail = async (userDetailId, userDetails) => {
     throw error;
   }
 };
+
+export const fetchUserDetail = async (userId) => {
+  try {
+    const response = await axios.get(`/api/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to fetch user details: ${error.message}`);
+  }
+};

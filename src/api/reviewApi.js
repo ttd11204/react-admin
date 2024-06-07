@@ -1,3 +1,5 @@
+// src/api/reviewApi.js
+
 import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
@@ -11,15 +13,25 @@ export const fetchReviews = async (pageNumber = 1, pageSize = 10) => {
       }
     });
 
-    console.log('API response full data:', response.data); // In ra toàn bộ dữ liệu phản hồi từ API
-
-    // Giả sử API trả về một mảng
     if (Array.isArray(response.data)) {
       const items = response.data;
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100; // Giả định tổng số bản ghi là 100 nếu không có header
+      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
+
+      const users = await fetchUsers();
+      const branches = await fetchBranches();
+
+      const itemsWithDetails = items.map(item => {
+        const user = users.find(u => u.id === item.id);
+        const branch = branches.find(b => b.branchId === item.branchId);
+        return {
+          ...item,
+          email: user ? user.email : 'N/A',
+          branchName: branch ? branch.branchName : 'N/A'
+        };
+      });
 
       return {
-        items,
+        items: itemsWithDetails,
         totalCount
       };
     } else {
@@ -27,6 +39,86 @@ export const fetchReviews = async (pageNumber = 1, pageSize = 10) => {
     }
   } catch (error) {
     console.error('Error fetching reviews data:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const createReview = async (reviewData) => {
+  try {
+    const response = await axios.post(`${url}/Reviews`, reviewData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating review:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const fetchUsers = async () => {
+  try {
+    const response = await axios.get(`${url}/Users`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users data:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const fetchBranches = async () => {
+  try {
+    const response = await axios.get(`${url}/Branches`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching branches data:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const updateReview = async (id, reviewData) => {
+  try {
+    console.log('Updating review with data:', JSON.stringify(reviewData, null, 2)); // Log the request payload
+    const response = await axios.put(`${url}/Reviews/${id}`, reviewData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating review:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const deleteReview = async (id) => {
+  try {
+    const response = await axios.delete(`${url}/Reviews/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting review:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const searchReviewsByRating = async (rating) => {
+  try {
+    const response = await axios.get(`${url}/Reviews/SearchByRating/${rating}`);
+    if (Array.isArray(response.data)) {
+      const items = response.data;
+
+      const users = await fetchUsers();
+      const branches = await fetchBranches();
+
+      const itemsWithDetails = items.map(item => {
+        const user = users.find(u => u.id === item.id);
+        const branch = branches.find(b => b.branchId === item.branchId);
+        return {
+          ...item,
+          email: user ? user.email : 'N/A',
+          branchName: branch ? branch.branchName : 'N/A'
+        };
+      });
+
+      return itemsWithDetails;
+    } else {
+      throw new Error('Invalid API response structure');
+    }
+  } catch (error) {
+    console.error('Error searching reviews by rating:', error.response ? error.response.data : error.message);
     throw error;
   }
 };

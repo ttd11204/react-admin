@@ -1,91 +1,109 @@
-import React, { useEffect, useState } from "react";
-import SearchIcon from "@mui/icons-material/Search";
-import {
-  Box,
-  Button,
-  Typography,
-  useTheme,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Select,
-  MenuItem,
-  InputBase,
-  IconButton,
-} from "@mui/material";
-import ReactPaginate from "react-paginate";
-import { useLocation, useNavigate } from "react-router-dom";
-import { tokens } from "../../theme";
-import { fetchReviews } from "../../api/reviewApi";
-import Header from "../../components/Header";
+// src/scenes/reviews/Reviews.jsx
 
-const useQuery = () => {
-  return new URLSearchParams(useLocation().search);
-};
+import React, { useEffect, useState } from "react";
+import { Box, Button, InputBase, IconButton, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Select, MenuItem, FormControl } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import SearchIcon from "@mui/icons-material/Search";
+import { fetchReviews, fetchUsers, fetchBranches, updateReview, deleteReview, searchReviewsByRating } from "../../api/reviewApi";
+import Header from "../../components/Header";
+import { tokens } from "../../theme";
 
 const Reviews = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [reviewsData, setReviewsData] = useState([]);
-  const query = useQuery();
+  const [users, setUsers] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [error, setError] = useState(null);
+  const [editMode, setEditMode] = useState({});
+  const [updatedReview, setUpdatedReview] = useState({});
+  const [searchRating, setSearchRating] = useState("");
   const navigate = useNavigate();
 
-  const pageQuery = parseInt(query.get("pageNumber")) || 1;
-  const sizeQuery = parseInt(query.get("pageSize")) || 10;
-
-  const [page, setPage] = useState(pageQuery - 1); // Convert page index to 0-based for ReactPaginate
-  const [pageSize, setPageSize] = useState(sizeQuery);
-  const [rowCount, setRowCount] = useState(0);
-  const [error, setError] = useState(null);
-
   useEffect(() => {
-    const getReviewsData = async () => {
+    const getData = async () => {
       try {
-        const data = await fetchReviews(page + 1, pageSize); // Convert page index to 1-based
-        console.log("Fetched reviews data:", data); // Log fetched data
-
-        if (data.items && Array.isArray(data.items)) {
-          const numberedData = data.items.map((item, index) => ({
-            ...item,
-            rowNumber: index + 1 + page * pageSize,
-          }));
-          setReviewsData(numberedData);
-          setRowCount(data.totalCount);
-        } else {
-          throw new Error("Invalid data structure");
-        }
+        const reviewsData = await fetchReviews();
+        const usersData = await fetchUsers();
+        const branchesData = await fetchBranches();
+        setReviewsData(reviewsData.items);
+        setUsers(usersData);
+        setBranches(branchesData);
       } catch (err) {
-        setError(`Failed to fetch reviews data: ${err.message}`);
+        setError(`Failed to fetch data: ${err.message}`);
       }
     };
-    getReviewsData();
-  }, [page, pageSize]);
+    getData();
+  }, []);
 
-  const handlePageClick = (event) => {
-    console.log("Page change:", event.selected); // Log new page index
-    const newPage = event.selected;
-    setPage(newPage);
-    navigate(`/Reviews?pageNumber=${newPage + 1}&pageSize=${pageSize}`); // Update URL
+  const handleEditToggle = (id) => {
+    setEditMode((prev) => ({ ...prev, [id]: !prev[id] }));
+    setUpdatedReview({});
   };
 
-  const handlePageSizeChange = (event) => {
-    console.log("Page size change:", event.target.value); // Log new page size
-    const newSize = parseInt(event.target.value, 10);
-    setPageSize(newSize);
-    setPage(0); // Reset to first page when pageSize changes
-    navigate(`/Reviews?pageNumber=1&pageSize=${newSize}`); // Update URL
+  const handleFieldChange = (id, field, value) => {
+    setUpdatedReview((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value,
+      },
+    }));
   };
 
-  const handleEdit = (id) => {
-    console.log(`Edit review with id: ${id}`);
+  const handleSave = async (id) => {
+    try {
+      const review = updatedReview[id];
+      const originalReview = reviewsData.find(r => r.reviewId === id);
+
+      // Đảm bảo tất cả các trường cần thiết đều có mặt
+      const payload = {
+        reviewText: review?.reviewText || originalReview?.reviewText,
+        rating: review?.rating || originalReview?.rating,
+        userId: review?.userId || originalReview?.id,
+        branchId: review?.branchId || originalReview?.branchId,
+      };
+
+      console.log('Review before sending:', JSON.stringify(payload, null, 2));
+      await updateReview(id, payload);
+      setEditMode((prev) => ({ ...prev, [id]: false }));
+      setReviewsData((prev) =>
+        prev.map((item) =>
+          item.reviewId === id
+            ? { ...item, ...payload, branchName: branches.find(b => b.branchId === payload.branchId)?.branchName, email: users.find(u => u.id === payload.userId)?.email }
+            : item
+        )
+      );
+    } catch (err) {
+      setError(`Failed to update review: ${err.message}`);
+    }
   };
 
-  const handleDelete = (id) => {
-    console.log(`Delete review with id: ${id}`);
+  const handleDelete = async (id) => {
+    try {
+      await deleteReview(id);
+      setReviewsData((prev) => prev.filter((item) => item.reviewId !== id));
+    } catch (err) {
+      setError(`Failed to delete review: ${err.message}`);
+    }
+  };
+
+  const handleSearch = async () => {
+    try {
+      if (searchRating) {
+        const data = await searchReviewsByRating(searchRating);
+        setReviewsData(data);
+      } else {
+        const reviewsData = await fetchReviews();
+        setReviewsData(reviewsData.items);
+      }
+    } catch (err) {
+      setError(`Failed to search reviews: ${err.message}`);
+    }
+  };
+
+  const handleCreateNew = () => {
+    navigate("/ReviewForm");
   };
 
   return (
@@ -97,16 +115,30 @@ const Reviews = () => {
         </Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
-            <Box display="flex" justifyContent="flex-end" mb={2}>
+          <Box display="flex" justifyContent="space-between" mb={2}>
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase
                 sx={{ ml: 2, flex: 1 }}
-                placeholder="Search"
+                placeholder="Search by Rating"
+                value={searchRating}
+                onChange={(e) => setSearchRating(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
               />
-              <IconButton type="button" sx={{ p: 1 }}>
+              <IconButton type="button" sx={{ p: 1 }} onClick={handleSearch}>
                 <SearchIcon />
               </IconButton>
             </Box>
+            <Button
+              variant="contained"
+              style={{
+                marginLeft: 8,
+                backgroundColor: colors.greenAccent[400],
+                color: colors.primary[900],
+              }}
+              onClick={handleCreateNew}
+            >
+              Create New
+            </Button>
           </Box>
 
           <TableContainer component={Paper}>
@@ -117,7 +149,8 @@ const Reviews = () => {
                   <TableCell>Review Text</TableCell>
                   <TableCell>Review Date</TableCell>
                   <TableCell>Rating</TableCell>
-                  <TableCell>User Name</TableCell>
+                  <TableCell>Branch Name</TableCell>
+                  <TableCell>User Email</TableCell>
                   <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
@@ -125,80 +158,120 @@ const Reviews = () => {
                 {reviewsData.length > 0 ? (
                   reviewsData.map((row) => (
                     <TableRow key={row.reviewId}>
-                      <TableCell>{row.rowNumber}</TableCell>
-                      <TableCell>{row.reviewText}</TableCell>
+                      <TableCell>{row.reviewId}</TableCell>
                       <TableCell>
-                        {new Date(row.reviewDate).toLocaleDateString()}
+                        {editMode[row.reviewId] ? (
+                          <TextField
+                            fullWidth
+                            variant="filled"
+                            value={updatedReview[row.reviewId]?.reviewText || row.reviewText}
+                            onChange={(e) => handleFieldChange(row.reviewId, "reviewText", e.target.value)}
+                          />
+                        ) : (
+                          row.reviewText
+                        )}
                       </TableCell>
-                      <TableCell>{row.rating}</TableCell>
+                      <TableCell>{new Date(row.reviewDate).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        {row.user ? row.user.userName : "N/A"}
+                        {editMode[row.reviewId] ? (
+                          <TextField
+                            fullWidth
+                            variant="filled"
+                            type="number"
+                            value={updatedReview[row.reviewId]?.rating || row.rating}
+                            onChange={(e) => handleFieldChange(row.reviewId, "rating", e.target.value)}
+                          />
+                        ) : (
+                          row.rating
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editMode[row.reviewId] ? (
+                          <FormControl fullWidth variant="filled">
+                            <Select
+                              value={updatedReview[row.reviewId]?.branchId || row.branchId}
+                              onChange={(e) => handleFieldChange(row.reviewId, "branchId", e.target.value)}
+                            >
+                              {branches.map((branch) => (
+                                <MenuItem key={branch.branchId} value={branch.branchId}>
+                                  {branch.branchName}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          row.branchName
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editMode[row.reviewId] ? (
+                          <FormControl fullWidth variant="filled">
+                            <Select
+                              value={updatedReview[row.reviewId]?.userId || row.id}
+                              onChange={(e) => handleFieldChange(row.reviewId, "userId", e.target.value)}
+                            >
+                              {users.map((user) => (
+                                <MenuItem key={user.id} value={user.id}>
+                                  {user.email}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          row.email
+                        )}
                       </TableCell>
                       <TableCell align="center">
-                        <Box>
-                          <Button
-                            onClick={() => handleEdit(row.reviewId)}
-                            variant="contained"
-                            size="small"
-                            style={{
-                              marginLeft: 8,
-                              backgroundColor: colors.greenAccent[400],
-                              color: colors.primary[900],
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(row.reviewId)}
-                            variant="contained"
-                            size="small"
-                            style={{
-                              marginLeft: 8,
-                              backgroundColor: colors.redAccent[400],
-                              color: colors.primary[900],
-                            }}
-                          >
-                            Delete
-                          </Button>
-                        </Box>
+                        {editMode[row.reviewId] ? (
+                          <>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => handleSave(row.reviewId)}
+                              style={{ marginRight: 8 }}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              color="secondary"
+                              onClick={() => handleEditToggle(row.reviewId)}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => handleEditToggle(row.reviewId)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              color="error"
+                              onClick={() => handleDelete(row.reviewId)}
+                              style={{ marginLeft: 8 }}
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      No data available
-                    </TableCell>
+                    <TableCell colSpan={7} align="center">No data available</TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </TableContainer>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mt="20px"
-          >
-            <Select value={pageSize} onChange={handlePageSizeChange}>
-              {[10, 15, 20, 25, 50].map((size) => (
-                <MenuItem key={size} value={size}>
-                  {size}
-                </MenuItem>
-              ))}
-            </Select>
-            <ReactPaginate
-              breakLabel="..."
-              nextLabel="next >"
-              onPageChange={handlePageClick}
-              pageRangeDisplayed={5}
-              pageCount={Math.ceil(rowCount / pageSize)}
-              previousLabel="< previous"
-              renderOnZeroPageCount={null}
-              containerClassName={"pagination"}
-              activeClassName={"active"}
-            />
-          </Box>
         </Box>
       )}
     </Box>
@@ -206,3 +279,4 @@ const Reviews = () => {
 };
 
 export default Reviews;
+  

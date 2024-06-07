@@ -6,7 +6,7 @@ import Sidebar from "./scenes/global/Sidebar";
 import Dashboard from "./scenes/dashboard";
 import Courts from "./scenes/courts";
 import Payments from "./scenes/payments";
-import Form from "./scenes/form";
+import Form from "./scenes/form/users";
 import Calendar from "./scenes/calendar";
 import FAQ from "./scenes/faq";
 import Bar from "./scenes/bar";
@@ -18,6 +18,9 @@ import Branches from "./scenes/branches";
 import TimeSlots from "./scenes/timeSlots";
 import Bookings from "./scenes/bookings";
 import Users from "./scenes/users";
+import ReviewForm from "./scenes/form/ReviewForm";
+import UserDetails from "./scenes/users/UserDetails";
+import BookingForm from "./scenes/form/BookingForm";
 
 
 function App() {
@@ -34,6 +37,7 @@ function App() {
               <Routes>
               <Route path="/" element={<Dashboard/>} />
               <Route path="/Users" element={<Users/>} />
+              <Route path="/Users/:id" element={<UserDetails />} />
               <Route path="/Courts" element={<Courts/>} />
               <Route path="/Payments" element={<Payments/>} />
               <Route path="/Reviews" element={<Review/>} />
@@ -41,6 +45,8 @@ function App() {
               <Route path="/TimeSlots" element={<TimeSlots/>} />
               <Route path="/Bookings" element={<Bookings/>} />
               <Route path="/form" element={<Form/>} />
+              <Route path="/BookingForm" element={<BookingForm />} />
+              <Route path="/ReviewForm" element={<ReviewForm/>} />
               <Route path="/calendar" element={<Calendar/>} />
               <Route path="/faq" element={<FAQ/>} />
               <Route path="/bar" element={<Bar/>} />
