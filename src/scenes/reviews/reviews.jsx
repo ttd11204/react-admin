@@ -1,10 +1,34 @@
-// src/scenes/reviews/Reviews.jsx
-
 import React, { useEffect, useState } from "react";
-import { Box, Button, InputBase, IconButton, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Select, MenuItem, FormControl } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import {
+  Box,
+  Button,
+  InputBase,
+  IconButton,
+  Typography,
+  useTheme,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl
+} from "@mui/material";
+import ReactPaginate from "react-paginate";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { fetchReviews, fetchUsers, fetchBranches, updateReview, deleteReview, searchReviewsByRating } from "../../api/reviewApi";
+import {
+  fetchReviews,
+  fetchUsers,
+  fetchBranches,
+  updateReview,
+  deleteReview,
+  searchReviewsByRating
+} from "../../api/reviewApi";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 
@@ -19,22 +43,29 @@ const Reviews = () => {
   const [updatedReview, setUpdatedReview] = useState({});
   const [searchRating, setSearchRating] = useState("");
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = parseInt(searchParams.get("pageNumber")) || 1;
+  const pageSize = parseInt(searchParams.get("pageSize")) || 10;
+
+  const [rowCount, setRowCount] = useState(0);
 
   useEffect(() => {
     const getData = async () => {
       try {
-        const reviewsData = await fetchReviews();
+        const reviewsData = await fetchReviews(page, pageSize);
         const usersData = await fetchUsers();
         const branchesData = await fetchBranches();
         setReviewsData(reviewsData.items);
         setUsers(usersData);
         setBranches(branchesData);
+        setRowCount(reviewsData.totalCount);
       } catch (err) {
         setError(`Failed to fetch data: ${err.message}`);
       }
     };
     getData();
-  }, []);
+  }, [page, pageSize]);
 
   const handleEditToggle = (id) => {
     setEditMode((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -56,7 +87,6 @@ const Reviews = () => {
       const review = updatedReview[id];
       const originalReview = reviewsData.find(r => r.reviewId === id);
 
-      // Đảm bảo tất cả các trường cần thiết đều có mặt
       const payload = {
         reviewText: review?.reviewText || originalReview?.reviewText,
         rating: review?.rating || originalReview?.rating,
@@ -94,8 +124,9 @@ const Reviews = () => {
         const data = await searchReviewsByRating(searchRating);
         setReviewsData(data);
       } else {
-        const reviewsData = await fetchReviews();
+        const reviewsData = await fetchReviews(page, pageSize);
         setReviewsData(reviewsData.items);
+        setRowCount(reviewsData.totalCount);
       }
     } catch (err) {
       setError(`Failed to search reviews: ${err.message}`);
@@ -104,6 +135,16 @@ const Reviews = () => {
 
   const handleCreateNew = () => {
     navigate("/ReviewForm");
+  };
+
+  const handlePageClick = (event) => {
+    const newPage = event.selected + 1;
+    setSearchParams({ pageNumber: newPage, pageSize });
+  };
+
+  const handlePageSizeChange = (event) => {
+    const newSize = parseInt(event.target.value, 10);
+    setSearchParams({ pageNumber: 1, pageSize: newSize });
   };
 
   return (
@@ -272,6 +313,28 @@ const Reviews = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          {rowCount > 0 && (
+            <Box display="flex" justifyContent="space-between" alignItems="center" mt="20px">
+              <Select value={pageSize} onChange={handlePageSizeChange}>
+                {[10, 15, 20, 25, 50].map((size) => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+              <ReactPaginate
+                breakLabel="..."
+                nextLabel="next >"
+                onPageChange={handlePageClick}
+                pageRangeDisplayed={5}
+                pageCount={Math.ceil(rowCount / pageSize)}
+                previousLabel="< previous"
+                renderOnZeroPageCount={null}
+                containerClassName={"pagination"}
+                activeClassName={"active"}
+              />
+            </Box>
+          )}
         </Box>
       )}
     </Box>
@@ -279,4 +342,3 @@ const Reviews = () => {
 };
 
 export default Reviews;
-  

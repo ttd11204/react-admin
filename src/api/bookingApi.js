@@ -1,5 +1,3 @@
-// src/api/bookingApi.js
-
 import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
@@ -13,8 +11,6 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
       }
     });
 
-    console.log('API response full data:', response.data);
-
     if (Array.isArray(response.data)) {
       const items = response.data;
       const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
@@ -24,12 +20,11 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
 
       const itemsWithDetails = items.map(item => {
         const user = users.find(u => u.id === item.id);
-        const court = item.timeSlots && item.timeSlots[0] ? courts.find(c => c.courtId === item.timeSlots[0].courtId) : null;
+        const court = courts.find(c => c.courtId === item.courtId);
         return {
           ...item,
           email: user ? user.email : 'N/A',
-          courtName: court ? court.courtName : 'N/A',
-          totalPrice: item.totalPrice || 'N/A'
+          courtName: court ? court.courtName : 'N/A'
         };
       });
 
@@ -66,68 +61,12 @@ export const fetchCourts = async () => {
   }
 };
 
-export const updateBookingStatus = async (bookingId, active) => {
-  try {
-    const response = await axios.put(`${url}/Bookings/${bookingId}/check`, { check: active });
-    return response.data;
-  } catch (error) {
-    console.error('Error updating booking status:', error.response ? error.response.data : error.message);
-    throw error;
-  }
-};
-
 export const deleteBooking = async (id) => {
   try {
     const response = await axios.delete(`${url}/Bookings/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Failed to delete booking with id ${id}:`, error.response ? error.response.data : error.message);
-    throw error;
-  }
-};
-
-export const searchBookingsByUserId = async (userId) => {
-  try {
-    const response = await axios.get(`${url}/Bookings/search/${userId}`);
-    if (Array.isArray(response.data)) {
-      const items = response.data;
-
-      const users = await fetchUsers();
-      const courts = await fetchCourts();
-
-      const itemsWithDetails = items.map(item => {
-        const user = users.find(u => u.id === item.id);
-        const court = item.timeSlots && item.timeSlots[0] ? courts.find(c => c.courtId === item.timeSlots[0].courtId) : null;
-        return {
-          ...item,
-          email: user ? user.email : 'N/A',
-          courtName: court ? court.courtName : 'N/A',
-          totalPrice: item.totalPrice || 'N/A'
-        };
-      });
-
-      return itemsWithDetails;
-    } else {
-      throw new Error('Invalid API response structure');
-    }
-  } catch (error) {
-    console.error('Error searching bookings by user ID:', error.response ? error.response.data : error.message);
-    throw error;
-  }
-};
-
-export const createBooking = async (bookingData) => {
-  try {
-    const response = await axios.post(`${url}/Bookings/reserve`, null, {
-      params: {
-        slotId: bookingData.slotId,
-        userId: bookingData.userId,
-        paymentAmount: bookingData.paymentAmount
-      }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error creating booking:', error.response ? error.response.data : error.message);
+    console.error('Error deleting booking:', error.response ? error.response.data : error.message);
     throw error;
   }
 };

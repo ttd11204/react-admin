@@ -1,5 +1,3 @@
-// src/api/reviewApi.js
-
 import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';

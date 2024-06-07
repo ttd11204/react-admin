@@ -1,64 +1,96 @@
-// src/scenes/bookings/Bookings.jsx
-
 import React, { useEffect, useState } from "react";
-import { Box, Button, InputBase, IconButton, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import SearchIcon from "@mui/icons-material/Search";
-import { fetchBookings, fetchUsers, fetchCourts, deleteBooking, searchBookingsByUserId } from "../../api/bookingApi";
-import Header from "../../components/Header";
+import {
+  Box,
+  Button,
+  Typography,
+  useTheme,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Select,
+  MenuItem,
+  IconButton,
+  InputBase,
+} from "@mui/material";
+import ReactPaginate from "react-paginate";
+import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
+import { fetchBookings, deleteBooking } from "../../api/bookingApi";
+import Header from "../../components/Header";
+import SearchIcon from "@mui/icons-material/Search";
+
+const useQuery = () => {
+  return new URLSearchParams(useLocation().search);
+};
 
 const Bookings = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [bookingsData, setBookingsData] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [courts, setCourts] = useState([]);
-  const [error, setError] = useState(null);
-  const [searchUserId, setSearchUserId] = useState("");
+  const query = useQuery();
   const navigate = useNavigate();
 
+  const pageQuery = parseInt(query.get("pageNumber")) || 1;
+  const sizeQuery = parseInt(query.get("pageSize")) || 10;
+
+  const [page, setPage] = useState(pageQuery - 1); // Convert page index to 0-based for ReactPaginate
+  const [pageSize, setPageSize] = useState(sizeQuery);
+  const [rowCount, setRowCount] =  useState(0);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    const getData = async () => {
+    const getBookingsData = async () => {
       try {
-        const bookingsData = await fetchBookings();
-        const usersData = await fetchUsers();
-        const courtsData = await fetchCourts();
-        setBookingsData(bookingsData.items);
-        setUsers(usersData);
-        setCourts(courtsData);
+        const data = await fetchBookings(page + 1, pageSize); // Convert page index to 1-based
+        console.log("Fetched bookings data:", data); // Log fetched data
+
+        if (data.items && Array.isArray(data.items)) {
+          const numberedData = data.items.map((item, index) => ({
+            ...item,
+            rowNumber: index + 1 + page * pageSize,
+          }));
+          setBookingsData(numberedData);
+          setRowCount(data.totalCount);
+        } else {
+          throw new Error("Invalid data structure");
+        }
       } catch (err) {
-        setError(`Failed to fetch data: ${err.message}`);
+        setError(`Failed to fetch bookings data: ${err.message}`);
       }
     };
-    getData();
-  }, []);
+    getBookingsData();
+  }, [page, pageSize]);
+
+  const handlePageClick = (event) => {
+    console.log("Page change:", event.selected); // Log new page index
+    const newPage = event.selected;
+    setPage(newPage);
+    navigate(`/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}`); // Update URL
+  };
+
+  const handlePageSizeChange = (event) => {
+    console.log("Page size change:", event.target.value); // Log new page size
+    const newSize = parseInt(event.target.value, 10);
+    setPageSize(newSize);
+    setPage(0); // Reset to first page when pageSize changes
+    navigate(`/Bookings?pageNumber=1&pageSize=${newSize}`); // Update URL
+  };
 
   const handleDelete = async (id) => {
     try {
       await deleteBooking(id);
-      setBookingsData((prev) => prev.filter((item) => item.bookingId !== id));
-    } catch (err) {
-      setError(`Failed to delete booking: ${err.message}`);
+      setBookingsData((prevData) =>
+        prevData.filter((booking) => booking.bookingId !== id)
+      );
+      console.log(`Booking with id ${id} deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete booking with id ${id}:`, error);
+      setError(`Failed to delete booking with id ${id}: ${error.message}`);
     }
-  };
-
-  const handleSearch = async () => {
-    try {
-      if (searchUserId) {
-        const data = await searchBookingsByUserId(searchUserId);
-        setBookingsData(data);
-      } else {
-        const bookingsData = await fetchBookings();
-        setBookingsData(bookingsData.items);
-      }
-    } catch (err) {
-      setError(`Failed to search bookings: ${err.message}`);
-    }
-  };
-
-  const handleCreateNew = () => {
-    navigate("/BookingForm");
   };
 
   return (
@@ -70,32 +102,18 @@ const Bookings = () => {
         </Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
-          <Box display="flex" justifyContent="space-between" mb={2}>
+          <Box display="flex" justifyContent="flex-end" mb={2}>
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase
                 sx={{ ml: 2, flex: 1 }}
                 placeholder="Search by User ID"
-                value={searchUserId}
-                onChange={(e) => setSearchUserId(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
+                
               />
-              <IconButton type="button" sx={{ p: 1 }} onClick={handleSearch}>
+              <IconButton type="button" sx={{ p: 1 }}>
                 <SearchIcon />
               </IconButton>
             </Box>
-            <Button
-              variant="contained"
-              style={{
-                marginLeft: 8,
-                backgroundColor: colors.greenAccent[400],
-                color: colors.primary[900],
-              }}
-              onClick={handleCreateNew}
-            >
-              Create New
-            </Button>
           </Box>
-
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -137,7 +155,7 @@ const Bookings = () => {
                       <TableCell>{row.check ? "Yes" : "No"}</TableCell>
                       <TableCell>{row.totalPrice}</TableCell>
                       <TableCell>{row.email}</TableCell>
-                      <TableCell>{row.courtName}</TableCell>
+                      <TableCell>{row.courtName || "N/A"}</TableCell>
                       <TableCell align="center">
                         <Box
                           display="flex"
@@ -169,6 +187,33 @@ const Bookings = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          {rowCount > 0 && (
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mt="20px"
+            >
+              <Select value={pageSize} onChange={handlePageSizeChange}>
+                {[10, 15, 20, 25, 50].map((size) => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+              <ReactPaginate
+                breakLabel="..."
+                nextLabel="next >"
+                onPageChange={handlePageClick}
+                pageRangeDisplayed={5}
+                pageCount={Math.ceil(rowCount / pageSize)}
+                previousLabel="< previous"
+                renderOnZeroPageCount={null}
+                containerClassName={"pagination"}
+                activeClassName={"active"}
+              />
+            </Box>
+          )}
         </Box>
       )}
     </Box>

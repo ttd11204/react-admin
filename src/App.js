@@ -20,8 +20,7 @@ import Bookings from "./scenes/bookings";
 import Users from "./scenes/users";
 import ReviewForm from "./scenes/form/ReviewForm";
 import UserDetails from "./scenes/users/UserDetails";
-import BookingForm from "./scenes/form/BookingForm";
-
+import BranchForm from "./scenes/form/BranchForm";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -45,8 +44,8 @@ function App() {
               <Route path="/TimeSlots" element={<TimeSlots/>} />
               <Route path="/Bookings" element={<Bookings/>} />
               <Route path="/form" element={<Form/>} />
-              <Route path="/BookingForm" element={<BookingForm />} />
               <Route path="/ReviewForm" element={<ReviewForm/>} />
+              <Route path="/BranchForm" element={<BranchForm/>} />
               <Route path="/calendar" element={<Calendar/>} />
               <Route path="/faq" element={<FAQ/>} />
               <Route path="/bar" element={<Bar/>} />
