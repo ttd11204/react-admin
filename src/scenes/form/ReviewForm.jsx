@@ -118,32 +118,32 @@ const ReviewForm = () => {
               />
 
               <FormControl fullWidth variant="filled" sx={{ gridColumn: "span 4" }}>
-                <InputLabel>User ID</InputLabel>
+                <InputLabel>User</InputLabel>
                 <Select
-                  label="User ID"
+                  label="User"
                   value={values.userId}
                   onChange={(event) => setFieldValue('userId', event.target.value)}
                   error={!!touched.userId && !!errors.userId}
                 >
                   {users.map((user) => (
                     <MenuItem key={user.id} value={user.id}>
-                      {user.userName}
+                      {user.id}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
 
               <FormControl fullWidth variant="filled" sx={{ gridColumn: "span 4" }}>
-                <InputLabel>Branch ID</InputLabel>
+                <InputLabel>Branch</InputLabel>
                 <Select
-                  label="Branch ID"
+                  label="Branch"
                   value={values.branchId}
                   onChange={(event) => setFieldValue('branchId', event.target.value)}
                   error={!!touched.branchId && !!errors.branchId}
                 >
                   {branches.map((branch) => (
                     <MenuItem key={branch.branchId} value={branch.branchId}>
-                      {branch.branchName}
+                      {branch.branchId}
                     </MenuItem>
                   ))}
                 </Select>

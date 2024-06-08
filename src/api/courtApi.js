@@ -11,12 +11,9 @@ export const fetchCourts = async (pageNumber = 1, pageSize = 10) => {
       }
     });
 
-    console.log('API response full data:', response.data); // In ra toàn bộ dữ liệu phản hồi từ API
-
-    // Giả sử API trả về một mảng
     if (Array.isArray(response.data)) {
       const items = response.data;
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100; // Giả định tổng số bản ghi là 100 nếu không có header
+      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
 
       return {
         items,
@@ -26,7 +23,37 @@ export const fetchCourts = async (pageNumber = 1, pageSize = 10) => {
       throw new Error('Invalid API response structure');
     }
   } catch (error) {
-    console.error('Error fetching team data:', error.response ? error.response.data : error.message);
+    console.error('Error fetching courts data:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const fetchCourtById = async (id) => {
+  try {
+    const response = await axios.get(`${url}/Courts/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching court by ID:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const updateCourtById = async (id, updatedData) => {
+  try {
+    const response = await axios.put(`${url}/Courts/${id}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating court:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const createCourt = async (courtData) => {
+  try {
+    const response = await axios.post(`${url}/Courts`, courtData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating court:', error.response ? error.response.data : error.message);
     throw error;
   }
 };

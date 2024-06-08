@@ -1,5 +1,3 @@
-// src/api/branchApi.js
-
 import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
@@ -46,6 +44,16 @@ export const fetchBranchById = async (branchId) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching branch data:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const fetchAllBranches = async () => {
+  try {
+    const response = await axios.get(`${url}/Branches`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching branches:', error);
     throw error;
   }
 };

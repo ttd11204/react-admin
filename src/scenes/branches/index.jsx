@@ -114,7 +114,7 @@ const Branches = () => {
                 placeholder="Search by Branch ID"
                 value={searchTerm}
                 onChange={handleSearchChange}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
               />
               <IconButton type="button" sx={{ p: 1 }} onClick={handleSearchSubmit}>
                 <SearchIcon />
