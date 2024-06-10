@@ -4,7 +4,7 @@ import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from "../../theme";
 import Header from "../../components/Header";
-import { fetchPayments, updatePaymentStatus } from '../../api/paymentApi';
+import { fetchPayments } from '../../api/paymentApi';
 import SearchIcon from '@mui/icons-material/Search';
 
 const useQuery = () => {
@@ -68,21 +68,6 @@ const Payments = () => {
     console.log(`Edit payment with id: ${id}`);
   };
 
-  const handleDelete = async (id) => {
-    console.log(`Delete payment with id: ${id}`);
-    try {
-      await updatePaymentStatus(id, 'pending');
-      // Optionally, refetch the data to update the UI or remove the deleted item from the state
-      const updatedPaymentsData = paymentsData.map(payment => 
-        payment.paymentId === id ? { ...payment, paymentStatus: 'pending' } : payment
-      );
-      setPaymentsData(updatedPaymentsData);
-    } catch (error) {
-      setError(`Failed to update payment status: ${error.message}`);
-    }
-  };
-  
-
   return (
     <Box m="20px">
       <Header title="PAYMENTS" subtitle="List of Payments" />
@@ -92,11 +77,7 @@ const Payments = () => {
         <Box m="40px 0 0 0" height="75vh">
           <Box display="flex" justifyContent="flex-end" mb={2}>
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
-              <InputBase
-                sx={{ ml: 2, flex: 1 }}
-                placeholder="Search"
-                
-              />
+              <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
               <IconButton type="button" sx={{ p: 1 }}>
                 <SearchIcon />
               </IconButton>
@@ -106,8 +87,10 @@ const Payments = () => {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
-                  <TableCell>ID</TableCell>
+                  <TableCell>Row Number</TableCell>
+                  <TableCell>Payment ID</TableCell>
                   <TableCell>Booking ID</TableCell>
+                  <TableCell>Payment Amount</TableCell>
                   <TableCell>Payment Date</TableCell>
                   <TableCell>Payment Message</TableCell>
                   <TableCell>Payment Status</TableCell>
@@ -121,7 +104,9 @@ const Payments = () => {
                   paymentsData.map((row) => (
                     <TableRow key={row.paymentId}>
                       <TableCell>{row.rowNumber}</TableCell>
+                      <TableCell>{row.paymentId}</TableCell>
                       <TableCell>{row.bookingId}</TableCell>
+                      <TableCell>{row.paymentAmount}</TableCell>
                       <TableCell>{new Date(row.paymentDate).toLocaleDateString()}</TableCell>
                       <TableCell>{row.paymentMessage}</TableCell>
                       <TableCell>{row.paymentStatus}</TableCell>
@@ -129,38 +114,25 @@ const Payments = () => {
                       <TableCell>{row.booking}</TableCell>
                       <TableCell>
                         <Box display="flex" justifyContent="center" alignItems="center">
-
-                        <Button 
-                          onClick={() => handleEdit(row.paymentId)} 
-                          variant="contained" 
-                          size="small" 
-                          style={{ 
-                            marginLeft: 8,
-                            backgroundColor: colors.greenAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button 
-                          onClick={() => handleDelete(row.paymentId)} 
-                          variant="contained" 
-                          size="small" 
-                          style={{ 
-                            marginLeft: 8,
-                            backgroundColor: colors.redAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          Delete
-                        </Button>
+                          <Button 
+                            onClick={() => handleEdit(row.paymentId)} 
+                            variant="contained" 
+                            size="small" 
+                            style={{ 
+                              marginLeft: 8,
+                              backgroundColor: colors.greenAccent[400],
+                              color: colors.primary[900]
+                            }}
+                          >
+                            Edit
+                          </Button>
                         </Box>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} align="center">
+                    <TableCell colSpan={10} align="center">
                       No data available
                     </TableCell>
                   </TableRow>
@@ -169,10 +141,7 @@ const Payments = () => {
             </Table>
           </TableContainer>
           <Box display="flex" justifyContent="space-between" alignItems="center" mt="20px">
-            <Select
-              value={pageSize}
-              onChange={handlePageSizeChange}
-            >
+            <Select value={pageSize} onChange={handlePageSizeChange}>
               {[10, 15, 20, 25, 50].map(size => (
                 <MenuItem key={size} value={size}>
                   {size}

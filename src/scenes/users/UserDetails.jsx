@@ -1,5 +1,3 @@
-// src/scenes/users/UserDetails.jsx
-
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Typography, TextField, Card, CardContent, Avatar, Grid } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -112,12 +110,12 @@ const UserDetails = () => {
                   {editMode ? (
                     <TextField
                       fullWidth
-                      value={user.fullName}
+                      value={user.fullName || ''}
                       onChange={(e) => handleFieldChange('fullName', e.target.value)}
                       size="small"
                     />
                   ) : (
-                    <Typography>{user.fullName}</Typography>
+                    <Typography>{user.fullName || 'N/A'}</Typography>
                   )}
                 </Box>
                 <Box mb={2}>
@@ -125,12 +123,12 @@ const UserDetails = () => {
                   {editMode ? (
                     <TextField
                       fullWidth
-                      value={user.email}
+                      value={user.email || ''}
                       onChange={(e) => handleFieldChange('email', e.target.value)}
                       size="small"
                     />
                   ) : (
-                    <Typography>{user.email}</Typography>
+                    <Typography>{user.email || 'N/A'}</Typography>
                   )}
                 </Box>
                 <Box mb={2}>
@@ -138,12 +136,12 @@ const UserDetails = () => {
                   {editMode ? (
                     <TextField
                       fullWidth
-                      value={user.phoneNumber}
+                      value={user.phoneNumber || ''}
                       onChange={(e) => handleFieldChange('phoneNumber', e.target.value)}
                       size="small"
                     />
                   ) : (
-                    <Typography>{user.phoneNumber}</Typography>
+                    <Typography>{user.phoneNumber || 'N/A'}</Typography>
                   )}
                 </Box>
                 <Box mb={2}>
@@ -151,12 +149,12 @@ const UserDetails = () => {
                   {editMode ? (
                     <TextField
                       fullWidth
-                      value={user.yearOfBirth}
+                      value={user.yearOfBirth || ''}
                       onChange={(e) => handleFieldChange('yearOfBirth', e.target.value)}
                       size="small"
                     />
                   ) : (
-                    <Typography>{user.yearOfBirth}</Typography>
+                    <Typography>{user.yearOfBirth || 'N/A'}</Typography>
                   )}
                 </Box>
                 <Box mb={2}>
@@ -164,12 +162,25 @@ const UserDetails = () => {
                   {editMode ? (
                     <TextField
                       fullWidth
-                      value={user.address}
+                      value={user.address || ''}
                       onChange={(e) => handleFieldChange('address', e.target.value)}
                       size="small"
                     />
                   ) : (
-                    <Typography>{user.address}</Typography>
+                    <Typography>{user.address || 'N/A'}</Typography>
+                  )}
+                </Box>
+                <Box mb={2}>
+                  <Typography variant="h6">Balance</Typography>
+                  {editMode ? (
+                    <TextField
+                      fullWidth
+                      value={user.balance || ''}
+                      onChange={(e) => handleFieldChange('balance', e.target.value)}
+                      size="small"
+                    />
+                  ) : (
+                    <Typography>{user.balance || 'N/A'}</Typography>
                   )}
                 </Box>
               </Grid>

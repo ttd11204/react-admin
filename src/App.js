@@ -6,7 +6,6 @@ import Sidebar from "./scenes/global/Sidebar";
 import Dashboard from "./scenes/dashboard";
 import Courts from "./scenes/courts";
 import Payments from "./scenes/payments";
-import Form from "./scenes/form/users";
 import Calendar from "./scenes/calendar";
 import FAQ from "./scenes/faq";
 import Bar from "./scenes/bar";
@@ -21,7 +20,6 @@ import Users from "./scenes/users";
 import ReviewForm from "./scenes/form/ReviewForm";
 import UserDetails from "./scenes/users/UserDetails";
 import BranchForm from "./scenes/form/BranchForm";
-import CourtForm from "./scenes/form/CourtForm";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -44,10 +42,8 @@ function App() {
               <Route path="/Branches" element={<Branches/>} />
               <Route path="/TimeSlots" element={<TimeSlots/>} />
               <Route path="/Bookings" element={<Bookings/>} />
-              <Route path="/form" element={<Form/>} />
               <Route path="/ReviewForm" element={<ReviewForm/>} />
               <Route path="/BranchForm" element={<BranchForm/>} />
-              <Route path="/CourtForm" element={<CourtForm />} />
               <Route path="/calendar" element={<Calendar/>} />
               <Route path="/faq" element={<FAQ/>} />
               <Route path="/bar" element={<Bar/>} />

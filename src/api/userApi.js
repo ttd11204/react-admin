@@ -51,6 +51,16 @@ export const updateUserBanStatus = async (userId, banned) => {
   }
 };
 
+export const createUser = async (userData) => {
+  try {
+    const response = await axios.post(`${url}/Users`, userData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating user:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
 export const updateUserDetail = async (userDetailId, userDetails) => {
   try {
     console.log('Sending update request:', { userDetailId, userDetails });

@@ -57,3 +57,13 @@ export const createCourt = async (courtData) => {
     throw error;
   }
 };
+
+export const deleteCourtById = async (id) => {
+  try {
+    const response = await axios.delete(`${url}/Courts/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting court:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};

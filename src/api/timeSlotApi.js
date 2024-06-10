@@ -21,3 +21,13 @@ export const createTimeSlot = async (newSlot) => {
     throw error;
   }
 };
+
+export const updateTimeSlotById = async (id, updatedSlot) => {
+  try {
+    const response = await axios.put(`${url}/TimeSlots/${id}`, updatedSlot);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating time slot:', error);
+    throw error;
+  }
+};

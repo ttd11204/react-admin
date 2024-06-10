@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase } from '@mui/material';
+import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase, Modal, TextField } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchTeamData, updateUserBanStatus } from '../../api/userApi';
+import { fetchTeamData, createUser, updateUserBanStatus } from '../../api/userApi';
 import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
 import './style.css';
@@ -16,6 +16,8 @@ const Users = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [teamData, setTeamData] = useState([]);
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [newUser, setNewUser] = useState({ username: '', email: '', phone: '' });
   const query = useQuery();
   const navigate = useNavigate();
 
@@ -109,11 +111,40 @@ const Users = () => {
   };
 
   const handleCreateNew = () => {
-    navigate("/form");
+    setOpenCreateModal(true);
   };
 
   const handleViewUser = (id) => {
     navigate(`/Users/${id}`);
+  };
+
+  const handleCreateUserChange = (e) => {
+    const { name, value } = e.target;
+    setNewUser((prevState) => ({ ...prevState, [name]: value }));
+  };
+
+  const handleCreateUserSubmit = async () => {
+    try {
+      await createUser(newUser);
+      setOpenCreateModal(false);
+      // Optionally, refetch the data to update the UI
+      const data = await fetchTeamData(page + 1, pageSize);
+      if (data.items && Array.isArray(data.items)) {
+        const numberedData = data.items.map((item, index) => ({
+          ...item,
+          rowNumber: index + 1 + page * pageSize,
+          banned: item.lockoutEnabled === false
+        }));
+        setTeamData(numberedData);
+        setRowCount(data.totalCount);
+      }
+    } catch (error) {
+      console.error('Failed to create user:', error);
+    }
+  };
+
+  const handleCreateModalClose = () => {
+    setOpenCreateModal(false);
   };
 
   return (
@@ -248,6 +279,28 @@ const Users = () => {
           </Box>
         </Box>
       )}
+
+      <Modal open={openCreateModal} onClose={handleCreateModalClose}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            border: '2px solid #000',
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <Typography variant="h6" mb="20px">Create New User</Typography>
+          <TextField label="Username" name="username" value={newUser.username} onChange={handleCreateUserChange} fullWidth margin="normal" />
+          <TextField label="Email" name="email" value={newUser.email} onChange={handleCreateUserChange} fullWidth margin="normal" />
+          <TextField label="Phone" name="phone" value={newUser.phone} onChange={handleCreateUserChange} fullWidth margin="normal" />
+          <Button variant="contained" color="primary" onClick={handleCreateUserSubmit} fullWidth>Create</Button>
+        </Box>
+      </Modal>
     </Box>
   );
 };
