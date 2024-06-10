@@ -7,4 +7,4 @@ export const registerApi = (fullName, email, password, confirmPassword) => {
         confirmPassword
     })
 };
-export default {registerApi}
+export default registerApi;

@@ -23,4 +23,3 @@ export const validateConfirmPassword = (password, confirmPassword) => {
     if (password === confirmPassword) return { isValid: true, message: '' };
     return { isValid: false, message: 'Does not match with Password!' };
 };
-

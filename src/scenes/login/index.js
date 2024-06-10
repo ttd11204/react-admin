@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./loginTest.css";
 import { FaGoogle, FaFacebookF } from "react-icons/fa";
 import { loginApi } from "../../api/usersApi";
-import { registerApi } from "../../api/usersApi";
+import { registerApi } from "../../api/registerApi";
 import {
   validateFullName,
   validateEmail,
@@ -14,6 +14,10 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { GoogleLogin } from "@react-oauth/google";
+// import { LoginSocialFacebook } from "reactjs-social-login";
+// import { FacebookLoginButton } from "react-social-login-buttons";
+import { FacebookAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../../firebase"
 
 const Login = () => {
   const [password, setPassword] = useState("");
@@ -24,6 +28,7 @@ const Login = () => {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState(null);
 
   const [fullNameValidation, setFullNameValidation] = useState({
     isValid: true,
@@ -79,7 +84,7 @@ const Login = () => {
       if (res && res.token) {
         localStorage.setItem("token", res.token);
         toast.success("Login successful!");
-        navigate("/login"); // Navigate to home page
+        navigate("/Users"); // Navigate to home page
       } else if (res && res.status === 401) {
         toast.error(res.error);
         setMessage("Login failed!");
@@ -150,6 +155,79 @@ const Login = () => {
     }
   };
 
+  const loginGoogle = async (response) => {
+    var token = response.credential; // Token này là một phần của response trả về từ Google sau khi đăng nhập thành công
+    console.log("Google Token:", token);
+
+    try {
+      const res = await fetch(
+        "https://courtcaller.azurewebsites.net/api/authentication/google-login?token=" +
+          token,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // body: { token }, 
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        console.log("Login successful:", data);
+        toast.success("Login Successfully");
+        navigate("/Users");
+       
+      } else {
+        console.error("Backend error:", data);
+        toast.error("Login Failed");
+        throw new Error(data.message || "Google login failed");
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+      toast.error("Login Failed");
+    }
+  };
+
+  
+  const loginFacebook = async (response) => {
+    try {
+      const provider = new FacebookAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+  
+      // Extract the access token from Firebase's stsTokenManager
+      const accessToken = result.user.stsTokenManager.accessToken;
+  
+      // Log the user info and token
+      console.log('Login successfully', result.user);
+      console.log('Access Token:', accessToken);
+  
+      // Send the access token to the back-end
+      const res = await fetch("https://courtcaller.azurewebsites.net/api/authentication/facebook-login?token=" + accessToken, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // body: JSON.stringify({ token: accessToken }),
+      });
+  
+      const data = await res.json();
+  
+      if (res.ok) {
+        console.log("Login successful:", data);
+        toast.success("Login Successfully");
+        navigate("/Users");
+      } else {
+        console.error("Backend error:", data);
+        toast.error("Login Failed");
+      }
+    } catch (error) {
+      console.error("Error:", error.message);
+      toast.error('Facebook login failed');
+    }
+  };
+
   return (
     <div className="login-component">
       <div className={`container ${!isLogin ? "active" : ""}`} id="container">
@@ -158,12 +236,17 @@ const Login = () => {
             <form onSubmit={handleLogin}>
               <h1>LOG IN</h1>
               <div className="social-icons">
-                <a href="#" className="icon" style={{ color: "red" }}>
-                  <FaGoogle />
-                </a>
-                <a href="#" className="icon" style={{ color: "blue" }}>
+                <GoogleLogin
+                  onSuccess={loginGoogle}
+                  onError={() => {
+                    console.log("Login Failed");
+                    toast.error("Google login failed");
+                  }}
+                />
+                
+                <a onClick={loginFacebook} className="icon" style={{ color: "blue" }}>
                   <FaFacebookF />
-                </a>
+                </a> 
               </div>
               <span>or use your account for login</span>
               <input
