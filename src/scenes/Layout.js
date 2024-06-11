@@ -1,6 +1,6 @@
 import React from "react";
-import Sidebar from "./scenes/global/Sidebar";
-import Topbar from "./scenes/global/Topbar";
+import Sidebar from "./global/Sidebar";
+import Topbar from "./global/Topbar";
 import { Outlet } from "react-router-dom";
 
 const Layout = () => {

@@ -86,7 +86,7 @@ const Login = () => {
       if (res && res.token) {
         localStorage.setItem("token", res.token);
         toast.success("Login successful!");
-        navigate("/Users"); // Navigate to home page
+        navigate("/staff"); // Navigate to home page
       } else if (res && res.status === 401) {
         toast.error(res.error || "Unauthorized");
         setMessage("Login failed!");
@@ -106,10 +106,11 @@ const Login = () => {
     }
   };
   
+  
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
+  
     const fullNameValidation = validateFullName(fullName);
     const emailValidation = validateEmail(email);
     const passwordValidation = validatePassword(password);
@@ -117,12 +118,12 @@ const Login = () => {
       password,
       confirmPassword
     );
-
+  
     setFullNameValidation(fullNameValidation);
     setEmailValidation(emailValidation);
     setPasswordValidation(passwordValidation);
     setConfirmPasswordValidation(confirmPasswordValidation);
-
+  
     if (
       !fullNameValidation.isValid ||
       !emailValidation.isValid ||
@@ -133,9 +134,9 @@ const Login = () => {
       setMessageType("error");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       const response = await axios.post(
         "https://courtcaller.azurewebsites.net/api/authentication/register",
@@ -149,7 +150,16 @@ const Login = () => {
       toast.success("Registration successful!");
       setMessage("SIGN UP SUCCESSFULLY - LOG IN NOW !");
       setMessageType("success");
-      setIsLogin(true);
+      setIsLogin(true);  // Chuyển sang form đăng nhập
+  
+      // Kiểm tra và điều hướng dựa trên fullName
+      if (fullName.startsWith("Staff")) {
+        navigate("/login?role=staff");
+      } else if (fullName.startsWith("Admin")) {
+        navigate("/login?role=admin");
+      } else {
+        navigate("/login");
+      }
     } catch (error) {
       if (error.response) {
         toast.error(error.response.data.message || "Registration failed");
@@ -162,7 +172,8 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  
+  
   const loginGoogle = async (response) => {
     var token = response.credential; // Token này là một phần của response trả về từ Google sau khi đăng nhập thành công
     console.log("Google Token:", token);
