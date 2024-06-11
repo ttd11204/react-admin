@@ -9,7 +9,7 @@ const Layout = () => {
       <Sidebar />
       <main className="content">
         <Topbar />
-        <Outlet />
+        <Outlet /> {/* Đây là nơi các route con sẽ được hiển thị */}
       </main>
     </div>
   );

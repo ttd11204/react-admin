@@ -14,10 +14,10 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { GoogleLogin } from "@react-oauth/google";
-// import { LoginSocialFacebook } from "reactjs-social-login";
-// import { FacebookLoginButton } from "react-social-login-buttons";
+import { LoginSocialFacebook } from "reactjs-social-login";
+import { FacebookLoginButton } from "react-social-login-buttons";
 import { FacebookAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "../../firebase"
+import { auth } from "../../firebase.js"
 
 const Login = () => {
   const [password, setPassword] = useState("");
@@ -72,25 +72,32 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     if (!email || !password) {
       toast.error("Email/Password is required!");
       return;
     }
-
+  
     setLoading(true);
     try {
       const res = await loginApi(email, password);
+      console.log(res); // In phản hồi từ API ra console để kiểm tra
+  
       if (res && res.token) {
         localStorage.setItem("token", res.token);
         toast.success("Login successful!");
         navigate("/Users"); // Navigate to home page
       } else if (res && res.status === 401) {
-        toast.error(res.error);
+        toast.error(res.error || "Unauthorized");
+        setMessage("Login failed!");
+        setMessageType("error");
+      } else {
+        toast.error("Login failed!");
         setMessage("Login failed!");
         setMessageType("error");
       }
     } catch (error) {
+      console.error("Login error: ", error); // In ra chi tiết lỗi
       toast.error("Login failed!");
       setMessage("Login failed!");
       setMessageType("error");
@@ -98,6 +105,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+  
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -176,6 +184,7 @@ const Login = () => {
 
       if (res.ok) {
         console.log("Login successful:", data);
+        localStorage.setItem("token", token);
         toast.success("Login Successfully");
         navigate("/Users");
        
@@ -216,6 +225,7 @@ const Login = () => {
   
       if (res.ok) {
         console.log("Login successful:", data);
+        localStorage.setItem("token", accessToken);
         toast.success("Login Successfully");
         navigate("/Users");
       } else {

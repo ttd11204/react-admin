@@ -1,10 +1,21 @@
 import axios from './customizeAxios';
-export const registerApi = (fullName, email, password, confirmPassword) => {
-    return axios.post("/authentication/register", {
+
+export const registerAdminApi = (fullName, email, password, confirmPassword) => {
+    return axios.post("/authentication/register-admin", {
         fullName,
         email,
         password,
         confirmPassword
-    })
+    });
 };
-export default registerApi;
+
+export const registerStaffApi = (fullName, email, password, confirmPassword) => {
+    return axios.post("/authentication/register-staff", {
+        fullName,
+        email,
+        password,
+        confirmPassword
+    });
+};
+
+export default { registerAdminApi, registerStaffApi };
