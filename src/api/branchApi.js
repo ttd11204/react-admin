@@ -48,12 +48,12 @@ export const fetchBranchById = async (branchId) => {
   }
 };
 
-export const fetchAllBranches = async () => {
+export const updateBranch = async (branchId, branchData) => {
   try {
-    const response = await axios.get(`${url}/Branches`);
+    const response = await axios.put(`${url}/Branches/${branchId}`, branchData);
     return response.data;
   } catch (error) {
-    console.error('Error fetching branches:', error);
+    console.error('Error updating branch:', error.response ? error.response.data : error.message);
     throw error;
   }
 };

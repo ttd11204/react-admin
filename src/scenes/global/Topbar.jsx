@@ -7,6 +7,7 @@ import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 
 const Topbar = () => {
   const theme = useTheme();
@@ -22,7 +23,10 @@ const Topbar = () => {
     }
   }, []);
 
-  const handlePersonIconClick = () => {
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
     navigate("/login");
   };
 
@@ -42,13 +46,13 @@ const Topbar = () => {
         <IconButton>
           <SettingsOutlinedIcon />
         </IconButton>
-        <IconButton onClick={handlePersonIconClick}>
+        <IconButton >
           <PersonOutlinedIcon />
         </IconButton>
         {userRole && (
-          <Box ml={2} display="flex" alignItems="center">
-            <span>{userRole}</span>
-          </Box>
+          <IconButton onClick={handleLogout}>
+            <ExitToAppOutlinedIcon />
+          </IconButton>
         )}
       </Box>
     </Box>
