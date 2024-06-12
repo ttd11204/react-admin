@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import Dashboard from "./scenes/dashboard";
@@ -24,8 +24,18 @@ import Layout from "./scenes/Layout";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Staff from "./staff/staff";
+import StaffLayout from "./staff/StaffLayout";
+
 function App() {
   const [theme, colorMode] = useMode();
+
+  const ProtectedRoute = ({ children, role }) => {
+    const userRole = localStorage.getItem("userRole");
+    if (!userRole || userRole !== role) {
+      return <Navigate to="/login" />;
+    }
+    return children;
+  };
 
   return (
     <ColorModeContext.Provider value={colorMode}>
@@ -36,7 +46,7 @@ function App() {
           <Route path="/login" element={<Login />} />
 
           {/* Routes cho admin */}
-          <Route path="/" element={<Layout />}>
+          <Route path="/" element={<ProtectedRoute role="Admin"><Layout /></ProtectedRoute>}>
             <Route index element={<Users />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="Users" element={<Users />} />
@@ -58,7 +68,7 @@ function App() {
           </Route>
 
           {/* Routes cho staff */}
-          <Route path="/" element={<Staff />} />
+          <Route path="/staff/*" element={<ProtectedRoute role="Staff"><StaffLayout /></ProtectedRoute>} />
         </Routes>
       </ThemeProvider>
     </ColorModeContext.Provider>

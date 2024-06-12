@@ -1,14 +1,12 @@
-// src/scenes/branches/index.jsx
-
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, InputBase, IconButton } from '@mui/material';
+import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase, Modal, TextField } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchBranches, fetchBranchById } from '../../api/branchApi';
+import { fetchBranches, fetchBranchById, createBranch, updateBranch } from '../../api/branchApi';
 import Header from '../../components/Header';
 import SearchIcon from '@mui/icons-material/Search';
-import '../users/style.css'; // Ensure correct CSS file path
+import '../users/style.css';
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -23,6 +21,31 @@ const Branches = () => {
   const [pageSize, setPageSize] = useState(10);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [openCreateModal, setOpenCreateModal] = useState(false); // State to control the create modal
+  const [openEditModal, setOpenEditModal] = useState(false); // State to control the edit modal
+  const [newBranch, setNewBranch] = useState({
+    branchAddress: "",
+    branchName: "",
+    branchPhone: "",
+    description: "",
+    branchPicture: "",
+    openTime: "",
+    closeTime: "",
+    openDay: "",
+    status: ""
+  });
+  const [currentBranch, setCurrentBranch] = useState({
+    branchId: "",
+    branchAddress: "",
+    branchName: "",
+    branchPhone: "",
+    description: "",
+    branchPicture: "",
+    openTime: "",
+    closeTime: "",
+    openDay: "",
+    status: ""
+  });
 
   const query = useQuery();
   const navigate = useNavigate();
@@ -60,12 +83,38 @@ const Branches = () => {
     navigate(`/Courts?branchId=${branchId}`);
   };
 
-  const handleEdit = (branchId) => {
-    navigate(`/Branches/edit/${branchId}`);
+  const handleEdit = async (branchId) => {
+    try {
+      const branch = await fetchBranchById(branchId);
+      setCurrentBranch(branch);
+      setOpenEditModal(true);
+    } catch (error) {
+      setError('Failed to fetch branch data');
+    }
   };
 
-  const handleCreateNew = () => {
-    navigate('/BranchForm');
+  const handleCreateNew = async () => {
+    try {
+      await createBranch(newBranch);
+      setOpenCreateModal(false);
+      const data = await fetchBranches(pageQuery, sizeQuery);
+      setBranchesData(data.items);
+      setRowCount(data.totalCount);
+    } catch (error) {
+      setError('Failed to create branch');
+    }
+  };
+
+  const handleUpdateBranch = async () => {
+    try {
+      await updateBranch(currentBranch.branchId, currentBranch);
+      setOpenEditModal(false);
+      const data = await fetchBranches(pageQuery, sizeQuery);
+      setBranchesData(data.items);
+      setRowCount(data.totalCount);
+    } catch (error) {
+      setError('Failed to update branch');
+    }
   };
 
   const handleSearchChange = (event) => {
@@ -100,6 +149,30 @@ const Branches = () => {
     }
   };
 
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setNewBranch(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const handleEditInputChange = (event) => {
+    const { name, value } = event.target;
+    setCurrentBranch(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const handleCreateModalClose = () => {
+    setOpenCreateModal(false);
+  };
+
+  const handleEditModalClose = () => {
+    setOpenEditModal(false);
+  };
+
   return (
     <Box m="20px">
       <Header title="BRANCHES" subtitle="List of Branches" />
@@ -122,7 +195,7 @@ const Branches = () => {
             </Box>
             <Button
               variant="contained"
-              onClick={handleCreateNew}
+              onClick={() => setOpenCreateModal(true)}
               style={{
                 backgroundColor: colors.greenAccent[400],
                 color: colors.primary[900],
@@ -210,6 +283,61 @@ const Branches = () => {
               activeClassName={"active"}
             />
           </Box>
+          <Modal open={openCreateModal} onClose={handleCreateModalClose}>
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 400,
+                bgcolor: 'background.paper',
+                border: '2px solid #000',
+                boxShadow: 24,
+                p: 4,
+              }}
+            >
+              <Typography variant="h6" mb="20px">Create New Branch</Typography>
+              <TextField label="Branch Address" name="branchAddress" value={newBranch.branchAddress} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Branch Name" name="branchName" value={newBranch.branchName} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Branch Phone" name="branchPhone" value={newBranch.branchPhone} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Description" name="description" value={newBranch.description} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Branch Picture" name="branchPicture" value={newBranch.branchPicture} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Close Time" name="closeTime" value={newBranch.closeTime} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Open Day" name="openDay" value={newBranch.openDay} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Status" name="status" value={newBranch.status} onChange={handleInputChange} fullWidth margin="normal" />
+              <Button variant="contained" color="primary" onClick={handleCreateNew} fullWidth>Create</Button>
+            </Box>
+          </Modal>
+
+          <Modal open={openEditModal} onClose={handleEditModalClose}>
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 400,
+                bgcolor: 'background.paper',
+                border: '2px solid #000',
+                boxShadow: 24,
+                p: 4,
+              }}
+            >
+              <Typography variant="h6" mb="20px">Edit Branch</Typography>
+              <TextField label="Branch Address" name="branchAddress" value={currentBranch.branchAddress} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Branch Name" name="branchName" value={currentBranch.branchName} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Branch Phone" name="branchPhone" value={currentBranch.branchPhone} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Description" name="description" value={currentBranch.description} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Branch Picture" name="branchPicture" value={currentBranch.branchPicture} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Open Time" name="openTime" value={currentBranch.openTime} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Close Time" name="closeTime" value={currentBranch.closeTime} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Open Day" name="openDay" value={currentBranch.openDay} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Status" name="status" value={currentBranch.status} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <Button variant="contained" color="primary" onClick={handleUpdateBranch} fullWidth>Save</Button>
+            </Box>
+          </Modal>
         </Box>
       )}
     </Box>
@@ -217,4 +345,3 @@ const Branches = () => {
 };
 
 export default Branches;
-

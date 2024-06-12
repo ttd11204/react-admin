@@ -1,34 +1,9 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  InputBase,
-  IconButton,
-  Typography,
-  useTheme,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl
-} from "@mui/material";
+import { Box, Button, InputBase, IconButton, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Select, MenuItem, FormControl, Modal } from "@mui/material";
 import ReactPaginate from "react-paginate";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import {
-  fetchReviews,
-  fetchUsers,
-  fetchBranches,
-  updateReview,
-  deleteReview,
-  searchReviewsByRating
-} from "../../api/reviewApi";
+import { fetchReviews, fetchUsers, fetchBranches, updateReview, deleteReview, createReview, searchReviewsByRating } from "../../api/reviewApi";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 
@@ -39,9 +14,22 @@ const Reviews = () => {
   const [users, setUsers] = useState([]);
   const [branches, setBranches] = useState([]);
   const [error, setError] = useState(null);
-  const [editMode, setEditMode] = useState({});
-  const [updatedReview, setUpdatedReview] = useState({});
+  const [editMode, setEditMode] = useState(false);
+  const [currentReview, setCurrentReview] = useState({
+    reviewText: "",
+    rating: 5,
+    userId: "",
+    branchId: ""
+  });
   const [searchRating, setSearchRating] = useState("");
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [newReview, setNewReview] = useState({
+    reviewText: "",
+    rating: 5,
+    userId: "",
+    branchId: ""
+  });
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -67,43 +55,33 @@ const Reviews = () => {
     getData();
   }, [page, pageSize]);
 
-  const handleEditToggle = (id) => {
-    setEditMode((prev) => ({ ...prev, [id]: !prev[id] }));
-    setUpdatedReview({});
+  const handleEditToggle = (review) => {
+    setCurrentReview({
+      reviewId: review.reviewId,
+      reviewText: review.reviewText,
+      rating: review.rating,
+      userId: review.id,
+      branchId: review.branchId
+    });
+    setEditMode(true);
+    setOpenEditModal(true);
   };
 
-  const handleFieldChange = (id, field, value) => {
-    setUpdatedReview((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        [field]: value,
-      },
-    }));
-  };
-
-  const handleSave = async (id) => {
+  const handleSave = async () => {
     try {
-      const review = updatedReview[id];
-      const originalReview = reviewsData.find(r => r.reviewId === id);
-
       const payload = {
-        reviewText: review?.reviewText || originalReview?.reviewText,
-        rating: review?.rating || originalReview?.rating,
-        userId: review?.userId || originalReview?.id,
-        branchId: review?.branchId || originalReview?.branchId,
+        reviewText: currentReview.reviewText,
+        rating: currentReview.rating,
+        userId: currentReview.userId,
+        branchId: currentReview.branchId,
       };
 
-      console.log('Review before sending:', JSON.stringify(payload, null, 2));
-      await updateReview(id, payload);
-      setEditMode((prev) => ({ ...prev, [id]: false }));
-      setReviewsData((prev) =>
-        prev.map((item) =>
-          item.reviewId === id
-            ? { ...item, ...payload, branchName: branches.find(b => b.branchId === payload.branchId)?.branchName, email: users.find(u => u.id === payload.userId)?.email }
-            : item
-        )
-      );
+      await updateReview(currentReview.reviewId, payload);
+      setEditMode(false);
+      setOpenEditModal(false);
+      const reviewsData = await fetchReviews(page, pageSize);
+      setReviewsData(reviewsData.items);
+      setRowCount(reviewsData.totalCount);
     } catch (err) {
       setError(`Failed to update review: ${err.message}`);
     }
@@ -133,8 +111,16 @@ const Reviews = () => {
     }
   };
 
-  const handleCreateNew = () => {
-    navigate("/ReviewForm");
+  const handleCreateNew = async () => {
+    try {
+      await createReview(newReview);
+      setOpenCreateModal(false);
+      const reviewsData = await fetchReviews(page, pageSize);
+      setReviewsData(reviewsData.items);
+      setRowCount(reviewsData.totalCount);
+    } catch (err) {
+      setError(`Failed to create review: ${err.message}`);
+    }
   };
 
   const handlePageClick = (event) => {
@@ -145,6 +131,24 @@ const Reviews = () => {
   const handlePageSizeChange = (event) => {
     const newSize = parseInt(event.target.value, 10);
     setSearchParams({ pageNumber: 1, pageSize: newSize });
+  };
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setNewReview((prevState) => ({ ...prevState, [name]: value }));
+  };
+
+  const handleEditInputChange = (event) => {
+    const { name, value } = event.target;
+    setCurrentReview((prevState) => ({ ...prevState, [name]: value }));
+  };
+
+  const handleCreateModalClose = () => {
+    setOpenCreateModal(false);
+  };
+
+  const handleEditModalClose = () => {
+    setOpenEditModal(false);
   };
 
   return (
@@ -176,7 +180,7 @@ const Reviews = () => {
                 backgroundColor: colors.greenAccent[400],
                 color: colors.primary[900],
               }}
-              onClick={handleCreateNew}
+              onClick={() => setOpenCreateModal(true)}
             >
               Create New
             </Button>
@@ -200,108 +204,28 @@ const Reviews = () => {
                   reviewsData.map((row) => (
                     <TableRow key={row.reviewId}>
                       <TableCell>{row.reviewId}</TableCell>
-                      <TableCell>
-                        {editMode[row.reviewId] ? (
-                          <TextField
-                            fullWidth
-                            variant="filled"
-                            value={updatedReview[row.reviewId]?.reviewText || row.reviewText}
-                            onChange={(e) => handleFieldChange(row.reviewId, "reviewText", e.target.value)}
-                          />
-                        ) : (
-                          row.reviewText
-                        )}
-                      </TableCell>
+                      <TableCell>{row.reviewText}</TableCell>
                       <TableCell>{new Date(row.reviewDate).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {editMode[row.reviewId] ? (
-                          <TextField
-                            fullWidth
-                            variant="filled"
-                            type="number"
-                            value={updatedReview[row.reviewId]?.rating || row.rating}
-                            onChange={(e) => handleFieldChange(row.reviewId, "rating", e.target.value)}
-                          />
-                        ) : (
-                          row.rating
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editMode[row.reviewId] ? (
-                          <FormControl fullWidth variant="filled">
-                            <Select
-                              value={updatedReview[row.reviewId]?.branchId || row.branchId}
-                              onChange={(e) => handleFieldChange(row.reviewId, "branchId", e.target.value)}
-                            >
-                              {branches.map((branch) => (
-                                <MenuItem key={branch.branchId} value={branch.branchId}>
-                                  {branch.branchName}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        ) : (
-                          row.branchName
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editMode[row.reviewId] ? (
-                          <FormControl fullWidth variant="filled">
-                            <Select
-                              value={updatedReview[row.reviewId]?.userId || row.id}
-                              onChange={(e) => handleFieldChange(row.reviewId, "userId", e.target.value)}
-                            >
-                              {users.map((user) => (
-                                <MenuItem key={user.id} value={user.id}>
-                                  {user.email}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        ) : (
-                          row.email
-                        )}
-                      </TableCell>
+                      <TableCell>{row.rating}</TableCell>
+                      <TableCell>{row.branchName}</TableCell>
+                      <TableCell>{row.email}</TableCell>
                       <TableCell align="center">
-                        {editMode[row.reviewId] ? (
-                          <>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() => handleSave(row.reviewId)}
-                              style={{ marginRight: 8 }}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="secondary"
-                              onClick={() => handleEditToggle(row.reviewId)}
-                            >
-                              Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() => handleEditToggle(row.reviewId)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="error"
-                              onClick={() => handleDelete(row.reviewId)}
-                              style={{ marginLeft: 8 }}
-                            >
-                              Delete
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => handleEditToggle(row)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="error"
+                          onClick={() => handleDelete(row.reviewId)}
+                          style={{ marginLeft: 8 }}
+                        >
+                          Delete
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -337,6 +261,88 @@ const Reviews = () => {
           )}
         </Box>
       )}
+
+      <Modal open={openCreateModal} onClose={handleCreateModalClose}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            border: '2px solid #000',
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <Typography variant="h6" mb="20px">Create New Review</Typography>
+          <TextField label="Review Text" name="reviewText" value={newReview.reviewText} onChange={handleInputChange} fullWidth margin="normal" />
+          <TextField label="Rating" name="rating" type="number" value={newReview.rating} onChange={handleInputChange} fullWidth margin="normal" />
+          <FormControl fullWidth variant="filled" margin="normal">
+            <Select name="userId" value={newReview.userId} onChange={handleInputChange} displayEmpty>
+              <MenuItem value="" disabled>Select User</MenuItem>
+              {users.map((user) => (
+                <MenuItem key={user.id} value={user.id}>
+                  {user.email}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth variant="filled" margin="normal">
+            <Select name="branchId" value={newReview.branchId} onChange={handleInputChange} displayEmpty>
+              <MenuItem value="" disabled>Select Branch</MenuItem>
+              {branches.map((branch) => (
+                <MenuItem key={branch.branchId} value={branch.branchId}>
+                  {branch.branchName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button variant="contained" color="primary" onClick={handleCreateNew} fullWidth>Create</Button>
+        </Box>
+      </Modal>
+
+      <Modal open={openEditModal} onClose={handleEditModalClose}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            border: '2px solid #000',
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <Typography variant="h6" mb="20px">Edit Review</Typography>
+          <TextField label="Review Text" name="reviewText" value={currentReview?.reviewText || ''} onChange={handleEditInputChange} fullWidth margin="normal" />
+          <TextField label="Rating" name="rating" type="number" value={currentReview?.rating || ''} onChange={handleEditInputChange} fullWidth margin="normal" />
+          <FormControl fullWidth variant="filled" margin="normal">
+            <Select name="userId" value={currentReview?.userId || ''} onChange={handleEditInputChange} displayEmpty>
+              <MenuItem value="" disabled>Select User</MenuItem>
+              {users.map((user) => (
+                <MenuItem key={user.id} value={user.id}>
+                  {user.email}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth variant="filled" margin="normal">
+            <Select name="branchId" value={currentReview?.branchId || ''} onChange={handleEditInputChange} displayEmpty>
+              <MenuItem value="" disabled>Select Branch</MenuItem>
+              {branches.map((branch) => (
+                <MenuItem key={branch.branchId} value={branch.branchId}>
+                  {branch.branchName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button variant="contained" color="primary" onClick={handleSave} fullWidth>Save</Button>
+        </Box>
+      </Modal>
     </Box>
   );
 };
