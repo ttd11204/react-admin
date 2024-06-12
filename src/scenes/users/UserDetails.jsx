@@ -34,6 +34,17 @@ const UserDetails = () => {
     }));
   };
 
+  const handleProfilePictureChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        handleFieldChange('profilePicture', e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     try {
       await updateUserDetail(id, user);
@@ -119,32 +130,6 @@ const UserDetails = () => {
                   )}
                 </Box>
                 <Box mb={2}>
-                  <Typography variant="h6">Email</Typography>
-                  {editMode ? (
-                    <TextField
-                      fullWidth
-                      value={user.email || ''}
-                      onChange={(e) => handleFieldChange('email', e.target.value)}
-                      size="small"
-                    />
-                  ) : (
-                    <Typography>{user.email || 'N/A'}</Typography>
-                  )}
-                </Box>
-                <Box mb={2}>
-                  <Typography variant="h6">Phone Number</Typography>
-                  {editMode ? (
-                    <TextField
-                      fullWidth
-                      value={user.phoneNumber || ''}
-                      onChange={(e) => handleFieldChange('phoneNumber', e.target.value)}
-                      size="small"
-                    />
-                  ) : (
-                    <Typography>{user.phoneNumber || 'N/A'}</Typography>
-                  )}
-                </Box>
-                <Box mb={2}>
                   <Typography variant="h6">Year of Birth</Typography>
                   {editMode ? (
                     <TextField
@@ -170,6 +155,16 @@ const UserDetails = () => {
                     <Typography>{user.address || 'N/A'}</Typography>
                   )}
                 </Box>
+                {editMode && (
+                  <Box mb={2}>
+                    <Typography variant="h6">Profile Picture</Typography>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureChange}
+                    />
+                  </Box>
+                )}
                 <Box mb={2}>
                   <Typography variant="h6">Balance</Typography>
                   {editMode ? (

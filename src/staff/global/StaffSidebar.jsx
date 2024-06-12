@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -34,6 +34,12 @@ const StaffSidebar = () => {
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    setUserRole(role);
+  }, []);
 
   return (
     <Box
@@ -74,7 +80,7 @@ const StaffSidebar = () => {
                 ml="15px"
               >
                 <Typography variant="h3" color={colors.grey[100]}>
-                  Staff
+                  {userRole === "Admin" ? "ADMIN" : "STAFF"}
                 </Typography>
                 <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
                   <MenuOutlinedIcon />
@@ -104,7 +110,7 @@ const StaffSidebar = () => {
                   John
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
-                  Court Staff
+                  {userRole === "Admin" ? "Court Admin" : "Court Staff"}
                 </Typography>
               </Box>
             </Box>

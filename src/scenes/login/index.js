@@ -72,40 +72,55 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-  
+
     if (!email || !password) {
-      toast.error("Email/Password is required!");
-      return;
+        toast.error("Email/Password is required!");
+        return;
     }
-  
+
     setLoading(true);
     try {
-      const res = await loginApi(email, password);
-      console.log(res); // In phản hồi từ API ra console để kiểm tra
-  
-      if (res && res.token) {
-        localStorage.setItem("token", res.token);
-        toast.success("Login successful!");
-        navigate("/staff"); // Navigate to home page
-      } else if (res && res.status === 401) {
-        toast.error(res.error || "Unauthorized");
-        setMessage("Login failed!");
-        setMessageType("error");
-      } else {
+        const res = await loginApi(email, password);
+        console.log(res); // In phản hồi từ API ra console để kiểm tra
+
+        if (res && res.token) {
+            localStorage.setItem("token", res.token);
+
+            // Decode token để lấy thông tin role
+            const decodedToken = JSON.parse(atob(res.token.split('.')[1]));
+            const userRole = decodedToken.role;
+            localStorage.setItem("userRole", userRole);
+
+            toast.success("Login successful!");
+
+            // Điều hướng dựa trên vai trò của người dùng
+            if (userRole === 'Admin') {
+                navigate("/dashboard");
+            } else if (userRole === 'Staff') {
+                navigate("/staff");
+            } else {
+                navigate("/login");
+                toast.error("Unauthorized role");
+            }
+        } else if (res && res.status === 401) {
+            toast.error(res.error || "Unauthorized");
+            setMessage("Login failed!");
+            setMessageType("error");
+        } else {
+            toast.error("Login failed!");
+            setMessage("Login failed!");
+            setMessageType("error");
+        }
+    } catch (error) {
+        console.error("Login error: ", error); // In ra chi tiết lỗi
         toast.error("Login failed!");
         setMessage("Login failed!");
         setMessageType("error");
-      }
-    } catch (error) {
-      console.error("Login error: ", error); // In ra chi tiết lỗi
-      toast.error("Login failed!");
-      setMessage("Login failed!");
-      setMessageType("error");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
-  
+};
+
   
 
   const handleRegister = async (e) => {

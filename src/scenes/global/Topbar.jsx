@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { ColorModeContext } from "../../theme";
@@ -12,6 +12,15 @@ const Topbar = () => {
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decodedToken = JSON.parse(atob(token.split('.')[1]));
+      setUserRole(decodedToken.role);
+    }
+  }, []);
 
   const handlePersonIconClick = () => {
     navigate("/login");
@@ -36,6 +45,11 @@ const Topbar = () => {
         <IconButton onClick={handlePersonIconClick}>
           <PersonOutlinedIcon />
         </IconButton>
+        {userRole && (
+          <Box ml={2} display="flex" alignItems="center">
+            <span>{userRole}</span>
+          </Box>
+        )}
       </Box>
     </Box>
   );
