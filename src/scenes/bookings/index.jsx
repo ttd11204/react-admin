@@ -39,7 +39,7 @@ const Bookings = () => {
 
   const [page, setPage] = useState(pageQuery - 1); // Convert page index to 0-based for ReactPaginate
   const [pageSize, setPageSize] = useState(sizeQuery);
-  const [rowCount, setRowCount] =  useState(0);
+  const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -93,6 +93,19 @@ const Bookings = () => {
     }
   };
 
+  const getStatusColor = (status) => {
+    const yellow = colors.yellow ? colors.yellow[700] : "#FFFF00"; // Fall back to yellow color
+    const red = colors.redAccent ? colors.redAccent[700] : "#FF0000"; // Fall back to red color
+    switch (status) {
+      case 'Pending':
+        return yellow;
+      case 'Cancelled':
+        return red;
+      default:
+        return 'inherit';
+    }
+  };
+
   return (
     <Box m="20px">
       <Header title="BOOKINGS" subtitle="List of Bookings" />
@@ -107,7 +120,6 @@ const Bookings = () => {
               <InputBase
                 sx={{ ml: 2, flex: 1 }}
                 placeholder="Search by User ID"
-                
               />
               <IconButton type="button" sx={{ p: 1 }}>
                 <SearchIcon />
@@ -119,43 +131,26 @@ const Bookings = () => {
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
                   <TableCell>Booking ID</TableCell>
+                  <TableCell>User ID</TableCell>
                   <TableCell>Booking Date</TableCell>
-                  <TableCell>Booking Time</TableCell>
-                  <TableCell>Check</TableCell>
+                  <TableCell>Booking Type</TableCell>
+                  <TableCell>Number of Slots</TableCell>
                   <TableCell>Total Price</TableCell>
-                  <TableCell>User Email</TableCell>
-                  <TableCell>Court Name</TableCell>
+                  <TableCell>Status</TableCell>
                   <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {bookingsData.length > 0 ? (
                   bookingsData.map((row) => (
-                    <TableRow
-                      key={row.bookingId}
-                      style={
-                        !row.check
-                          ? {
-                              backgroundColor:
-                                theme.palette.mode === "dark"
-                                  ? colors.redAccent[700]
-                                  : colors.redAccent[700],
-                              color: theme.palette.mode === "dark" ? colors.redAccent[100] : '#FFFFFF',
-                            }
-                          : null
-                      }
-                    >
+                    <TableRow key={row.bookingId}>
                       <TableCell>{row.bookingId}</TableCell>
-                      <TableCell>
-                        {new Date(row.bookingDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(row.bookingDate).toLocaleTimeString()}
-                      </TableCell>
-                      <TableCell>{row.check ? "Yes" : "No"}</TableCell>
+                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{new Date(row.bookingDate).toLocaleString()}</TableCell>
+                      <TableCell>{row.bookingType}</TableCell>
+                      <TableCell>{row.numberOfSlot}</TableCell>
                       <TableCell>{row.totalPrice}</TableCell>
-                      <TableCell>{row.email}</TableCell>
-                      <TableCell>{row.courtName || "N/A"}</TableCell>
+                      <TableCell style={{ color: getStatusColor(row.status) }}>{row.status}</TableCell>
                       <TableCell align="center">
                         <Box
                           display="flex"
