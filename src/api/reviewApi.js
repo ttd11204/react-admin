@@ -5,25 +5,36 @@ const url = 'https://courtcaller.azurewebsites.net/api';
 export const fetchReviews = async (pageNumber = 1, pageSize = 10) => {
   try {
     const response = await axios.get(`${url}/Reviews`, {
-      params: { pageNumber, pageSize }
+      params: {
+        pageNumber,
+        pageSize
+      }
     });
 
-    const items = response.data;
-    const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
-    const users = await fetchUsers();
-    const branches = await fetchBranches();
+    if (Array.isArray(response.data)) {
+      const items = response.data;
+      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
 
-    const itemsWithDetails = items.map(item => {
-      const user = users.find(u => u.id === item.id);
-      const branch = branches.find(b => b.branchId === item.branchId);
+      const users = await fetchUsers();
+      const branches = await fetchBranches();
+
+      const itemsWithDetails = items.map(item => {
+        const user = users.find(u => u.id === item.userId);
+        const branch = branches.find(b => b.branchId === item.branchId);
+        return {
+          ...item,
+          email: user ? user.email : 'N/A',
+          branchName: branch ? branch.branchName : 'N/A'
+        };
+      });
+
       return {
-        ...item,
-        email: user ? user.email : 'N/A',
-        branchName: branch ? branch.branchName : 'N/A'
+        items: itemsWithDetails,
+        totalCount
       };
-    });
-
-    return { items: itemsWithDetails, totalCount };
+    } else {
+      throw new Error('Invalid API response structure');
+    }
   } catch (error) {
     console.error('Error fetching reviews data:', error.response ? error.response.data : error.message);
     throw error;
@@ -62,6 +73,7 @@ export const fetchBranches = async () => {
 
 export const updateReview = async (id, reviewData) => {
   try {
+    console.log('Updating review with data:', JSON.stringify(reviewData, null, 2)); // Log the request payload
     const response = await axios.put(`${url}/Reviews/${id}`, reviewData);
     return response.data;
   } catch (error) {
@@ -83,21 +95,26 @@ export const deleteReview = async (id) => {
 export const searchReviewsByRating = async (rating) => {
   try {
     const response = await axios.get(`${url}/Reviews/SearchByRating/${rating}`);
-    const items = response.data;
-    const users = await fetchUsers();
-    const branches = await fetchBranches();
+    if (Array.isArray(response.data)) {
+      const items = response.data;
 
-    const itemsWithDetails = items.map(item => {
-      const user = users.find(u => u.id === item.id);
-      const branch = branches.find(b => b.branchId === item.branchId);
-      return {
-        ...item,
-        email: user ? user.email : 'N/A',
-        branchName: branch ? branch.branchName : 'N/A'
-      };
-    });
+      const users = await fetchUsers();
+      const branches = await fetchBranches();
 
-    return itemsWithDetails;
+      const itemsWithDetails = items.map(item => {
+        const user = users.find(u => u.id === item.userId);
+        const branch = branches.find(b => b.branchId === item.branchId);
+        return {
+          ...item,
+          email: user ? user.email : 'N/A',
+          branchName: branch ? branch.branchName : 'N/A'
+        };
+      });
+
+      return itemsWithDetails;
+    } else {
+      throw new Error('Invalid API response structure');
+    }
   } catch (error) {
     console.error('Error searching reviews by rating:', error.response ? error.response.data : error.message);
     throw error;

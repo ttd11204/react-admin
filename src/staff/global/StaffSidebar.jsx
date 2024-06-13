@@ -126,7 +126,7 @@ const StaffSidebar = () => {
             </Typography>
             <Item
               title="User"
-              to="/Users"
+              to="/staff/Users"
               icon={<PeopleOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -134,7 +134,7 @@ const StaffSidebar = () => {
 
             <Item
               title="Bookings"
-              to="/Bookings"
+              to="/staff/Bookings"
               icon={<ContactsOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -142,14 +142,14 @@ const StaffSidebar = () => {
 
             <Item
               title="Payments"
-              to="/Payments"
+              to="/staff/Payments"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Reviews"
-              to="/Reviews"
+              to="/staff/Reviews"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -160,19 +160,19 @@ const StaffSidebar = () => {
               color={colors.grey[300]}
               sx={{ m: "15px 0 5px 20px" }}
             >
-              Pages
+              Book
             </Typography>
             
             <Item
               title="Calendar"
-              to="/calendar"
+              to="/staff/ReserveSlot"
               icon={<CalendarTodayOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="FAQ Page"
-              to="/faq"
+              to="/staff/faq"
               icon={<HelpOutlineOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}

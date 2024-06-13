@@ -10,7 +10,6 @@ import {
   validatePassword,
   validateConfirmPassword,
 } from "./formValidation";
-import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { GoogleLogin } from "@react-oauth/google";
@@ -28,7 +27,6 @@ const Login = () => {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState(null);
 
   const [fullNameValidation, setFullNameValidation] = useState({
     isValid: true,
@@ -95,7 +93,7 @@ const Login = () => {
 
             // Điều hướng dựa trên vai trò của người dùng
             if (userRole === 'Admin') {
-                navigate("/dashboard");
+                navigate("/");
             } else if (userRole === 'Staff') {
                 navigate("/staff");
             } else {
@@ -153,15 +151,7 @@ const Login = () => {
     setLoading(true);
   
     try {
-      const response = await axios.post(
-        "https://courtcaller.azurewebsites.net/api/authentication/register",
-        {
-          fullName: fullName,
-          email: email,
-          password: password,
-          confirmPassword: confirmPassword,
-        }
-      );
+      
       toast.success("Registration successful!");
       setMessage("SIGN UP SUCCESSFULLY - LOG IN NOW !");
       setMessageType("success");

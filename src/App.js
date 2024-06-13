@@ -5,7 +5,7 @@ import { ColorModeContext, useMode } from "./theme";
 import Dashboard from "./scenes/dashboard";
 import Courts from "./scenes/courts";
 import Payments from "./scenes/payments";
-import Calendar from "./scenes/calendar";
+// import Calendar from "./scenes/calendar";
 import FAQ from "./scenes/faq";
 import Bar from "./scenes/bar";
 import Pie from "./scenes/pie";
@@ -18,13 +18,12 @@ import Bookings from "./scenes/bookings";
 import Users from "./scenes/users";
 import ReviewForm from "./scenes/form/ReviewForm";
 import UserDetails from "./scenes/users/UserDetails";
-import BranchForm from "./scenes/form/BranchForm";
 import Login from "./scenes/login";
 import Layout from "./scenes/Layout"; 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Staff from "./staff/staff";
 import StaffLayout from "./staff/StaffLayout";
+import ReserveSlot from "./staff/calendar/Byday";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -58,8 +57,6 @@ function App() {
             <Route path="TimeSlots" element={<TimeSlots />} />
             <Route path="Bookings" element={<Bookings />} />
             <Route path="ReviewForm" element={<ReviewForm />} />
-            <Route path="BranchForm" element={<BranchForm />} />
-            <Route path="calendar" element={<Calendar />} />
             <Route path="faq" element={<FAQ />} />
             <Route path="bar" element={<Bar />} />
             <Route path="pie" element={<Pie />} />
@@ -68,7 +65,15 @@ function App() {
           </Route>
 
           {/* Routes cho staff */}
-          <Route path="/staff/*" element={<ProtectedRoute role="Staff"><StaffLayout /></ProtectedRoute>} />
+          <Route path="/staff/*" element={<ProtectedRoute role="Staff"><StaffLayout /></ProtectedRoute>} >
+            <Route path="Users" element={<Users />} />
+            <Route path="Bookings" element={<Bookings />} />
+            <Route path="Payments" element={<Payments />} />
+            <Route path="Reviews" element={<Review />} />
+            <Route path="ReserveSlot" element={<ReserveSlot />} />
+            <Route path="ReviewForm" element={<ReviewForm />} />
+            {/* Thêm các tuyến đường khác cho staff tại đây */}
+          </Route>
         </Routes>
       </ThemeProvider>
     </ColorModeContext.Provider>
