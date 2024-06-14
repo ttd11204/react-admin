@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Grid, Typography, Select, MenuItem, FormControl, IconButton } from "@mui/material";
 import { fetchBranches } from '../../api/branchApi';
+import { reserveSlots } from '../../api/bookingApi';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import "./styles.css";
 import dayjs from 'dayjs';
-import axios from "axios";
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import { fetchPrice } from '../../api/priceApi';
+dayjs.extend(isSameOrBefore);
 
 const morningTimeSlots = [
   "6:00 - 7:00",
@@ -31,7 +34,7 @@ const afternoonTimeSlots = [
 
 const getDaysOfWeek = (startOfWeek) => {
   let days = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 1; i < 8; i++) {
     days.push(dayjs(startOfWeek).add(i, 'day'));
   }
   return days;
@@ -41,30 +44,12 @@ const ReserveSlot = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState('');
   const [showAfternoon, setShowAfternoon] = useState(false);
-  const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week').add(1, 'day'));
+  const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week'));
   const [weekdayPrice, setWeekdayPrice] = useState(0);
   const [weekendPrice, setWeekendPrice] = useState(0);
+  const [selectedSlots, setSelectedSlots] = useState([]);
   const navigate = useNavigate();
   const currentDate = dayjs();
-
-  useEffect(() => {
-    const fetchPrices = async () => {
-      try {
-        const response = await axios.post('https://localhost:7104/api/Prices/showprice', null, {
-          params: {
-            branchId: 'B001'
-          }
-        });
-
-        setWeekdayPrice(response.data.weekdayPrice);
-        setWeekendPrice(response.data.weekendPrice);
-      } catch (error) {
-        console.error('Error fetching prices', error);
-      }
-    };
-
-    fetchPrices();
-  }, []);
 
   useEffect(() => {
     const fetchBranchesData = async () => {
@@ -80,19 +65,31 @@ const ReserveSlot = () => {
     fetchBranchesData();
   }, []);
 
-  const handleButtonClick = (slot, day) => {
-    if (!selectedBranch) {
-      alert("Please select a branch first");
-      return;
-    }
-    navigate("/staff/PaymentDetail", {
-      state: {
-        branchId: selectedBranch,
-        timeSlot: slot,
-        date: day.format('YYYY-MM-DD'),
-        price: "120k"
+  useEffect(() => {
+    const fetchPrices = async () => {
+      if (!selectedBranch) return;
+
+      try {
+        const prices = await fetchPrice(selectedBranch);
+        setWeekdayPrice(prices.weekdayPrice);
+        setWeekendPrice(prices.weekendPrice);
+      } catch (error) {
+        console.error('Error fetching prices', error);
       }
-    });
+    };
+
+    fetchPrices();
+  }, [selectedBranch]);
+
+  const handleSlotClick = (slot, day) => {
+    const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
+    if (selectedSlots.includes(slotId)) {
+      setSelectedSlots(selectedSlots.filter(id => id !== slotId));
+    } else if (selectedSlots.length < 3) {
+      setSelectedSlots([...selectedSlots, slotId]);
+    } else {
+      alert("You can select up to 3 slots only");
+    }
   };
 
   const handleToggleMorning = () => {
@@ -104,12 +101,54 @@ const ReserveSlot = () => {
   };
 
   const handlePreviousWeek = () => {
-    setStartOfWeek(dayjs(startOfWeek).subtract(1, 'week'));
+    if (dayjs(startOfWeek).isAfter(dayjs().startOf('week'))) {
+      setStartOfWeek(dayjs(startOfWeek).subtract(1, 'week'));
+    }
   };
 
   const handleNextWeek = () => {
     setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
   };
+
+  const handleContinue = async () => {
+    if (!selectedBranch) {
+      alert("Please select a branch first");
+      return;
+    }
+  
+    const bookingRequests = selectedSlots.map(slotId => {
+      const [slotDate, timeSlot] = slotId.split('_');
+      const [slotStartTime, slotEndTime] = timeSlot.split(' - ');
+  
+      return {
+        courtId: 'C001', 
+        branchId: selectedBranch,
+        slotDate,
+        timeSlot: {
+          slotStartTime: `${slotStartTime}:00`, // Đảm bảo định dạng thời gian chính xác
+          slotEndTime: `${slotEndTime}:00`     // Đảm bảo định dạng thời gian chính xác
+        }
+      };
+    });
+  
+    console.log(bookingRequests); // Thêm dòng này để kiểm tra cấu trúc dữ liệu
+  
+    try {
+      const userId = 'U001'; // Bạn có thể thay đổi 'U001' bằng userId thực tế nếu bạn có
+      await reserveSlots(userId, bookingRequests);
+      navigate("/staff/PaymentDetail", {
+        state: {
+          branchId: selectedBranch,
+          slots: selectedSlots,
+          price: "120k"
+        }
+      });
+    } catch (error) {
+      console.error('Error reserving slots', error);
+      alert('Failed to reserve slots. Please try again.');
+    }
+  };
+  
 
   const days = getDaysOfWeek(startOfWeek);
 
@@ -135,11 +174,11 @@ const ReserveSlot = () => {
           </Select>
         </FormControl>
         <Box display="flex" alignItems="center" sx={{ backgroundColor: "#E0E0E0", p: 1, borderRadius: 2 }}>
-          <IconButton onClick={handlePreviousWeek} size="small">
+          <IconButton onClick={handlePreviousWeek} size="small" disabled={dayjs(startOfWeek).isSame(dayjs().startOf('week'))}>
             <ArrowBackIosIcon fontSize="inherit" />
           </IconButton>
           <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
-            Từ ngày {dayjs(startOfWeek).format('D/M')} đến ngày {dayjs(startOfWeek).add(6, 'day').format('D/M')}
+            Từ ngày {dayjs(startOfWeek).add(1, 'day').format('D/M')} đến ngày {dayjs(startOfWeek).add(7, 'day').format('D/M')}
           </Typography>
           <IconButton onClick={handleNextWeek} size="small">
             <ArrowForwardIosIcon fontSize="inherit" />
@@ -200,50 +239,76 @@ const ReserveSlot = () => {
             </Box>
           </Grid>
 
-          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => (
-            <Grid item xs key={slotIndex}>
-              <Button
-                onClick={() => handleButtonClick(slot, day)}
-                sx={{
-                  backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : "#D9E9FF",
-                  color: "#0D1B34",
-                  p: 2,
-                  borderRadius: 2,
-                  width: "100%",
-                  textTransform: "none",
-                  border: '1px solid #90CAF9',
-                  textAlign: 'center',
-                  marginBottom: '16px',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center'
-                }}
-                m="10px"
-                disabled={day.isBefore(currentDate, 'day')}
-              >
-                <Box>
-                  <Typography
-                    sx={{
-                      fontWeight: 'bold',
-                      color: "#0D1B34"
-                    }}
-                  >
-                    {slot}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: "#0D1B34"
-                    }}
-                  >
-                    120k
-                  </Typography>
-                </Box>
-              </Button>
-            </Grid>
-          ))}
+          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
+            const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
+            const isSelected = selectedSlots.includes(slotId);
+            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Thursday for weekdays, Friday to Sunday for weekends
+
+            return (
+              <Grid item xs key={slotIndex}>
+                <Button
+                  onClick={() => handleSlotClick(slot, day)}
+                  sx={{
+                    backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
+                    color: isSelected ? "#FFFFFF" : "#0D1B34",
+                    p: 2,
+                    borderRadius: 2,
+                    width: "100%",
+                    textTransform: "none",
+                    border: isSelected ? '2px solid #0D61F2' : '1px solid #90CAF9',
+                    textAlign: 'center',
+                    marginBottom: '16px',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}
+                  m="10px"
+                  disabled={day.isBefore(currentDate, 'day')}
+                >
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontWeight: 'bold',
+                        color: isSelected ? "#FFFFFF" : "#0D1B34"
+                      }}
+                    >
+                      {slot}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        color: isSelected ? "#FFFFFF" : "#0D1B34"
+                      }}
+                    >
+                      {price}k
+                    </Typography>
+                  </Box>
+                </Button>
+              </Grid>
+            );
+          })}
         </Grid>
       ))}
+      <Box display="flex" justifyContent="end" mt={1} marginRight={'12px'}  >
+        <Button
+          variant="contained"
+
+          sx={{
+            color: "#white",
+            backgroundColor: "#1976d2",
+            ':hover': {
+              backgroundColor: '#1565c0',
+            },
+            ':active': {
+              backgroundColor: '#1976d2',
+            },
+          }
+          }
+          onClick={handleContinue}
+        >
+          Continue
+        </Button>
+      </Box>
     </Box>
   );
 };
