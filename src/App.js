@@ -24,6 +24,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StaffLayout from "./staff/StaffLayout";
 import ReserveSlot from "./staff/calendar/Byday";
+import PaymentDetail from "./staff/Payment/PaymentDetails";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -71,6 +72,7 @@ function App() {
             <Route path="Payments" element={<Payments />} />
             <Route path="Reviews" element={<Review />} />
             <Route path="ReserveSlot" element={<ReserveSlot />} />
+            <Route path="PaymentDetail" element={<PaymentDetail />} />
             <Route path="ReviewForm" element={<ReviewForm />} />
             {/* Thêm các tuyến đường khác cho staff tại đây */}
           </Route>
