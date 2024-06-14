@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, Grid, Typography, Select, MenuItem, FormControl, InputLabel, IconButton } from "@mui/material";
+import { Box, Button, Grid, Typography, Select, MenuItem, FormControl, IconButton } from "@mui/material";
 import { fetchBranches } from '../../api/branchApi';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import "./styles.css"; // Import the CSS file
-import dayjs from 'dayjs'; // Import dayjs for date manipulation
+import "./styles.css";
+import dayjs from 'dayjs';
+import axios from "axios";
 
 const morningTimeSlots = [
   "6:00 - 7:00",
@@ -33,7 +34,7 @@ const getDaysOfWeek = (startOfWeek) => {
   for (let i = 0; i < 7; i++) {
     days.push(dayjs(startOfWeek).add(i, 'day'));
   }
-  return days.sort((a, b) => a.day() - b.day() || 7);
+  return days;
 };
 
 const ReserveSlot = () => {
@@ -41,14 +42,36 @@ const ReserveSlot = () => {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [showAfternoon, setShowAfternoon] = useState(false);
   const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week').add(1, 'day'));
+  const [weekdayPrice, setWeekdayPrice] = useState(0);
+  const [weekendPrice, setWeekendPrice] = useState(0);
   const navigate = useNavigate();
+  const currentDate = dayjs();
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const response = await axios.post('https://localhost:7104/api/Prices/showprice', null, {
+          params: {
+            branchId: 'B001'
+          }
+        });
+
+        setWeekdayPrice(response.data.weekdayPrice);
+        setWeekendPrice(response.data.weekendPrice);
+      } catch (error) {
+        console.error('Error fetching prices', error);
+      }
+    };
+
+    fetchPrices();
+  }, []);
 
   useEffect(() => {
     const fetchBranchesData = async () => {
       try {
         const response = await fetchBranches(1, 10);
         setBranches(response.items);
-        setSelectedBranch(''); 
+        setSelectedBranch('');
       } catch (error) {
         console.error('Error fetching branches data:', error);
       }
@@ -57,7 +80,7 @@ const ReserveSlot = () => {
     fetchBranchesData();
   }, []);
 
-  const handleButtonClick = (slot) => {
+  const handleButtonClick = (slot, day) => {
     if (!selectedBranch) {
       alert("Please select a branch first");
       return;
@@ -66,6 +89,7 @@ const ReserveSlot = () => {
       state: {
         branchId: selectedBranch,
         timeSlot: slot,
+        date: day.format('YYYY-MM-DD'),
         price: "120k"
       }
     });
@@ -179,9 +203,9 @@ const ReserveSlot = () => {
           {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => (
             <Grid item xs key={slotIndex}>
               <Button
-                onClick={() => handleButtonClick(slot)}
+                onClick={() => handleButtonClick(slot, day)}
                 sx={{
-                  backgroundColor: "#D9E9FF",
+                  backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : "#D9E9FF",
                   color: "#0D1B34",
                   p: 2,
                   borderRadius: 2,
@@ -196,6 +220,7 @@ const ReserveSlot = () => {
                   justifyContent: 'center'
                 }}
                 m="10px"
+                disabled={day.isBefore(currentDate, 'day')}
               >
                 <Box>
                   <Typography
