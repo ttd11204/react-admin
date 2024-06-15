@@ -3,10 +3,9 @@ import { Box, Typography, FormControl, FormLabel, RadioGroup, FormControlLabel, 
 import { useLocation } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
-import { fetchUserDetailByEmail } from '../../api/userApi';
-import { PaymentConfirmationStep, PaymentRejectedStep } from './PaymentConfirmationStep'; // Import both components
-import { fetchUserDetail } from '../../api/userApi';
-//xóa import vnpay
+import { fetchUserDetailByEmail, fetchUserDetail } from '../../api/userApi';
+import { generatePaymentToken, processPayment } from '../../api/paymentApi';
+import LoadingPage from './LoadingPage';
 
 const theme = createTheme({
   components: {
@@ -23,8 +22,7 @@ const theme = createTheme({
   },
 });
 
-// Update the steps to remove 'VNPay'
-const steps = ['Payment Details', 'Payment Confirmation'];  //xóa VNPay
+const steps = ['Payment Details', 'Payment Confirmation'];
 
 const PaymentDetail = () => {
   const location = useLocation();
@@ -35,7 +33,7 @@ const PaymentDetail = () => {
   const [userExists, setUserExists] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
-  const [userDetail, setUserDetail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleEmailCheck = async () => {
     if (!email) {
@@ -75,13 +73,31 @@ const PaymentDetail = () => {
     }
   };
 
-  // Update the handleNext function to skip 'VNPay' step
-  const handleNext = () => {
+  const handleNext = async () => {
     if (activeStep === 0 && !userExists) {
       setErrorMessage('Please enter a valid email and check user existence.');
       return;
     }
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+
+    if (activeStep === 0) {
+      setIsLoading(true); // Show loading page
+      try {
+        const bookingId = "6CDvgCfOT";
+        const tokenResponse = await generatePaymentToken(bookingId);
+        const token = tokenResponse.token;
+        const paymentResponse = await processPayment(token);
+        const paymentUrl = paymentResponse;
+
+        // Redirect to payment URL
+        window.location.href = paymentUrl;
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        setErrorMessage('Error processing payment. Please try again.');
+        setIsLoading(false); // Hide loading page if there's an error
+      }
+    } else {
+      setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    }
   };
 
   const handleBack = () => {
@@ -90,7 +106,6 @@ const PaymentDetail = () => {
 
   const totalPrice = price - discount;
 
-  // Remove the VNPay case from getStepContent
   const getStepContent = (step) => {
     switch (step) {
       case 0:
@@ -168,14 +183,8 @@ const PaymentDetail = () => {
             </Box>
           </>
         );
-
-        // đổi case 1 thành paymentconfimationstep hoặc paymentrejectedstep dựa trên kết quả trả về từ vnpay
       case 1:
-        //thành công
-        // return <PaymentConfirmationStep userInfo={userInfo} branchId={branchId} timeSlot={timeSlot} totalPrice={totalPrice} />;
-
-        //thất bại
-        return <PaymentRejectedStep />;
+        return <LoadingPage />; // Show loading page
       default:
         return 'Unknown step';
     }
@@ -194,7 +203,7 @@ const PaymentDetail = () => {
             </Step>
           ))}
         </Stepper>
-        {getStepContent(activeStep)}
+        {isLoading ? <LoadingPage /> : getStepContent(activeStep)}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
           <Button
             disabled={activeStep === 0}
@@ -207,6 +216,7 @@ const PaymentDetail = () => {
             variant="contained"
             color="primary"
             onClick={handleNext}
+            disabled={isLoading} // Disable button while loading
           >
             {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
           </Button>
