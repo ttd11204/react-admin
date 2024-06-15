@@ -70,3 +70,14 @@ export const deleteBooking = async (id) => {
     throw error;
   }
 };
+export const reserveSlots = async (userId, bookings) => {
+  try {
+    const response = await axios.post(`https://courtcaller.azurewebsites.net/api/Bookings/reserve-slot?userId=${userId}`, bookings);
+    return response.data;
+  } catch (error) {
+    console.error('Error reserving slots', error);
+    throw error;
+  }
+};
+
+

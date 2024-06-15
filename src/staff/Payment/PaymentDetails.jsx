@@ -95,6 +95,21 @@ const PaymentDetail = () => {
                 </Typography>
               )}
             </Box>
+            <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2, marginTop: '20px' }}>
+              <Typography variant="h5" gutterBottom color="black" display="flex" alignItems="center">
+                <DiscountIcon sx={{ marginRight: '8px' }} /> Apply Discount
+              </Typography>
+              <TextField
+                label="Discount Code"
+                variant="outlined"
+                fullWidth
+                sx={{ marginBottom: '10px' }}
+                onChange={handleDiscountChange}
+              />
+              <Typography variant="h6" color="black">
+                <strong>Total Price:</strong> {totalPrice} USD
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
               <Box sx={{ flex: 1, marginRight: '20px', backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
                 <Typography variant="h5" gutterBottom color="black" display="flex" alignItems="center">
@@ -122,21 +137,6 @@ const PaymentDetail = () => {
                   <strong>Price:</strong> {price} USD
                 </Typography>
               </Box>
-            </Box>
-            <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2, marginTop: '20px' }}>
-              <Typography variant="h5" gutterBottom color="black" display="flex" alignItems="center">
-                <DiscountIcon sx={{ marginRight: '8px' }} /> Apply Discount
-              </Typography>
-              <TextField
-                label="Discount Code"
-                variant="outlined"
-                fullWidth
-                sx={{ marginBottom: '10px' }}
-                onChange={handleDiscountChange}
-              />
-              <Typography variant="h6" color="black">
-                <strong>Total Price:</strong> {totalPrice} USD
-              </Typography>
             </Box>
           </>
         );
