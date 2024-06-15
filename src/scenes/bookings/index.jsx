@@ -1,21 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Typography,
-  useTheme,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Select,
-  MenuItem,
-  IconButton,
-  InputBase,
-} from "@mui/material";
+import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase } from "@mui/material";
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
@@ -41,6 +25,8 @@ const Bookings = () => {
   const [pageSize, setPageSize] = useState(sizeQuery);
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
+
+  const userRole = localStorage.getItem("userRole");
 
   useEffect(() => {
     const getBookingsData = async () => {
@@ -69,7 +55,11 @@ const Bookings = () => {
     console.log("Page change:", event.selected); // Log new page index
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}`); // Update URL
+    if (userRole === 'Admin') {
+      navigate(`/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    }
   };
 
   const handlePageSizeChange = (event) => {
@@ -77,7 +67,11 @@ const Bookings = () => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0); // Reset to first page when pageSize changes
-    navigate(`/Bookings?pageNumber=1&pageSize=${newSize}`); // Update URL
+    if (userRole === 'Admin') {
+      navigate(`/Bookings?pageNumber=1&pageSize=${newSize}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Bookings?pageNumber=1&pageSize=${newSize}`);
+    }
   };
 
   const handleDelete = async (id) => {
