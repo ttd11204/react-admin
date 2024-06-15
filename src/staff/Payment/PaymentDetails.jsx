@@ -4,9 +4,10 @@ import { useLocation } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
 import { fetchUserDetailByEmail } from '../../api/userApi';
-import VNPayStep from './VNPayStep';
-import PaymentConfirmationStep from './PaymentConfirmationStep';
+import { PaymentConfirmationStep, PaymentRejectedStep } from './PaymentConfirmationStep'; // Import both components
 import { fetchUserDetail } from '../../api/userApi';
+//xóa import vnpay
+
 
 const theme = createTheme({
   components: {
@@ -23,7 +24,8 @@ const theme = createTheme({
   },
 });
 
-const steps = ['Payment Details', 'VNPay', 'Payment Confirmation'];
+// Update the steps to remove 'VNPay'
+const steps = ['Payment Details', 'Payment Confirmation'];  //xóa VNPay
 
 const PaymentDetail = () => {
   const location = useLocation();
@@ -35,9 +37,6 @@ const PaymentDetail = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [userDetail, setUserDetail] = useState('');
-
-
-
 
   const handleEmailCheck = async () => {
     if (!email) {
@@ -77,6 +76,7 @@ const PaymentDetail = () => {
     }
   };
 
+  // Update the handleNext function to skip 'VNPay' step
   const handleNext = () => {
     if (activeStep === 0 && !userExists) {
       setErrorMessage('Please enter a valid email and check user existence.');
@@ -91,6 +91,7 @@ const PaymentDetail = () => {
 
   const totalPrice = price - discount;
 
+  // Remove the VNPay case from getStepContent
   const getStepContent = (step) => {
     switch (step) {
       case 0:
@@ -168,10 +169,14 @@ const PaymentDetail = () => {
             </Box>
           </>
         );
+
+        // đổi case 1 thành paymentconfimationstep hoặc paymentrejectedstep dựa trên kết quả trả về từ vnpay
       case 1:
-        return <VNPayStep />;
-      case 2:
-        return <PaymentConfirmationStep />;
+        //thành công
+        // return <PaymentConfirmationStep userInfo={userInfo} branchId={branchId} timeSlot={timeSlot} totalPrice={totalPrice} />;
+
+        //thất bại
+        return <PaymentRejectedStep />;
       default:
         return 'Unknown step';
     }
