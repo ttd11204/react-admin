@@ -8,7 +8,6 @@ import { PaymentConfirmationStep, PaymentRejectedStep } from './PaymentConfirmat
 import { fetchUserDetail } from '../../api/userApi';
 //xóa import vnpay
 
-
 const theme = createTheme({
   components: {
     MuiRadio: {

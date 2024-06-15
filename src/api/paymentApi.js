@@ -25,3 +25,23 @@ export const fetchPayments = async (pageNumber = 1, pageSize = 10) => {
     throw error;
   }
 };
+
+export const generatePaymentToken = async (bookingId) => {
+  try {
+    const response = await axios.get(`${url}/Payments/GeneratePaymentToken/${bookingId}`);
+    return response.data; // Assume the API returns the token directly
+  } catch (error) {
+    console.error('Error generating payment token:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const processPayment = async (token) => {
+  try {
+    const response = await axios.post(`${url}/Payments/ProcessPayment`, { token });
+    return response.data; // Assume the API returns the payment processing result
+  } catch (error) {
+    console.error('Error processing payment:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
