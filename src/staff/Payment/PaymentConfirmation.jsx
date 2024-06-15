@@ -3,7 +3,7 @@ import { Box, Typography, Paper, Grid, Button } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
-export const PaymentConfirmationStep = ({ userInfo = {}, branchId = 'N/A', courtId = 'N/A', timeSlot = 'N/A', paymentDate = 'N/A', totalPrice = 'N/A' }) => {
+export const PaymentConfirmed = ({ userInfo = {}, branchId = 'N/A', courtId = 'N/A', timeSlot = 'N/A', paymentDate = 'N/A', totalPrice = 'N/A' }) => {
   return (
     <Box sx={{ padding: '40px', textAlign: 'center' }}>
       <Box sx={{ backgroundColor: "#F0F0F0", padding: '40px', borderRadius: 2 }}>
@@ -88,7 +88,7 @@ export const PaymentConfirmationStep = ({ userInfo = {}, branchId = 'N/A', court
   );
 };
 
-export const PaymentRejectedStep = () => {
+export const PaymentRejected = () => {
   return (
     <Box sx={{ padding: '40px', textAlign: 'center' }}>
       <Box sx={{ backgroundColor: "#F0F0F0", padding: '40px', borderRadius: 2 }}>

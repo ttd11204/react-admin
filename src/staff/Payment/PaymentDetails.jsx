@@ -185,6 +185,19 @@ const PaymentDetail = () => {
         );
       case 1:
         return <LoadingPage />; // Show loading page
+        
+// -----------------------------------------------------------------------------------
+        {/* xử lý vnPay xong thì đưa ra cái này !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         // đổi case 1 thành paymentconfimationstep hoặc paymentrejectedstep dựa trên kết quả trả về từ vnpay
+      case 1:
+        //thành công
+        // return <PaymentConfirmationStep userInfo={userInfo} branchId={branchId} timeSlot={timeSlot} totalPrice={totalPrice} />;
+
+        //thất bại
+        return <PaymentRejectedStep />;
+        */}
+// -----------------------------------------------------------------------------------
+
       default:
         return 'Unknown step';
     }
