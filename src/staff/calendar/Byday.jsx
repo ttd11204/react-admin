@@ -123,18 +123,21 @@ const ReserveSlot = () => {
       return {
         courtId: 'C001', 
         branchId: selectedBranch,
-        slotDate,
-        timeSlot: {
-          slotStartTime: `${slotStartTime}:00`, // Đảm bảo định dạng thời gian chính xác
-          slotEndTime: `${slotEndTime}:00`     // Đảm bảo định dạng thời gian chính xác
-        }
+        slotModels: [
+          {
+            slotDate,
+            timeSlot: {
+              slotStartTime: `${slotStartTime}:00`, 
+              slotEndTime: `${slotEndTime}:00`     
+            }
+          }
+        ]
       };
     });
   
-    console.log(bookingRequests); // Thêm dòng này để kiểm tra cấu trúc dữ liệu
-  
+    console.log(bookingRequests);
     try {
-      const userId = 'U001'; // Bạn có thể thay đổi 'U001' bằng userId thực tế nếu bạn có
+      const userId = 'U001'; 
       await reserveSlots(userId, bookingRequests);
       navigate("/staff/PaymentDetail", {
         state: {
@@ -148,6 +151,25 @@ const ReserveSlot = () => {
       alert('Failed to reserve slots. Please try again.');
     }
   };
+
+  const handleContinue1 = async () => {
+    try {
+      const userId = 'U001'; 
+      // await reserveSlots(userId, bookingRequests);
+      navigate("/staff/PaymentDetail", {
+        state: {
+          branchId: selectedBranch,
+          slots: selectedSlots,
+          price: "120k"
+        }
+      });
+    } catch (error) {
+      console.error('Error reserving slots', error);
+      alert('Failed to reserve slots. Please try again.');
+    }
+
+  }
+  
   
 
   const days = getDaysOfWeek(startOfWeek);
@@ -304,7 +326,8 @@ const ReserveSlot = () => {
             },
           }
           }
-          onClick={handleContinue}
+          // onClick={handleContinue}
+          onClick={handleContinue1}
         >
           Continue
         </Button>

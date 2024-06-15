@@ -3,10 +3,10 @@ import { Box, Typography, FormControl, FormLabel, RadioGroup, FormControlLabel, 
 import { useLocation } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
-import DiscountIcon from '@mui/icons-material/Discount';
 import { fetchUserDetailByEmail } from '../../api/userApi';
 import VNPayStep from './VNPayStep';
 import PaymentConfirmationStep from './PaymentConfirmationStep';
+import { fetchUserDetail } from '../../api/userApi';
 
 const theme = createTheme({
   components: {
@@ -32,38 +32,57 @@ const PaymentDetail = () => {
   const [discount, setDiscount] = useState(0);
   const [email, setEmail] = useState('');
   const [userExists, setUserExists] = useState(false);
+  const [userInfo, setUserInfo] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [userDetail, setUserDetail] = useState('');
 
-  const handleDiscountChange = (event) => {
-    const value = event.target.value;
-    if (!isNaN(value) && value >= 0) {
-      setDiscount(value);
+
+
+
+  const handleEmailCheck = async () => {
+    if (!email) {
+      setErrorMessage('Please enter an email.');
+      return;
+    }
+
+    try {
+      const userData = await fetchUserDetailByEmail(email);
+      if (userData && userData.length > 0) {
+        const user = userData[0];
+        const detailedUserInfo = await fetchUserDetail(user.id);
+        if (detailedUserInfo) {
+          setUserExists(true);
+          setUserInfo({
+            userName: user.userName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            fullName: detailedUserInfo.fullName,
+            balance: detailedUserInfo.balance,
+            address: detailedUserInfo.address,
+          });
+          setErrorMessage('');
+        } else {
+          setUserExists(false);
+          setUserInfo(null);
+          setErrorMessage('User details not found.');
+        }
+      } else {
+        setUserExists(false);
+        setUserInfo(null);
+        setErrorMessage('User does not exist. Please register.');
+      }
+    } catch (error) {
+      console.error('Error checking user existence:', error);
+      setErrorMessage('Error checking user existence. Please try again.');
     }
   };
 
-  const handleNext = async () => {
-    if (activeStep === 0) {
-      if (!email) {
-        setErrorMessage('Please enter an email.');
-        return;
-      }
-
-      try {
-        const userData = await fetchUserDetailByEmail(email);
-        if (userData) {
-          setUserExists(true);
-          setActiveStep((prevActiveStep) => prevActiveStep + 1);
-        } else {
-          setUserExists(false);
-          setErrorMessage('User does not exist. Please register.');
-        }
-      } catch (error) {
-        console.error('Error checking user existence:', error);
-        setErrorMessage('Error checking user existence. Please try again.');
-      }
-    } else {
-      setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  const handleNext = () => {
+    if (activeStep === 0 && !userExists) {
+      setErrorMessage('Please enter a valid email and check user existence.');
+      return;
     }
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
   const handleBack = () => {
@@ -81,34 +100,40 @@ const PaymentDetail = () => {
               <Typography variant="h5" gutterBottom color="black">
                 Customer Information
               </Typography>
-              <TextField
-                label="Email"
-                variant="outlined"
-                fullWidth
-                sx={{ marginBottom: '10px' }}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <TextField
+                  label="Email"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ marginBottom: '10px', marginRight: '10px' }}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <Button variant="contained" color="primary" onClick={handleEmailCheck}>
+                  Check
+                </Button>
+              </Box>
               {errorMessage && (
                 <Typography variant="body2" color="error">
                   {errorMessage}
                 </Typography>
               )}
-            </Box>
-            <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2, marginTop: '20px' }}>
-              <Typography variant="h5" gutterBottom color="black" display="flex" alignItems="center">
-                <DiscountIcon sx={{ marginRight: '8px' }} /> Apply Discount
-              </Typography>
-              <TextField
-                label="Discount Code"
-                variant="outlined"
-                fullWidth
-                sx={{ marginBottom: '10px' }}
-                onChange={handleDiscountChange}
-              />
-              <Typography variant="h6" color="black">
-                <strong>Total Price:</strong> {totalPrice} USD
-              </Typography>
+              {userExists && userInfo && (
+                <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2, marginTop: '20px' }}>
+                  <Typography variant="h6" color="black">
+                    <strong>Username:</strong> {userInfo.userName ? userInfo.userName : 'N/A'}
+                  </Typography>
+                  <Typography variant="h6" color="black">
+                    <strong>Full Name:</strong> {userInfo.fullName ? userInfo.fullName : 'N/A'}
+                  </Typography>
+                  <Typography variant="h6" color="black">
+                    <strong>Phone:</strong> {userInfo.phoneNumber ? userInfo.phoneNumber : 'N/A'}
+                  </Typography>
+                  <Typography variant="h6" color="black">
+                    <strong>Coin:</strong> {userInfo.balance ? userInfo.balance : 'N/A'}
+                  </Typography>
+                </Box>
+              )}
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
               <Box sx={{ flex: 1, marginRight: '20px', backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
@@ -135,6 +160,9 @@ const PaymentDetail = () => {
                 </Typography>
                 <Typography variant="h6" color="black">
                   <strong>Price:</strong> {price} USD
+                </Typography>
+                <Typography variant="h6" color="black">
+                  <strong>Total Price:</strong> {totalPrice} USD
                 </Typography>
               </Box>
             </Box>
