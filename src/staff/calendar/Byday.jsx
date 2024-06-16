@@ -238,7 +238,7 @@ const ReserveSlot = () => {
 
       return {
 
-        branchId: selectedBranch,
+        
         slotDate,
         timeSlot: {
           slotStartTime: `${slotStartTime}:00`,
@@ -256,6 +256,7 @@ const ReserveSlot = () => {
 
     navigate("/staff/PaymentDetail", {
       state: {
+        branchId: selectedBranch,
         bookingRequests,
         totalPrice: bookingRequests.reduce((totalprice, object) => totalprice + parseFloat(object.price), 0)
       }
