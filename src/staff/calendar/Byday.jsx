@@ -207,8 +207,8 @@ useEffect(() => {
     fetchPrices();
   }, [selectedBranch]);
 
-  const handleSlotClick = (slot, day) => {
-    const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
+  const handleSlotClick = (slot, day, price) => {
+    const slotId = `${day.format('YYYY-MM-DD')}_${slot}-${price}`;
     if (selectedSlots.includes(slotId)) {
       setSelectedSlots(selectedSlots.filter(id => id !== slotId));
     } else if (selectedSlots.length < 3) {
@@ -247,28 +247,29 @@ useEffect(() => {
     const bookingRequests = selectedSlots.map(slotId => {
       const [slotDate, timeSlot] = slotId.split('_');
       const [slotStartTime, slotEndTime] = timeSlot.split(' - ');
-  
+     
       return {
         courtId: 'C001', 
         branchId: selectedBranch,
         slotDate,
         timeSlot: {
-          slotStartTime: `${slotStartTime}:00`, // Đảm bảo định dạng thời gian chính xác
-          slotEndTime: `${slotEndTime}:00`     // Đảm bảo định dạng thời gian chính xác
+          slotStartTime: `${slotStartTime}:00`, 
+          slotEndTime: `${slotEndTime}:00`    ,
+          
         }
       };
     });
   
-    console.log(bookingRequests); // Thêm dòng này để kiểm tra cấu trúc dữ liệu
+    console.log(bookingRequests); 
   
     try {
-      const userId = 'U001'; // Bạn có thể thay đổi 'U001' bằng userId thực tế nếu bạn có
+      const userId = 'U001'; 
       await reserveSlots(userId, bookingRequests);
       navigate("/staff/PaymentDetail", {
         state: {
           branchId: selectedBranch,
           slots: selectedSlots,
-          price: "120k"
+          price: "...",
         }
       });
     } catch (error) {
@@ -381,7 +382,7 @@ useEffect(() => {
           return (
             <Grid item xs key={slotIndex}>
               <Button
-                onClick={() => handleSlotClick(slot, day)}
+                onClick={() => handleSlotClick(slot, day, price)}
                 sx={{
                   backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
                   color: isSelected ? "#FFFFFF" : "#0D1B34",
