@@ -6,6 +6,7 @@ import { tokens } from '../../theme';
 import { fetchTeamData, createUser, updateUserBanStatus } from '../../api/userApi';
 import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
+import { GrView } from "react-icons/gr"; // Import GrView icon
 import './style.css';
 
 const useQuery = () => {
@@ -232,18 +233,9 @@ const Users = () => {
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
                       <TableCell align="center">
-                        <Button
-                          onClick={() => handleViewUser(row.id)}
-                          variant="contained"
-                          size="small"
-                          style={{
-                            marginLeft: 8,
-                            backgroundColor: colors.greenAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          View
-                        </Button>
+                        <IconButton onClick={() => handleViewUser(row.id)} style={{ color: colors.greenAccent[400] }}>
+                          <GrView />
+                        </IconButton>
                       </TableCell>
                       <TableCell align="center">
                         <Button

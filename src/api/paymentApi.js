@@ -26,7 +26,16 @@ export const fetchPayments = async (pageNumber = 1, pageSize = 10) => {
   }
 };
 
-// New method to generate payment token
+export const deletePayment = async (paymentId) => {
+  try {
+    const response = await axios.delete(`${url}/Payments/${paymentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting payment:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
 export const generatePaymentToken = async (bookingId) => {
   try {
     const response = await axios.get(`${url}/Payments/GeneratePaymentToken/${bookingId}`);
@@ -37,7 +46,6 @@ export const generatePaymentToken = async (bookingId) => {
   }
 };
 
-// New method to process payment
 export const processPayment = async (token) => {
   try {
     const response = await axios.post(`${url}/Payments/ProcessPayment?token=${token}`);

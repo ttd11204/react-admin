@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Button, IconButton, InputBase } from '@mui/material';
+import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from "../../theme";
 import Header from "../../components/Header";
-import { fetchPayments } from '../../api/paymentApi';
+import { fetchPayments, deletePayment } from '../../api/paymentApi'; // Updated import
 import SearchIcon from '@mui/icons-material/Search';
+import DeleteIcon from '@mui/icons-material/Delete'; // Import Delete icon
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -74,8 +75,13 @@ const Payments = () => {
     }
   };
 
-  const handleEdit = (id) => {
-    console.log(`Edit payment with id: ${id}`);
+  const handleDelete = async (id) => {
+    try {
+      await deletePayment(id); // Call deletePayment function
+      setPaymentsData(paymentsData.filter(payment => payment.paymentId !== id)); // Update state to remove deleted payment
+    } catch (err) {
+      setError(`Failed to delete payment: ${err.message}`);
+    }
   };
 
   return (
@@ -124,18 +130,18 @@ const Payments = () => {
                       <TableCell>{row.booking}</TableCell>
                       <TableCell>
                         <Box display="flex" justifyContent="center" alignItems="center">
-                          <Button 
-                            onClick={() => handleEdit(row.paymentId)} 
-                            variant="contained" 
-                            size="small" 
-                            style={{ 
+                          <IconButton
+                            onClick={() => handleDelete(row.paymentId)}
+                            color="secondary"
+                            size="small"
+                            style={{
                               marginLeft: 8,
-                              backgroundColor: colors.greenAccent[400],
-                              color: colors.primary[900]
+                              backgroundColor: colors.redAccent[400],
+                              color: colors.primary[900],
                             }}
                           >
-                            Edit
-                          </Button>
+                            <DeleteIcon />
+                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
