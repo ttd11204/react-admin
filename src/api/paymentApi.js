@@ -55,3 +55,13 @@ export const processPayment = async (token) => {
     throw error;
   }
 };
+
+export const fetchPaymentById = async (paymentId) => {
+  try {
+    const response = await axios.get(`${url}/Payments/${paymentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching payment by ID:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
