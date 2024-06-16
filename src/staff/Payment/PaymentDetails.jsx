@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel } from '@mui/material';
+import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Card, CardContent, CardHeader, Grid } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -26,7 +26,12 @@ const steps = ['Payment Details', 'Payment Confirmation'];
 
 const PaymentDetail = () => {
   const location = useLocation();
-  const { branchId, timeSlot, price } = location.state;
+  const { branchId, bookingRequests, totalPrice } = location.state || {  };
+  const sortedBookingRequests = bookingRequests ? [...bookingRequests].sort((a, b) => {
+    const dateA = new Date(`${a.slotDate}T${a.timeSlot.slotStartTime}`);
+    const dateB = new Date(`${b.slotDate}T${b.timeSlot.slotStartTime}`);
+    return dateA - dateB;
+  }) : [];
   const [activeStep, setActiveStep] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [email, setEmail] = useState('');
@@ -42,6 +47,7 @@ const PaymentDetail = () => {
     }
 
     try {
+      console.log('totalPrice:', bookingRequests);
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
@@ -104,7 +110,7 @@ const PaymentDetail = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const totalPrice = price - discount;
+
 
   const getStepContent = (step) => {
     switch (step) {
@@ -150,43 +156,75 @@ const PaymentDetail = () => {
                 </Box>
               )}
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-              <Box sx={{ flex: 1, marginRight: '20px', backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
-                <Typography variant="h5" gutterBottom color="black" display="flex" alignItems="center">
-                  <PaymentIcon sx={{ marginRight: '8px' }} /> Payment Method
+
+
+            {/* box này là thông tin payment method */}
+            <Box sx={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+      <Grid container spacing={2} >
+        <Grid item xs={12} md={6}>
+          <Box
+            sx={{
+              backgroundColor: "#E0E0E0",
+              padding: '20px',
+              borderRadius: 2,
+              maxHeight: '400px',
+              overflowY: 'auto',
+            }}
+          >
+            <Typography variant="h5" gutterBottom color="black" display="flex" alignItems="center">
+              <PaymentIcon sx={{ marginRight: '8px' }} /> Payment Method
+            </Typography>
+            <FormControl component="fieldset">
+              <FormLabel component="legend" sx={{ color: 'black' }}>Select Payment Method</FormLabel>
+              <RadioGroup aria-label="payment method" name="paymentMethod">
+                <FormControlLabel value="cash" control={<Radio />} label="Cash" sx={{ color: 'black' }} />
+                <FormControlLabel value="creditCard" control={<Radio />} label="Credit Card" sx={{ color: 'black' }} />
+              </RadioGroup>
+            </FormControl>
+          </Box>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
+            <Typography variant="h5" gutterBottom color="black">
+              Bill
+            </Typography>
+            <Typography variant="h6" color="black">
+              <strong>Branch ID:</strong> {branchId}
+            </Typography>
+            <Typography variant="h6" color="black" sx={{ marginTop: '20px' }}>
+              <strong>Time Slot:</strong>
+            </Typography>
+            {bookingRequests && sortedBookingRequests.map((request, index) => (
+              <Box key={index} sx={{ marginBottom: '15px', padding: '10px', backgroundColor: '#FFFFFF', borderRadius: 2, boxShadow: 1 }}>
+                <Typography variant="body1" color="black">
+                  <strong>Date:</strong> {request.slotDate}
                 </Typography>
-                <FormControl component="fieldset">
-                  <FormLabel component="legend" sx={{ color: 'black' }}>Select Payment Method</FormLabel>
-                  <RadioGroup aria-label="payment method" name="paymentMethod">
-                    <FormControlLabel value="cash" control={<Radio />} label="Cash" sx={{ color: 'black' }} />
-                    <FormControlLabel value="creditCard" control={<Radio />} label="Credit Card" sx={{ color: 'black' }} />
-                  </RadioGroup>
-                </FormControl>
+                <Typography variant="body1" color="black">
+                  <strong>Start Time:</strong> {request.timeSlot.slotStartTime}
+                </Typography>
+                <Typography variant="body1" color="black">
+                  <strong>End Time:</strong> {request.timeSlot.slotEndTime}
+                </Typography>
+                <Typography variant="body1" color="black">
+                  <strong>Price:</strong> {request.price} USD
+                </Typography>
               </Box>
-              <Box sx={{ flex: 1, backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
-                <Typography variant="h5" gutterBottom color="black">
-                  Bill
-                </Typography>
-                <Typography variant="h6" color="black">
-                  <strong>Branch ID:</strong> {branchId}
-                </Typography>
-                <Typography variant="h6" color="black">
-                  <strong>Time Slot:</strong> {timeSlot}
-                </Typography>
-                <Typography variant="h6" color="black">
-                  <strong>Price:</strong> {price} USD
-                </Typography>
-                <Typography variant="h6" color="black">
-                  <strong>Total Price:</strong> {totalPrice} USD
-                </Typography>
-              </Box>
-            </Box>
+            ))}
+            <Divider sx={{ marginY: '10px' }} />
+            <Typography variant="h6" color="black">
+              <strong>Total Price:</strong> {totalPrice} USD
+            </Typography>
+          </Box>
+        </Grid>
+      </Grid>
+    </Box>
+            
           </>
         );
       case 1:
         return <LoadingPage />; // Show loading page
-        
-// -----------------------------------------------------------------------------------
+
+        // -----------------------------------------------------------------------------------
         {/* xử lý vnPay xong thì đưa ra cái này !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          // đổi case 1 thành paymentconfimationstep hoặc paymentrejectedstep dựa trên kết quả trả về từ vnpay
       case 1:
@@ -196,7 +234,7 @@ const PaymentDetail = () => {
         //thất bại
         return <PaymentRejectedStep />;
         */}
-// -----------------------------------------------------------------------------------
+      // -----------------------------------------------------------------------------------
 
       default:
         return 'Unknown step';

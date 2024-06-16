@@ -9,35 +9,82 @@ import "./styles.css";
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { fetchPrice } from '../../api/priceApi';
+import { fetchBranchById } from '../../api/branchApi';
+
 dayjs.extend(isSameOrBefore);
 
-const morningTimeSlots = [
-  "6:00 - 7:00",
-  "7:00 - 8:00",
-  "8:00 - 9:00",
-  "9:00 - 10:00",
-  "10:00 - 11:00",
-  "11:00 - 12:00",
-  "12:00 - 13:00",
-  "13:00 - 14:00",
-];
+// quy ước các ngày trong tuần thành số
+const dayToNumber = {
+  "Monday": 1,
+  "Tuesday": 2,
+  "Wednesday": 3,
+  "Thursday": 4,
+  "Friday": 5,
+  "Saturday": 6,
+  "Sunday": 7
+};
 
-const afternoonTimeSlots = [
-  "14:00 - 15:00",
-  "15:00 - 16:00",
-  "16:00 - 17:00",
-  "17:00 - 18:00",
-  "18:00 - 19:00",
-  "19:00 - 20:00",
-  "20:00 - 21:00",
-];
-
-const getDaysOfWeek = (startOfWeek) => {
-  let days = [];
-  for (let i = 1; i < 8; i++) {
-    days.push(dayjs(startOfWeek).add(i, 'day'));
+//trả về mảng 2 cái ngày bắt đầu và kết thúc dạng số
+const parseOpenDay = (openDay) => {
+  if (!openDay || typeof openDay !== 'string') {
+    console.error('Invalid openDay:', openDay);
+    return [0, 0];
   }
+  const days = openDay.split(' to ');
+  if (days.length !== 2) {
+    console.error('Invalid openDay format:', openDay);
+    return [0, 0];
+  }
+  const [startDay, endDay] = days;
+  return [dayToNumber[startDay], dayToNumber[endDay]];
+
+};
+
+
+// tạo ra mảng các ngày trong tuần
+const getDaysOfWeek = (startOfWeek, openDay) => {
+  let days = [];
+  const [startDay, endDay] = parseOpenDay(openDay);
+  if (startDay === 0 || endDay === 0) {
+    console.error('Invalid days parsed:', { startDay, endDay });
+    return days;
+  }
+
+  for (var i = startDay; i <= endDay; i++) {
+
+    days.push(dayjs(startOfWeek).add(i, 'day'));
+
+  }
+
   return days;
+};
+
+
+// hàm generate các slot từ openTime đến closeTime
+const generateTimeSlots = (openTime, closeTime) => {
+  let slots = [];
+  for (let hour = openTime; hour < closeTime; hour++) {
+    const start = formatTime(hour);
+    const end = formatTime(hour + 1);
+    slots.push(`${start} - ${end}`);
+  }
+  return slots;
+};
+
+const formatTime = (time) => {
+  const hours = Math.floor(time);
+  const minutes = Math.round((time - hours) * 60);
+  const formattedHours = hours < 10 ? `0${hours}` : hours;
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+  return `${formattedHours}:${formattedMinutes}`;
+};
+
+const timeStringToDecimal = (timeString) => {
+  const date = new Date(`1970-01-01T${timeString}Z`);
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  const seconds = date.getUTCSeconds();
+  return hours + minutes / 60 + seconds / 3600;
 };
 
 const ReserveSlot = () => {
@@ -48,9 +95,34 @@ const ReserveSlot = () => {
   const [weekdayPrice, setWeekdayPrice] = useState(0);
   const [weekendPrice, setWeekendPrice] = useState(0);
   const [selectedSlots, setSelectedSlots] = useState([]);
+  const [openTime, setOpentime] = useState([]);
+  const [closeTime, setClosetime] = useState([]);
+  const [openDay, setOpenDay] = useState([]);
+  const [weekDays, setWeekDays] = useState([]);
+  const [morningTimeSlots, setMorningTimeSlots] = useState([]);
+  const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
   const navigate = useNavigate();
   const currentDate = dayjs();
 
+
+  //fetch branch theo id
+  useEffect(() => {
+    const fetchBranchesById = async () => {
+      try {
+        const response = await fetchBranchById(selectedBranch);
+        setOpentime(response.openTime);
+        setClosetime(response.closeTime);
+        setOpenDay(response.openDay);
+      } catch (error) {
+        console.error('Error fetching branches data:', error);
+      }
+    };
+    if (selectedBranch) {
+      fetchBranchesById();
+    }
+  }, [selectedBranch]);
+
+  ////fetch branch để hiện ra select các branch
   useEffect(() => {
     const fetchBranchesData = async () => {
       try {
@@ -65,6 +137,8 @@ const ReserveSlot = () => {
     fetchBranchesData();
   }, []);
 
+
+  //fetch giá theo tuấn cùi
   useEffect(() => {
     const fetchPrices = async () => {
       if (!selectedBranch) return;
@@ -81,8 +155,45 @@ const ReserveSlot = () => {
     fetchPrices();
   }, [selectedBranch]);
 
-  const handleSlotClick = (slot, day) => {
-    const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
+
+  // Parse openDay and get days of the week
+  useEffect(() => {
+    if (openDay) {
+      const days = getDaysOfWeek(startOfWeek, openDay);
+      setWeekDays(days);
+      console.log('Computed weekDays:', days);
+    }
+  }, [openDay, startOfWeek]);
+
+  // tạo ra các slot nhỏ sáng từ opentime đến 14h 
+  useEffect(() => {
+    if (openTime && '14:00:00') {
+      const decimalOpenTime = timeStringToDecimal(openTime);
+      const decimalCloseTime = timeStringToDecimal('14:00:00');
+      console.log('decimalOpenTime:', decimalOpenTime);
+      console.log('decimalCloseTime:', decimalCloseTime);
+      const timeSlots = generateTimeSlots(decimalOpenTime, decimalCloseTime);
+      setMorningTimeSlots(timeSlots);
+      console.log('generate timeSlots:', timeSlots);
+    }
+  }, [openTime]);
+
+  // tạo ra các slot nhỏ chiều từ 14h đến closeTime
+  useEffect(() => {
+    if (closeTime && '14:00:00') {
+      const decimalOpenTime = timeStringToDecimal('14:00:00');
+      const decimalCloseTime = timeStringToDecimal(closeTime);
+      console.log('decimalOpenTime:', decimalOpenTime);
+      console.log('decimalCloseTime:', decimalCloseTime);
+      const timeSlots = generateTimeSlots(decimalOpenTime, decimalCloseTime);
+      setAfternoonTimeSlots(timeSlots);
+      console.log('generate timeSlots:', timeSlots);
+    }
+  }, [closeTime]);
+
+  //xử lý lúc click vào slot
+  const handleSlotClick = (slot, day, price) => {
+    const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
     if (selectedSlots.includes(slotId)) {
       setSelectedSlots(selectedSlots.filter(id => id !== slotId));
     } else if (selectedSlots.length < 3) {
@@ -92,6 +203,7 @@ const ReserveSlot = () => {
     }
   };
 
+  // xử lý nút sáng chiều
   const handleToggleMorning = () => {
     setShowAfternoon(false);
   };
@@ -100,9 +212,12 @@ const ReserveSlot = () => {
     setShowAfternoon(true);
   };
 
+  //xử lý chỉ hiện 1 tuần trước và các tuần sau
   const handlePreviousWeek = () => {
-    if (dayjs(startOfWeek).isAfter(dayjs().startOf('week'))) {
-      setStartOfWeek(dayjs(startOfWeek).subtract(1, 'week'));
+
+    const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
+    if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
+      setStartOfWeek(oneWeekBeforeCurrentWeek);
     }
   };
 
@@ -110,69 +225,48 @@ const ReserveSlot = () => {
     setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
   };
 
+  //xử lý khi click vào nút continue qua trang tiếp theo (Nhân lấy về cần chú ý là chỉ lấy các slot đã click qua trang mới chứ chưa post api booking, và chưa lấy userid)
   const handleContinue = async () => {
     if (!selectedBranch) {
       alert("Please select a branch first");
       return;
     }
-  
+
     const bookingRequests = selectedSlots.map(slotId => {
-      const [slotDate, timeSlot] = slotId.split('_');
+      const [slotDate, timeSlot, price] = slotId.split('_');
       const [slotStartTime, slotEndTime] = timeSlot.split(' - ');
-  
+
       return {
-        courtId: 'C001', 
-        branchId: selectedBranch,
-        slotModels: [
-          {
-            slotDate,
-            timeSlot: {
-              slotStartTime: `${slotStartTime}:00`, 
-              slotEndTime: `${slotEndTime}:00`     
-            }
-          }
-        ]
+
+        
+        slotDate,
+        timeSlot: {
+          slotStartTime: `${slotStartTime}:00`,
+          slotEndTime: `${slotEndTime}:00`,
+
+        },
+        price: parseFloat(price)
       };
+
+
+
     });
-  
-    console.log(bookingRequests);
-    try {
-      const userId = 'U001'; 
-      await reserveSlots(userId, bookingRequests);
-      navigate("/staff/PaymentDetail", {
-        state: {
-          branchId: selectedBranch,
-          slots: selectedSlots,
-          price: "120k"
-        }
-      });
-    } catch (error) {
-      console.error('Error reserving slots', error);
-      alert('Failed to reserve slots. Please try again.');
-    }
+
+
+
+    navigate("/staff/PaymentDetail", {
+      state: {
+        branchId: selectedBranch,
+        bookingRequests,
+        totalPrice: bookingRequests.reduce((totalprice, object) => totalprice + parseFloat(object.price), 0)
+      }
+    });
+
   };
 
-  const handleContinue1 = async () => {
-    try {
-      const userId = 'U001'; 
-      // await reserveSlots(userId, bookingRequests);
-      navigate("/staff/PaymentDetail", {
-        state: {
-          branchId: selectedBranch,
-          slots: selectedSlots,
-          price: "120k"
-        }
-      });
-    } catch (error) {
-      console.error('Error reserving slots', error);
-      alert('Failed to reserve slots. Please try again.');
-    }
 
-  }
-  
-  
+  const days = weekDays;
 
-  const days = getDaysOfWeek(startOfWeek);
 
   return (
     <Box m="20px" className="max-width-box" sx={{ backgroundColor: "#F5F5F5", borderRadius: 2, p: 2 }}>
@@ -195,44 +289,49 @@ const ReserveSlot = () => {
             ))}
           </Select>
         </FormControl>
-        <Box display="flex" alignItems="center" sx={{ backgroundColor: "#E0E0E0", p: 1, borderRadius: 2 }}>
-          <IconButton onClick={handlePreviousWeek} size="small" disabled={dayjs(startOfWeek).isSame(dayjs().startOf('week'))}>
-            <ArrowBackIosIcon fontSize="inherit" />
-          </IconButton>
-          <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
-            Từ ngày {dayjs(startOfWeek).add(1, 'day').format('D/M')} đến ngày {dayjs(startOfWeek).add(7, 'day').format('D/M')}
-          </Typography>
-          <IconButton onClick={handleNextWeek} size="small">
-            <ArrowForwardIosIcon fontSize="inherit" />
-          </IconButton>
-        </Box>
-        <Box>
-          <Button
-            variant="contained"
-            sx={{
-              backgroundColor: showAfternoon ? "#FFFFFF" : "#0D1B34",
-              color: showAfternoon ? "#0D1B34" : "white",
-              mr: 1,
-              textTransform: "none",
-              marginBottom: '0'
-            }}
-            onClick={handleToggleMorning}
-          >
-            Morning
-          </Button>
-          <Button
-            variant="contained"
-            sx={{
-              backgroundColor: showAfternoon ? "#0D1B34" : "#FFFFFF",
-              color: showAfternoon ? "white" : "#0D1B34",
-              textTransform: "none",
-              marginBottom: '0'
-            }}
-            onClick={handleToggleAfternoon}
-          >
-            Afternoon
-          </Button>
-        </Box>
+
+
+        {/* Khung ngày */}
+        <>{selectedBranch && (
+          <Box display="flex" alignItems="center" sx={{ backgroundColor: "#E0E0E0", p: 1, borderRadius: 2 }}>
+            <IconButton onClick={handlePreviousWeek} size="small" >
+              <ArrowBackIosIcon fontSize="inherit" />
+            </IconButton>
+            <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
+              From {dayjs(startOfWeek).add(1, 'day').format('D/M')} To {dayjs(startOfWeek).add(7, 'day').format('D/M')}
+            </Typography>
+            <IconButton onClick={handleNextWeek} size="small">
+              <ArrowForwardIosIcon fontSize="inherit" />
+            </IconButton>
+          </Box>)}</>
+        <>{selectedBranch && (
+          <Box>
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: showAfternoon ? "#FFFFFF" : "#0D1B34",
+                color: showAfternoon ? "#0D1B34" : "white",
+                mr: 1,
+                textTransform: "none",
+                marginBottom: '0'
+              }}
+              onClick={handleToggleMorning}
+            >
+              Morning
+            </Button>
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: showAfternoon ? "#0D1B34" : "#FFFFFF",
+                color: showAfternoon ? "white" : "#0D1B34",
+                textTransform: "none",
+                marginBottom: '0'
+              }}
+              onClick={handleToggleAfternoon}
+            >
+              Afternoon
+            </Button>
+          </Box>)}</>
       </Box>
 
       {days.map((day, dayIndex) => (
@@ -262,14 +361,16 @@ const ReserveSlot = () => {
           </Grid>
 
           {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
-            const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
+            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Friday for weekdays, Saturday to Sunday for weekends
+            const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
             const isSelected = selectedSlots.includes(slotId);
-            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Thursday for weekdays, Friday to Sunday for weekends
+
+            // Monday to Thursday for weekdays, Saturday to Sunday for weekends
 
             return (
               <Grid item xs key={slotIndex}>
                 <Button
-                  onClick={() => handleSlotClick(slot, day)}
+                  onClick={() => handleSlotClick(slot, day, price)}
                   sx={{
                     backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
                     color: isSelected ? "#FFFFFF" : "#0D1B34",
@@ -311,27 +412,27 @@ const ReserveSlot = () => {
           })}
         </Grid>
       ))}
-      <Box display="flex" justifyContent="end" mt={1} marginRight={'12px'}  >
-        <Button
-          variant="contained"
+      <>{selectedBranch && (
+        <Box display="flex" justifyContent="end" mt={1} marginRight={'12px'}  >
+          <Button
+            variant="contained"
 
-          sx={{
-            color: "#white",
-            backgroundColor: "#1976d2",
-            ':hover': {
-              backgroundColor: '#1565c0',
-            },
-            ':active': {
-              backgroundColor: '#1976d2',
-            },
-          }
-          }
-          // onClick={handleContinue}
-          onClick={handleContinue1}
-        >
-          Continue
-        </Button>
-      </Box>
+            sx={{
+              color: "#white",
+              backgroundColor: "#1976d2",
+              ':hover': {
+                backgroundColor: '#1565c0',
+              },
+              ':active': {
+                backgroundColor: '#1976d2',
+              },
+            }
+            }
+            onClick={handleContinue}
+          >
+            Continue
+          </Button>
+        </Box>)}</>
     </Box>
   );
 };
