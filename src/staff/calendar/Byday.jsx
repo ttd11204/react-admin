@@ -208,7 +208,7 @@ useEffect(() => {
   }, [selectedBranch]);
 
   const handleSlotClick = (slot, day, price) => {
-    const slotId = `${day.format('YYYY-MM-DD')}_${slot}-${price}`;
+    const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
     if (selectedSlots.includes(slotId)) {
       setSelectedSlots(selectedSlots.filter(id => id !== slotId));
     } else if (selectedSlots.length < 3) {
@@ -245,37 +245,45 @@ useEffect(() => {
     }
   
     const bookingRequests = selectedSlots.map(slotId => {
-      const [slotDate, timeSlot] = slotId.split('_');
+      const [slotDate, timeSlot,price] = slotId.split('_');
       const [slotStartTime, slotEndTime] = timeSlot.split(' - ');
      
       return {
-        courtId: 'C001', 
+         
         branchId: selectedBranch,
         slotDate,
         timeSlot: {
           slotStartTime: `${slotStartTime}:00`, 
           slotEndTime: `${slotEndTime}:00`    ,
           
-        }
+        },
+        price: price
       };
+      
+
+
     });
   
-    console.log(bookingRequests); 
-  
-    try {
-      const userId = 'U001'; 
-      await reserveSlots(userId, bookingRequests);
-      navigate("/staff/PaymentDetail", {
-        state: {
-          branchId: selectedBranch,
-          slots: selectedSlots,
-          price: "...",
-        }
-      });
-    } catch (error) {
-      console.error('Error reserving slots', error);
-      alert('Failed to reserve slots. Please try again.');
-    }
+    // console.log(bookingRequests); 
+    navigate("/staff/PaymentDetail", {
+      state: {
+        bookingRequests
+      }
+    });
+    // try {
+    //   const userId = 'U001'; 
+    //   await reserveSlots(userId, bookingRequests);
+    //   navigate("/staff/PaymentDetail", {
+    //     state: {
+    //       branchId: selectedBranch,
+    //       slots: selectedSlots,
+    //       price: "...",
+    //     }
+    //   });
+    // } catch (error) {
+    //   console.error('Error reserving slots', error);
+    //   alert('Failed to reserve slots. Please try again.');
+    // }
   };
   
 
@@ -375,9 +383,11 @@ useEffect(() => {
         </Grid>
 
         {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
-          const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
+          const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Friday for weekdays, Saturday to Sunday for weekends
+          const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
           const isSelected = selectedSlots.includes(slotId);
-          const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Thursday for weekdays, Saturday to Sunday for weekends
+  
+           // Monday to Thursday for weekdays, Saturday to Sunday for weekends
 
           return (
             <Grid item xs key={slotIndex}>
