@@ -10,28 +10,29 @@ import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { fetchPrice } from '../../api/priceApi';
 import { fetchBranchById } from '../../api/branchApi';
+import { formatIsoTimeString } from "@fullcalendar/core/internal";
 dayjs.extend(isSameOrBefore);
 
-const morningTimeSlots = [
-  "6:00 - 7:00",
-  "7:00 - 8:00",
-  "8:00 - 9:00",
-  "9:00 - 10:00",
-  "10:00 - 11:00",
-  "11:00 - 12:00",
-  "12:00 - 13:00",
-  "13:00 - 14:00",
-];
+// const morningTimeSlots = [
+//   "6:00 - 7:00",
+//   "7:00 - 8:00",
+//   "8:00 - 9:00",
+//   "9:00 - 10:00",
+//   "10:00 - 11:00",
+//   "11:00 - 12:00",
+//   "12:00 - 13:00",
+//   "13:00 - 14:00",
+// ];
 
-const afternoonTimeSlots = [
-  "14:00 - 15:00",
-  "15:00 - 16:00",
-  "16:00 - 17:00",
-  "17:00 - 18:00",
-  "18:00 - 19:00",
-  "19:00 - 20:00",
-  "20:00 - 21:00",
-];
+// const afternoonTimeSlots = [
+//   "14:00 - 15:00",
+//   "15:00 - 16:00",
+//   "16:00 - 17:00",
+//   "17:00 - 18:00",
+//   "18:00 - 19:00",
+//   "19:00 - 20:00",
+//   "20:00 - 21:00",
+// ];
 
 const dayToNumber = {
   "Monday": 1,
@@ -78,6 +79,31 @@ const getDaysOfWeek = (startOfWeek, openDay) => {
 };
 
 
+// tạo hàm generate các slot từ openTime đến closeTime
+const generateTimeSlots = (openTime, closeTime) => {
+  let slots = [];
+  for (let hour = openTime; hour < closeTime; hour++) {
+    const start = formatTime(hour);
+    const end = formatTime(hour + 1);
+    slots.push(`${start} - ${end}`);
+  }
+  return slots;
+};
+
+const formatTime = (time) => {
+  const hours = Math.floor(time);
+  const minutes = Math.round((time - hours) * 60);
+  const formattedHours = hours < 10 ? `0${hours}` : hours;
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+  return `${formattedHours}:${formattedMinutes}`;
+};
+const timeStringToDecimal = (timeString) => {
+  const date = new Date(`1970-01-01T${timeString}Z`);
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  const seconds = date.getUTCSeconds();
+  return hours + minutes / 60 + seconds / 3600;
+};
 
 const ReserveSlot = () => {
   const [branches, setBranches] = useState([]);
@@ -91,6 +117,8 @@ const ReserveSlot = () => {
   const [closeTime, setClosetime] = useState([]);
   const [openDay, setOpenDay] = useState([]);
   const [weekDays, setWeekDays] = useState([]);
+  const [morningTimeSlots, setMorningTimeSlots] = useState([]);
+  const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
   const navigate = useNavigate();
   const currentDate = dayjs();
 
@@ -121,7 +149,31 @@ useEffect(() => {
   }
 }, [openDay, startOfWeek]);
 
+// tạo ra các slot nhỏ sáng từ opentime đến 14h 
+useEffect(() => {
+  if (openTime && '14:00:00') {
+   const decimalOpenTime =  timeStringToDecimal(openTime);
+    const decimalCloseTime = timeStringToDecimal('14:00:00');
+    console.log('decimalOpenTime:', decimalOpenTime);
+    console.log('decimalCloseTime:', decimalCloseTime);
+    const timeSlots = generateTimeSlots(decimalOpenTime, decimalCloseTime);
+    setMorningTimeSlots(timeSlots);
+    console.log('generate timeSlots:', timeSlots);
+  }
+}, [openTime]);
 
+// tạo ra các slot nhỏ chiều từ 14h đến closeTime
+useEffect(() => {
+  if (closeTime && '14:00:00') {
+    const decimalOpenTime = timeStringToDecimal('14:00:00');
+    const decimalCloseTime = timeStringToDecimal(closeTime);
+    console.log('decimalOpenTime:', decimalOpenTime);
+    console.log('decimalCloseTime:', decimalCloseTime);
+    const timeSlots = generateTimeSlots(decimalOpenTime, decimalCloseTime);
+    setAfternoonTimeSlots(timeSlots);
+    console.log('generate timeSlots:', timeSlots);
+  }
+}, [closeTime]);
 
   useEffect(() => {
     const fetchBranchesData = async () => {
