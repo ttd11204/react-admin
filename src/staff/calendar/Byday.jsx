@@ -101,9 +101,11 @@ const ReserveSlot = () => {
   };
 
   const handlePreviousWeek = () => {
-    if (dayjs(startOfWeek).isAfter(dayjs().startOf('week'))) {
-      setStartOfWeek(dayjs(startOfWeek).subtract(1, 'week'));
-    }
+   
+    const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
+  if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
+    setStartOfWeek(oneWeekBeforeCurrentWeek);
+  }
   };
 
   const handleNextWeek = () => {
@@ -174,7 +176,7 @@ const ReserveSlot = () => {
           </Select>
         </FormControl>
         <Box display="flex" alignItems="center" sx={{ backgroundColor: "#E0E0E0", p: 1, borderRadius: 2 }}>
-          <IconButton onClick={handlePreviousWeek} size="small" disabled={dayjs(startOfWeek).isSame(dayjs().startOf('week'))}>
+          <IconButton onClick={handlePreviousWeek} size="small" >
             <ArrowBackIosIcon fontSize="inherit" />
           </IconButton>
           <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
@@ -242,7 +244,7 @@ const ReserveSlot = () => {
           {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
             const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
             const isSelected = selectedSlots.includes(slotId);
-            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Thursday for weekdays, Friday to Sunday for weekends
+            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Thursday for weekdays, Saturday to Sunday for weekends
 
             return (
               <Grid item xs key={slotIndex}>
