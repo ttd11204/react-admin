@@ -250,17 +250,22 @@ useEffect(() => {
           ))}
         </Select>
       </FormControl>
+      
+      
+      {/* Khung ngày */}
+         <>{selectedBranch && (
       <Box display="flex" alignItems="center" sx={{ backgroundColor: "#E0E0E0", p: 1, borderRadius: 2 }}>
         <IconButton onClick={handlePreviousWeek} size="small" >
           <ArrowBackIosIcon fontSize="inherit" />
         </IconButton>
         <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
-          Từ ngày {dayjs(startOfWeek).add(1, 'day').format('D/M')} đến ngày {dayjs(startOfWeek).add(7, 'day').format('D/M')}
+          From {dayjs(startOfWeek).add(1, 'day').format('D/M')} To {dayjs(startOfWeek).add(7, 'day').format('D/M')}
         </Typography>
         <IconButton onClick={handleNextWeek} size="small">
           <ArrowForwardIosIcon fontSize="inherit" />
         </IconButton>
-      </Box>
+      </Box>)}</>
+      <>{selectedBranch && (
       <Box>
         <Button
           variant="contained"
@@ -287,7 +292,7 @@ useEffect(() => {
         >
           Afternoon
         </Button>
-      </Box>
+      </Box>)}</>
     </Box>
 
     {days.map((day, dayIndex) => (
@@ -366,6 +371,7 @@ useEffect(() => {
         })}
       </Grid>
     ))}
+    <>{selectedBranch && (
     <Box display="flex" justifyContent="end" mt={1} marginRight={'12px'}  >
       <Button
         variant="contained"
@@ -385,7 +391,7 @@ useEffect(() => {
       >
         Continue
       </Button>
-    </Box>
+    </Box>)}</>
   </Box>
   );
 };
