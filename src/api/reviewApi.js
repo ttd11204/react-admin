@@ -19,7 +19,7 @@ export const fetchReviews = async (pageNumber = 1, pageSize = 10) => {
       const branches = await fetchBranches();
 
       const itemsWithDetails = items.map(item => {
-        const user = users.find(u => u.id === item.userId);
+        const user = users.find(u => u.id === item.id);
         const branch = branches.find(b => b.branchId === item.branchId);
         return {
           ...item,
