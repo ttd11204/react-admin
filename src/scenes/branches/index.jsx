@@ -21,8 +21,8 @@ const Branches = () => {
   const [pageSize, setPageSize] = useState(10);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [openCreateModal, setOpenCreateModal] = useState(false); // State to control the create modal
-  const [openEditModal, setOpenEditModal] = useState(false); // State to control the edit modal
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
   const [newBranch, setNewBranch] = useState({
     branchAddress: "",
     branchName: "",
@@ -31,8 +31,10 @@ const Branches = () => {
     branchPicture: "",
     openTime: "",
     closeTime: "",
-    openDay: "",
-    status: ""
+    openDay: { day1: "", day2: "" },
+    status: "",
+    weekdayPrice: "",
+    weekendPrice: ""
   });
   const [currentBranch, setCurrentBranch] = useState({
     branchId: "",
@@ -43,9 +45,13 @@ const Branches = () => {
     branchPicture: "",
     openTime: "",
     closeTime: "",
-    openDay: "",
-    status: ""
+    openDay: { day1: "", day2: "" },
+    status: "",
+    weekdayPrice: "",
+    weekendPrice: ""
   });
+
+  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   const query = useQuery();
   const navigate = useNavigate();
@@ -69,14 +75,14 @@ const Branches = () => {
   const handlePageClick = (event) => {
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Branches?pageNumber=${newPage + 1}&pageSize=${pageSize}`); // Update URL
+    navigate(`/Branches?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
   };
 
   const handlePageSizeChange = (event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
-    setPage(0); // Reset to first page when pageSize changes
-    navigate(`/Branches?pageNumber=1&pageSize=${newSize}`); // Update URL
+    setPage(0);
+    navigate(`/Branches?pageNumber=1&pageSize=${newSize}`);
   };
 
   const handleView = (branchId) => {
@@ -95,7 +101,11 @@ const Branches = () => {
 
   const handleCreateNew = async () => {
     try {
-      await createBranch(newBranch);
+      const formattedBranch = {
+        ...newBranch,
+        openDay: `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`
+      };
+      await createBranch(formattedBranch);
       setOpenCreateModal(false);
       const data = await fetchBranches(pageQuery, sizeQuery);
       setBranchesData(data.items);
@@ -107,7 +117,11 @@ const Branches = () => {
 
   const handleUpdateBranch = async () => {
     try {
-      await updateBranch(currentBranch.branchId, currentBranch);
+      const formattedBranch = {
+        ...currentBranch,
+        openDay: `${currentBranch.openDay.day1} to ${currentBranch.openDay.day2}`
+      };
+      await updateBranch(currentBranch.branchId, formattedBranch);
       setOpenEditModal(false);
       const data = await fetchBranches(pageQuery, sizeQuery);
       setBranchesData(data.items);
@@ -157,11 +171,33 @@ const Branches = () => {
     }));
   };
 
+  const handleSelectChange = (event) => {
+    const { name, value } = event.target;
+    setNewBranch(prevState => ({
+      ...prevState,
+      openDay: {
+        ...prevState.openDay,
+        [name]: value
+      }
+    }));
+  };
+
   const handleEditInputChange = (event) => {
     const { name, value } = event.target;
     setCurrentBranch(prevState => ({
       ...prevState,
       [name]: value
+    }));
+  };
+
+  const handleEditSelectChange = (event) => {
+    const { name, value } = event.target;
+    setCurrentBranch(prevState => ({
+      ...prevState,
+      openDay: {
+        ...prevState.openDay,
+        [name]: value
+      }
     }));
   };
 
@@ -305,8 +341,52 @@ const Branches = () => {
               <TextField label="Branch Picture" name="branchPicture" value={newBranch.branchPicture} onChange={handleInputChange} fullWidth margin="normal" />
               <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
               <TextField label="Close Time" name="closeTime" value={newBranch.closeTime} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Open Day" name="openDay" value={newBranch.openDay} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Status" name="status" value={newBranch.status} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Weekday Price" name="weekdayPrice" value={newBranch.weekdayPrice} onChange={handleInputChange} fullWidth margin="normal" />
+              <TextField label="Weekend Price" name="weekendPrice" value={newBranch.weekendPrice} onChange={handleInputChange} fullWidth margin="normal" />
+              <Box mt={2} mb={2}>
+                <Typography variant="subtitle1">Open Day</Typography>
+                <Box display="flex" justifyContent="space-between" mt={1}>
+                  <Select
+                    label="Day 1"
+                    name="day1"
+                    value={newBranch.openDay.day1}
+                    onChange={handleSelectChange}
+                    fullWidth
+                  >
+                    {daysOfWeek.map(day => (
+                      <MenuItem key={day} value={day}>
+                        {day}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <Select
+                    label="Day 2"
+                    name="day2"
+                    value={newBranch.openDay.day2}
+                    onChange={handleSelectChange}
+                    fullWidth
+                  >
+                    {daysOfWeek.map(day => (
+                      <MenuItem key={day} value={day}>
+                        {day}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+              </Box>
+              <Box mt={2} mb={2}>
+                <Typography variant="subtitle1">Status</Typography>
+                <Select
+                  label="Status"
+                  name="status"
+                  value={newBranch.status}
+                  onChange={handleInputChange}
+                  fullWidth
+                >
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
+                </Select>
+              </Box>
               <Button variant="contained" color="primary" onClick={handleCreateNew} fullWidth>Create</Button>
             </Box>
           </Modal>
@@ -333,8 +413,52 @@ const Branches = () => {
               <TextField label="Branch Picture" name="branchPicture" value={currentBranch.branchPicture} onChange={handleEditInputChange} fullWidth margin="normal" />
               <TextField label="Open Time" name="openTime" value={currentBranch.openTime} onChange={handleEditInputChange} fullWidth margin="normal" />
               <TextField label="Close Time" name="closeTime" value={currentBranch.closeTime} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Open Day" name="openDay" value={currentBranch.openDay} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Status" name="status" value={currentBranch.status} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Weekday Price" name="weekdayPrice" value={currentBranch.weekdayPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <TextField label="Weekend Price" name="weekendPrice" value={currentBranch.weekendPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
+              <Box mt={2} mb={2}>
+                <Typography variant="subtitle1">Open Day</Typography>
+                <Box display="flex" justifyContent="space-between" mt={1}>
+                  <Select
+                    label="Day 1"
+                    name="day1"
+                    value={currentBranch.openDay.day1}
+                    onChange={handleEditSelectChange}
+                    fullWidth
+                  >
+                    {daysOfWeek.map(day => (
+                      <MenuItem key={day} value={day}>
+                        {day}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <Select
+                    label="Day 2"
+                    name="day2"
+                    value={currentBranch.openDay.day2}
+                    onChange={handleEditSelectChange}
+                    fullWidth
+                  >
+                    {daysOfWeek.map(day => (
+                      <MenuItem key={day} value={day}>
+                        {day}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+              </Box>
+              <Box mt={2} mb={2}>
+                <Typography variant="subtitle1">Status</Typography>
+                <Select
+                  label="Status"
+                  name="status"
+                  value={currentBranch.status}
+                  onChange={handleEditInputChange}
+                  fullWidth
+                >
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
+                </Select>
+              </Box>
               <Button variant="contained" color="primary" onClick={handleUpdateBranch} fullWidth>Save</Button>
             </Box>
           </Modal>
@@ -345,3 +469,4 @@ const Branches = () => {
 };
 
 export default Branches;
+
