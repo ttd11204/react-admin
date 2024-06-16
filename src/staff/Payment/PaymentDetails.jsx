@@ -26,7 +26,7 @@ const steps = ['Payment Details', 'Payment Confirmation'];
 
 const PaymentDetail = () => {
   const location = useLocation();
-  const { branchId, timeSlot, price } = location.state;
+  const { bookingRequests, totalPrice } = location.state || {};
   const [activeStep, setActiveStep] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [email, setEmail] = useState('');
@@ -42,6 +42,7 @@ const PaymentDetail = () => {
     }
 
     try {
+      console.log('totalPrice:', totalPrice);
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
@@ -104,7 +105,7 @@ const PaymentDetail = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const totalPrice = price - discount;
+  
 
   const getStepContent = (step) => {
     switch (step) {
@@ -168,13 +169,13 @@ const PaymentDetail = () => {
                   Bill
                 </Typography>
                 <Typography variant="h6" color="black">
-                  <strong>Branch ID:</strong> {branchId}
+                  <strong>Branch ID:</strong> {}
                 </Typography>
                 <Typography variant="h6" color="black">
-                  <strong>Time Slot:</strong> {timeSlot}
+                  <strong>Time Slot:</strong> {}
                 </Typography>
                 <Typography variant="h6" color="black">
-                  <strong>Price:</strong> {price} USD
+                  <strong>Price:</strong> {} USD
                 </Typography>
                 <Typography variant="h6" color="black">
                   <strong>Total Price:</strong> {totalPrice} USD
