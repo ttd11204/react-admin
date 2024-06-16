@@ -252,9 +252,10 @@ const ReserveSlot = () => {
       return {
         slotDate: day.format('YYYY-MM-DD'),
         timeSlot: {
+          
           slotStartTime: `${slotStartTime}:00`,
           slotEndTime: `${slotEndTime}:00`,
-        },
+          },
         price: parseFloat(price),
       };
     });

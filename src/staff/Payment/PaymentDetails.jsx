@@ -6,6 +6,7 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import { fetchUserDetailByEmail, fetchUserDetail } from '../../api/userApi';
 import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
+import { reserveSlots } from '../../api/bookingApi';
 
 const theme = createTheme({
   components: {
@@ -33,7 +34,7 @@ const PaymentDetail = () => {
     return dateA - dateB;
   }) : [];
   const [activeStep, setActiveStep] = useState(0);
-  const [discount, setDiscount] = useState(0);
+  
   const [email, setEmail] = useState('');
   const [userExists, setUserExists] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
@@ -47,7 +48,7 @@ const PaymentDetail = () => {
     }
 
     try {
-      console.log('totalPrice:', bookingRequests);
+     
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
@@ -55,6 +56,7 @@ const PaymentDetail = () => {
         if (detailedUserInfo) {
           setUserExists(true);
           setUserInfo({
+            userId: user.id,
             userName: user.userName,
             email: user.email,
             phoneNumber: user.phoneNumber,
@@ -63,6 +65,7 @@ const PaymentDetail = () => {
             address: detailedUserInfo.address,
           });
           setErrorMessage('');
+          
         } else {
           setUserExists(false);
           setUserInfo(null);
@@ -79,6 +82,11 @@ const PaymentDetail = () => {
     }
   };
 
+
+  
+
+
+
   const handleNext = async () => {
     if (activeStep === 0 && !userExists) {
       setErrorMessage('Please enter a valid email and check user existence.');
@@ -88,7 +96,26 @@ const PaymentDetail = () => {
     if (activeStep === 0) {
       setIsLoading(true); // Show loading page
       try {
-        const bookingId = "6CDvgCfOT";
+        
+
+        const bookingForm = bookingRequests.map((request) => {
+          
+
+          return {
+            courtId: 'C001', 
+            branchId: branchId, 
+            slotDate: request.slotDate, 
+            timeSlot: {
+              slotStartTime: request.timeSlot.slotStartTime, 
+              slotEndTime: request.timeSlot.slotEndTime, },
+          };
+        });
+
+        // Log dữ liệu gửi lên để kiểm tra
+        console.log('Formatted Requests:', bookingForm);
+
+        const booking = await reserveSlots(userInfo.userId, bookingForm);
+        const bookingId = booking.bookingId;
         const tokenResponse = await generatePaymentToken(bookingId);
         const token = tokenResponse.token;
         const paymentResponse = await processPayment(token);

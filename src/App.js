@@ -25,6 +25,7 @@ import "react-toastify/dist/ReactToastify.css";
 import StaffLayout from "./staff/StaffLayout";
 import ReserveSlot from "./staff/calendar/Byday";
 import PaymentDetail from "./staff/Payment/PaymentDetails";
+import PaymentConfirmed from "./staff/Payment/PaymentConfirmation";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -76,6 +77,7 @@ function App() {
             <Route path="ReserveSlot" element={<ReserveSlot />} />
             <Route path="PaymentDetail" element={<PaymentDetail />} />
             <Route path="ReviewForm" element={<ReviewForm />} />
+            <Route path="confirm" element={< PaymentConfirmed/>} />
           </Route>
         </Routes>
       </ThemeProvider>
