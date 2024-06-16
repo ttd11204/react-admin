@@ -22,7 +22,7 @@ const dayToNumber = {
   "Friday": 5,
   "Saturday": 6,
   "Sunday": 7
-};
+}; 
 
 //trả về mảng 2 cái ngày bắt đầu và kết thúc dạng số
 const parseOpenDay = (openDay) => {
@@ -194,15 +194,28 @@ const ReserveSlot = () => {
   //xử lý lúc click vào slot
   const handleSlotClick = (slot, day, price) => {
     const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
-    if (selectedSlots.includes(slotId)) {
-      setSelectedSlots(selectedSlots.filter(id => id !== slotId));
-    } else if (selectedSlots.length < 3) {
-      setSelectedSlots([...selectedSlots, slotId]);
+    
+    // Tìm tất cả các slot cùng thời gian đã được chọn
+    const sameTimeSlots = selectedSlots.filter(selectedSlot => selectedSlot.slotId.startsWith(`${day.format('YYYY-MM-DD')}_${slot}`));
+  
+    // Nếu slot đã chọn tồn tại và đã chọn đủ 2 slot cùng thời gian, hủy chọn slot đầu tiên
+    if (sameTimeSlots.length >= 2) {
+      const firstSlotId = sameTimeSlots[0].slotId;
+      setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== firstSlotId));
     } else {
-      alert("You can select up to 3 slots only");
+      // Nếu tổng số slot đã chọn nhỏ hơn 3, thêm slot mới
+      if (selectedSlots.length < 3) {
+        setSelectedSlots([...selectedSlots, { slotId, slot, day, price }]);
+      } else {
+        alert("You can select up to 3 slots only");
+      }
     }
   };
-
+  
+  const handleRemoveSlot = (slotId) => {
+    setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== slotId));
+  };
+  
   // xử lý nút sáng chiều
   const handleToggleMorning = () => {
     setShowAfternoon(false);
@@ -231,38 +244,31 @@ const ReserveSlot = () => {
       alert("Please select a branch first");
       return;
     }
-
-    const bookingRequests = selectedSlots.map(slotId => {
-      const [slotDate, timeSlot, price] = slotId.split('_');
+  
+    const bookingRequests = selectedSlots.map((slot) => {
+      const { day, slot: timeSlot, price } = slot;
       const [slotStartTime, slotEndTime] = timeSlot.split(' - ');
-
+  
       return {
-
-        
-        slotDate,
+        slotDate: day.format('YYYY-MM-DD'),
         timeSlot: {
           slotStartTime: `${slotStartTime}:00`,
           slotEndTime: `${slotEndTime}:00`,
-
         },
-        price: parseFloat(price)
+        price: parseFloat(price),
       };
-
-
-
     });
-
-
-
+  
     navigate("/staff/PaymentDetail", {
       state: {
         branchId: selectedBranch,
         bookingRequests,
-        totalPrice: bookingRequests.reduce((totalprice, object) => totalprice + parseFloat(object.price), 0)
-      }
+        totalPrice: bookingRequests.reduce((totalprice, object) => totalprice + parseFloat(object.price), 0),
+      },
     });
-
   };
+  
+  
 
 
   const days = weekDays;
@@ -335,8 +341,8 @@ const ReserveSlot = () => {
       </Box>
 
       {days.map((day, dayIndex) => (
-        <Grid container spacing={2} key={dayIndex} alignItems="center">
-          <Grid item xs={1}>
+        <Grid container spacing={2} key={dayIndex} alignItems="center" >
+          <Grid item xs={1} padding= "8px">
             <Box
               sx={{
                 backgroundColor: "#0D61F2",
@@ -348,7 +354,8 @@ const ReserveSlot = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                height: '100%'
+                height: '100%',
+                
               }}
             >
               <Typography variant="body2" component="div">
@@ -360,56 +367,101 @@ const ReserveSlot = () => {
             </Box>
           </Grid>
 
-          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
-            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Friday for weekdays, Saturday to Sunday for weekends
-            const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
-            const isSelected = selectedSlots.includes(slotId);
+          { (showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
+  const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Friday for weekdays, Saturday to Sunday for weekends
+  const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
+  const isSelected = selectedSlots.some(selectedSlot => selectedSlot.slotId === slotId);
+  const slotCount = selectedSlots.filter(selectedSlot => selectedSlot.slotId === slotId).length;
 
-            // Monday to Thursday for weekdays, Saturday to Sunday for weekends
-
-            return (
-              <Grid item xs key={slotIndex}>
-                <Button
-                  onClick={() => handleSlotClick(slot, day, price)}
-                  sx={{
-                    backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
-                    color: isSelected ? "#FFFFFF" : "#0D1B34",
-                    p: 2,
-                    borderRadius: 2,
-                    width: "100%",
-                    textTransform: "none",
-                    border: isSelected ? '2px solid #0D61F2' : '1px solid #90CAF9',
-                    textAlign: 'center',
-                    marginBottom: '16px',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center'
-                  }}
-                  m="10px"
-                  disabled={day.isBefore(currentDate, 'day')}
-                >
-                  <Box>
-                    <Typography
+  return (
+    <Grid item xs key={slotIndex}>
+      <Button
+        onClick={() => handleSlotClick(slot, day, price)}
+        sx={{
+          backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
+          color: isSelected ? "#FFFFFF" : "#0D1B34",
+          p: 2,
+          borderRadius: 2,
+          width: "100%",
+          textTransform: "none",
+          border: isSelected ? '2px solid #0D61F2' : '1px solid #90CAF9',
+          textAlign: 'center',
+          marginBottom: '16px',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          position: 'relative'
+        }}
+        m="10px"
+        disabled={day.isBefore(currentDate, 'day')}
+      >
+        <Box>
+          <Typography
+            sx={{
+              fontWeight: 'bold',
+              color: isSelected ? "#FFFFFF" : "#0D1B34"
+            }}
+          >
+            {slot}
+          </Typography>
+          <Typography
+            sx={{
+              color: isSelected ? "#FFFFFF" : "#0D1B34"
+            }}
+          >
+            {price}k
+          </Typography>
+          { isSelected &&  (
+                    <IconButton
+                    onClick={(e) => { e.stopPropagation(); handleRemoveSlot(slotId); }}
                       sx={{
-                        fontWeight: 'bold',
-                        color: isSelected ? "#FFFFFF" : "#0D1B34"
+                        position: 'absolute',
+                        top: 5,
+                        left: 5,
+                        backgroundColor: '#FFFFFF',
+                        color: '#1976d2',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
                       }}
                     >
-                      {slot}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        color: isSelected ? "#FFFFFF" : "#0D1B34"
-                      }}
-                    >
-                      {price}k
-                    </Typography>
-                  </Box>
-                </Button>
-              </Grid>
-            );
-          })}
+                      -
+                    </IconButton>
+                  )}
+          {isSelected && (
+            
+            <Typography
+              sx={{
+                position: 'absolute',
+                top: 5,
+                right: 5,
+                backgroundColor: '#FFFFFF',
+                color: '#1976d2',
+                borderRadius: '50%',
+                width: 20,
+                height: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}
+             >
+              {slotCount}
+            </Typography>
+            
+          )}
+        </Box>
+      </Button>
+    </Grid>
+  );
+})}
         </Grid>
       ))}
       <>{selectedBranch && (
