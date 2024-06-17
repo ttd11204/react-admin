@@ -19,19 +19,21 @@ import Users from "./scenes/users";
 import ReviewForm from "./scenes/form/ReviewForm";
 import UserDetails from "./scenes/users/UserDetails";
 import Login from "./scenes/login";
-import Layout from "./scenes/Layout"; 
+import Layout from "./scenes/Layout";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StaffLayout from "./staff/StaffLayout";
 import ReserveSlot from "./staff/calendar/Byday";
 import PaymentDetail from "./staff/Payment/PaymentDetails";
+import {PaymentConfirmed} from "./staff/Payment/PaymentConfirmation";
+import { PaymentRejected } from "./staff/Payment/PaymentConfirmation";
 
 function App() {
   const [theme, colorMode] = useMode();
 
-  const ProtectedRoute = ({ children, role }) => {
+  const ProtectedRoute = ({ children, roles }) => {
     const userRole = localStorage.getItem("userRole");
-    if (!userRole || userRole !== role) {
+    if (!userRole || !roles.includes(userRole)) {
       return <Navigate to="/login" />;
     }
     return children;
@@ -41,12 +43,12 @@ function App() {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <ToastContainer /> 
+        <ToastContainer />
         <Routes>
           <Route path="/login" element={<Login />} />
 
           {/* Routes cho admin */}
-          <Route path="/" element={<ProtectedRoute role="Admin"><Layout /></ProtectedRoute>}>
+          <Route path="/" element={<ProtectedRoute roles={["Admin"]}><Layout /></ProtectedRoute>}>
             <Route index element={<Users />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="Users" element={<Users />} />
@@ -66,15 +68,18 @@ function App() {
           </Route>
 
           {/* Routes cho staff */}
-          <Route path="/staff/*" element={<ProtectedRoute role="Staff"><StaffLayout /></ProtectedRoute>} >
+          <Route path="/staff/*" element={<ProtectedRoute roles={["Staff"]}><StaffLayout /></ProtectedRoute>}>
+            <Route index element={<Users />} />
             <Route path="Users" element={<Users />} />
+            <Route path="Users/:id" element={<UserDetails />} />
             <Route path="Bookings" element={<Bookings />} />
             <Route path="Payments" element={<Payments />} />
             <Route path="Reviews" element={<Review />} />
             <Route path="ReserveSlot" element={<ReserveSlot />} />
             <Route path="PaymentDetail" element={<PaymentDetail />} />
             <Route path="ReviewForm" element={<ReviewForm />} />
-            {/* Thêm các tuyến đường khác cho staff tại đây */}
+            <Route path="confirm" element={< PaymentConfirmed/>} />
+            <Route path="reject" element={<PaymentRejected />} />
           </Route>
         </Routes>
       </ThemeProvider>

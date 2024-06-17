@@ -90,7 +90,7 @@ export const updateUserDetail = async (userDetailId, userDetails) => {
 
 export const fetchUserDetail = async (userId) => {
   try {
-    const response = await axios.get(`${url}/Users/${userId}`);
+    const response = await axios.get(`${url}/UserDetails/${userId}`);
     return response.data;
   } catch (error) {
     throw new Error(`Failed to fetch user details: ${error.message}`);

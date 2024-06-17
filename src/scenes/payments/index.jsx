@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Button, IconButton, InputBase } from '@mui/material';
+import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from "../../theme";
 import Header from "../../components/Header";
-import { fetchPayments } from '../../api/paymentApi';
+import { fetchPayments, deletePayment, fetchPaymentById } from '../../api/paymentApi'; // Updated import
 import SearchIcon from '@mui/icons-material/Search';
+import DeleteIcon from '@mui/icons-material/Delete'; // Import Delete icon
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -25,6 +26,10 @@ const Payments = () => {
   const [pageSize, setPageSize] = useState(sizeQuery);
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
+  const [searchValue, setSearchValue] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+
+  const userRole = localStorage.getItem("userRole");
 
   useEffect(() => {
     const getPaymentsData = async () => {
@@ -33,11 +38,7 @@ const Payments = () => {
         console.log('Fetched payments data:', data); // Log fetched data
 
         if (data.items && Array.isArray(data.items)) {
-          const numberedData = data.items.map((item, index) => ({
-            ...item,
-            rowNumber: index + 1 + page * pageSize
-          }));
-          setPaymentsData(numberedData);
+          setPaymentsData(data.items);
           setRowCount(data.totalCount);
         } else {
           throw new Error('Invalid data structure');
@@ -53,7 +54,11 @@ const Payments = () => {
     console.log('Page change:', event.selected); // Log new page index
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Payments?pageNumber=${newPage + 1}&pageSize=${pageSize}`); // Update URL
+    if (userRole === 'Admin') {
+      navigate(`/Payments?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Payments?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    }
   };
 
   const handlePageSizeChange = (event) => {
@@ -61,11 +66,59 @@ const Payments = () => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0); // Reset to first page when pageSize changes
-    navigate(`/Payments?pageNumber=1&pageSize=${newSize}`); // Update URL
+    if (userRole === 'Admin') {
+      navigate(`/Payments?pageNumber=1&pageSize=${newSize}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Payments?pageNumber=1&pageSize=${newSize}`);
+    }
   };
 
-  const handleEdit = (id) => {
-    console.log(`Edit payment with id: ${id}`);
+  const handleDelete = async (id) => {
+    try {
+      await deletePayment(id); // Call deletePayment function
+      setPaymentsData(paymentsData.filter(payment => payment.paymentId !== id)); // Update state to remove deleted payment
+    } catch (err) {
+      setError(`Failed to delete payment: ${err.message}`);
+    }
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchValue(event.target.value);
+  };
+
+  const handleSearch = async () => {
+    if (searchValue.trim() === '') {
+      setSearchResult(null);
+      const getPaymentsData = async () => {
+        try {
+          const data = await fetchPayments(page + 1, pageSize); // Convert page index to 1-based
+          console.log('Fetched payments data:', data); // Log fetched data
+
+          if (data.items && Array.isArray(data.items)) {
+            setPaymentsData(data.items);
+            setRowCount(data.totalCount);
+          } else {
+            throw new Error('Invalid data structure');
+          }
+        } catch (err) {
+          setError(`Failed to fetch payments data: ${err.message}`);
+        }
+      };
+      getPaymentsData();
+    } else {
+      try {
+        const result = await fetchPaymentById(searchValue);
+        setSearchResult(result);
+      } catch (err) {
+        setError(`Failed to fetch payment by ID: ${err.message}`);
+      }
+    }
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -77,8 +130,14 @@ const Payments = () => {
         <Box m="40px 0 0 0" height="75vh">
           <Box display="flex" justifyContent="flex-end" mb={2}>
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
-              <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
-              <IconButton type="button" sx={{ p: 1 }}>
+              <InputBase
+                sx={{ ml: 2, flex: 1 }}
+                placeholder="Search by Payment ID"
+                value={searchValue}
+                onChange={handleSearchChange}
+                onKeyPress={handleKeyPress} // Add onKeyPress event
+              />
+              <IconButton type="button" sx={{ p: 1 }} onClick={handleSearch}>
                 <SearchIcon />
               </IconButton>
             </Box>
@@ -87,7 +146,6 @@ const Payments = () => {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
-                  <TableCell>Row Number</TableCell>
                   <TableCell>Payment ID</TableCell>
                   <TableCell>Booking ID</TableCell>
                   <TableCell>Payment Amount</TableCell>
@@ -100,10 +158,36 @@ const Payments = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paymentsData.length > 0 ? (
+                {searchResult ? (
+                  <TableRow key={searchResult.paymentId}>
+                    <TableCell>{searchResult.paymentId}</TableCell>
+                    <TableCell>{searchResult.bookingId}</TableCell>
+                    <TableCell>{searchResult.paymentAmount}</TableCell>
+                    <TableCell>{new Date(searchResult.paymentDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{searchResult.paymentMessage}</TableCell>
+                    <TableCell>{searchResult.paymentStatus}</TableCell>
+                    <TableCell>{searchResult.paymentSignature}</TableCell>
+                    <TableCell>{searchResult.booking}</TableCell>
+                    <TableCell>
+                      <Box display="flex" justifyContent="center" alignItems="center">
+                        <IconButton
+                          onClick={() => handleDelete(searchResult.paymentId)}
+                          color="secondary"
+                          size="small"
+                          style={{
+                            marginLeft: 8,
+                            backgroundColor: colors.redAccent[400],
+                            color: colors.primary[900],
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ) : paymentsData.length > 0 ? (
                   paymentsData.map((row) => (
                     <TableRow key={row.paymentId}>
-                      <TableCell>{row.rowNumber}</TableCell>
                       <TableCell>{row.paymentId}</TableCell>
                       <TableCell>{row.bookingId}</TableCell>
                       <TableCell>{row.paymentAmount}</TableCell>
@@ -114,25 +198,25 @@ const Payments = () => {
                       <TableCell>{row.booking}</TableCell>
                       <TableCell>
                         <Box display="flex" justifyContent="center" alignItems="center">
-                          <Button 
-                            onClick={() => handleEdit(row.paymentId)} 
-                            variant="contained" 
-                            size="small" 
-                            style={{ 
+                          <IconButton
+                            onClick={() => handleDelete(row.paymentId)}
+                            color="secondary"
+                            size="small"
+                            style={{
                               marginLeft: 8,
-                              backgroundColor: colors.greenAccent[400],
-                              color: colors.primary[900]
+                              backgroundColor: colors.redAccent[400],
+                              color: colors.primary[900],
                             }}
                           >
-                            Edit
-                          </Button>
+                            <DeleteIcon />
+                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">
+                    <TableCell colSpan={9} align="center">
                       No data available
                     </TableCell>
                   </TableRow>

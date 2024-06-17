@@ -2,6 +2,8 @@ import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
 
+
+//fetch bookings
 export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
   try {
     const response = await axios.get(`${url}/Bookings`, {
@@ -41,6 +43,7 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10) => {
   }
 };
 
+//fetch users
 export const fetchUsers = async () => {
   try {
     const response = await axios.get(`${url}/Users`);
@@ -51,6 +54,7 @@ export const fetchUsers = async () => {
   }
 };
 
+//fetch courts
 export const fetchCourts = async () => {
   try {
     const response = await axios.get(`${url}/Courts`);
@@ -61,6 +65,7 @@ export const fetchCourts = async () => {
   }
 };
 
+//delete (set false)
 export const deleteBooking = async (id) => {
   try {
     const response = await axios.delete(`${url}/Bookings/${id}`);
@@ -70,6 +75,8 @@ export const deleteBooking = async (id) => {
     throw error;
   }
 };
+
+//booking by day
 export const reserveSlots = async (userId, bookings) => {
   try {
     const response = await axios.post(`https://courtcaller.azurewebsites.net/api/Bookings/reserve-slot?userId=${userId}`, bookings);
@@ -80,4 +87,14 @@ export const reserveSlots = async (userId, bookings) => {
   }
 };
 
+//search
+export const fetchBookingById = async (bookingId) => {
+  try {
+    const response = await axios.get(`${url}/Bookings/${bookingId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching booking by ID:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
 

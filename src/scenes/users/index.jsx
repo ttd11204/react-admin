@@ -6,6 +6,7 @@ import { tokens } from '../../theme';
 import { fetchTeamData, createUser, updateUserBanStatus } from '../../api/userApi';
 import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
+import { GrView } from "react-icons/gr"; // Import GrView icon
 import './style.css';
 
 const useQuery = () => {
@@ -29,6 +30,8 @@ const Users = () => {
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(query.get('search') || "");
+
+  const userRole = localStorage.getItem("userRole");
 
   useEffect(() => {
     const getTeamData = async () => {
@@ -58,7 +61,11 @@ const Users = () => {
     console.log('Page change:', event.selected);
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    if (userRole === 'Admin') {
+      navigate(`/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    }
   };
 
   const handlePageSizeChange = (event) => {
@@ -66,30 +73,20 @@ const Users = () => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
-    navigate(`/Users?pageNumber=1&pageSize=${newSize}`);
-  };
-
-  const handleBanToggle = async (id, currentStatus) => {
-    try {
-      const updatedStatus = !currentStatus;
-      await updateUserBanStatus(id, updatedStatus);
-      setTeamData((prevData) =>
-        prevData.map((user) =>
-          user.id === id ? { ...user, banned: updatedStatus } : user
-        )
-      );
-    } catch (error) {
-      console.error('Failed to update user ban status:', error);
+    if (userRole === 'Admin') {
+      navigate(`/Users?pageNumber=1&pageSize=${newSize}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Users?pageNumber=1&pageSize=${newSize}`);
     }
-  };
-
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
   };
 
   const handleSearchSubmit = async () => {
     setPage(0);
-    navigate(`/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
+    if (userRole === 'Admin') {
+      navigate(`/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
+    }
     try {
       const data = await fetchTeamData(1, pageSize, searchQuery.trim());
       console.log('Fetched team data:', data);
@@ -110,12 +107,34 @@ const Users = () => {
     }
   };
 
+  const handleBanToggle = async (id, currentStatus) => {
+    try {
+      const updatedStatus = !currentStatus;
+      await updateUserBanStatus(id, updatedStatus);
+      setTeamData((prevData) =>
+        prevData.map((user) =>
+          user.id === id ? { ...user, banned: updatedStatus } : user
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update user ban status:', error);
+    }
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
   const handleCreateNew = () => {
     setOpenCreateModal(true);
   };
 
   const handleViewUser = (id) => {
-    navigate(`/Users/${id}`);
+    if (userRole === 'Admin') {
+      navigate(`/Users/${id}`);
+    } else if (userRole === 'Staff') {
+      navigate(`/staff/Users/${id}`);
+    }
   };
 
   const handleCreateUserChange = (e) => {
@@ -167,17 +186,19 @@ const Users = () => {
                 <SearchIcon />
               </IconButton>
             </Box>
-            <Button
-              variant="contained"
-              style={{
-                marginLeft: 8,
-                backgroundColor: colors.greenAccent[400],
-                color: colors.primary[900],
-              }}
-              onClick={handleCreateNew}
-            >
-              Create New
-            </Button>
+            {userRole === 'Admin' && (
+              <Button
+                variant="contained"
+                style={{
+                  marginLeft: 8,
+                  backgroundColor: colors.greenAccent[400],
+                  color: colors.primary[900],
+                }}
+                onClick={handleCreateNew}
+              >
+                Create New
+              </Button>
+            )}
           </Box>
           <TableContainer component={Paper}>
             <Table>
@@ -212,18 +233,9 @@ const Users = () => {
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
                       <TableCell align="center">
-                        <Button
-                          onClick={() => handleViewUser(row.id)}
-                          variant="contained"
-                          size="small"
-                          style={{
-                            marginLeft: 8,
-                            backgroundColor: colors.greenAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          View
-                        </Button>
+                        <IconButton onClick={() => handleViewUser(row.id)} style={{ color: colors.greenAccent[400] }}>
+                          <GrView />
+                        </IconButton>
                       </TableCell>
                       <TableCell align="center">
                         <Button
