@@ -102,7 +102,7 @@ const PaymentDetail = () => {
           
 
           return {
-            courtId: 'C001', 
+            courtId: null, 
             branchId: branchId, 
             slotDate: request.slotDate, 
             timeSlot: {
