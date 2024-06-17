@@ -32,6 +32,7 @@ const Branches = () => {
     openTime: "",
     closeTime: "",
     openDay: { day1: "", day2: "" },
+    status: "Inactive",
     weekdayPrice: "",
     weekendPrice: ""
   });
@@ -45,6 +46,7 @@ const Branches = () => {
     openTime: "",
     closeTime: "",
     openDay: { day1: "", day2: "" },
+    status: "",
     weekdayPrice: "",
     weekendPrice: ""
   });
@@ -101,7 +103,8 @@ const Branches = () => {
     try {
       const formattedBranch = {
         ...newBranch,
-        openDay: `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`
+        openDay: `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`,
+        status: "Inactive" // Ensure status is set to Inactive
       };
       await createBranch(formattedBranch);
       setOpenCreateModal(false);
@@ -263,7 +266,7 @@ const Branches = () => {
                       <TableCell>{branch.openTime}</TableCell>
                       <TableCell>{branch.closeTime}</TableCell>
                       <TableCell>{branch.openDay}</TableCell>
-                      <TableCell>{branch.status ? 'Active' : 'Inactive'}</TableCell>
+                      <TableCell>{branch.status}</TableCell>
                       <TableCell align="center">
                         <Box display="flex" justifyContent="center" alignItems="center">
                           <Button
@@ -441,6 +444,19 @@ const Branches = () => {
                       </Select>
                     </Box>
                   </Box>
+                  <Box mt={2} mb={2}>
+                    <Typography variant="subtitle1">Status</Typography>
+                    <Select
+                      label="Status"
+                      name="status"
+                      value={currentBranch.status}
+                      onChange={handleEditInputChange}
+                      fullWidth
+                    >
+                      <MenuItem value="Active">Active</MenuItem>
+                      <MenuItem value="Inactive">Inactive</MenuItem>
+                    </Select>
+                  </Box>
                 </Box>
               </Box>
               <Button variant="contained" color="primary" onClick={handleUpdateBranch} fullWidth>Save</Button>
@@ -453,4 +469,3 @@ const Branches = () => {
 };
 
 export default Branches;
-
