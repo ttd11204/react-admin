@@ -31,3 +31,12 @@ export const updateTimeSlotById = async (id, updatedSlot) => {
     throw error;
   }
 };
+export const fetchTimeSlotByBookingId = async (bookingId) => {
+  try {
+    const response = await axios.get(`${url}/TimeSlots/bookingId/${bookingId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching time slot by booking ID:', error);
+    throw error
+  }
+};
