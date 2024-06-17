@@ -32,7 +32,6 @@ const Branches = () => {
     openTime: "",
     closeTime: "",
     openDay: { day1: "", day2: "" },
-    status: "",
     weekdayPrice: "",
     weekendPrice: ""
   });
@@ -46,7 +45,6 @@ const Branches = () => {
     openTime: "",
     closeTime: "",
     openDay: { day1: "", day2: "" },
-    status: "",
     weekdayPrice: "",
     weekendPrice: ""
   });
@@ -326,7 +324,7 @@ const Branches = () => {
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: 400,
+                width: '80%',
                 bgcolor: 'background.paper',
                 border: '2px solid #000',
                 boxShadow: 24,
@@ -334,58 +332,51 @@ const Branches = () => {
               }}
             >
               <Typography variant="h6" mb="20px">Create New Branch</Typography>
-              <TextField label="Branch Address" name="branchAddress" value={newBranch.branchAddress} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Branch Name" name="branchName" value={newBranch.branchName} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Branch Phone" name="branchPhone" value={newBranch.branchPhone} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Description" name="description" value={newBranch.description} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Branch Picture" name="branchPicture" value={newBranch.branchPicture} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Close Time" name="closeTime" value={newBranch.closeTime} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Weekday Price" name="weekdayPrice" value={newBranch.weekdayPrice} onChange={handleInputChange} fullWidth margin="normal" />
-              <TextField label="Weekend Price" name="weekendPrice" value={newBranch.weekendPrice} onChange={handleInputChange} fullWidth margin="normal" />
-              <Box mt={2} mb={2}>
-                <Typography variant="subtitle1">Open Day</Typography>
-                <Box display="flex" justifyContent="space-between" mt={1}>
-                  <Select
-                    label="Day 1"
-                    name="day1"
-                    value={newBranch.openDay.day1}
-                    onChange={handleSelectChange}
-                    fullWidth
-                  >
-                    {daysOfWeek.map(day => (
-                      <MenuItem key={day} value={day}>
-                        {day}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <Select
-                    label="Day 2"
-                    name="day2"
-                    value={newBranch.openDay.day2}
-                    onChange={handleSelectChange}
-                    fullWidth
-                  >
-                    {daysOfWeek.map(day => (
-                      <MenuItem key={day} value={day}>
-                        {day}
-                      </MenuItem>
-                    ))}
-                  </Select>
+              <Box display="flex" justifyContent="space-between">
+                <Box width="48%">
+                  <TextField label="Branch Address" name="branchAddress" value={newBranch.branchAddress} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField label="Branch Name" name="branchName" value={newBranch.branchName} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField label="Branch Phone" name="branchPhone" value={newBranch.branchPhone} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField label="Description" name="description" value={newBranch.description} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField label="Branch Picture" name="branchPicture" value={newBranch.branchPicture} onChange={handleInputChange} fullWidth margin="normal" />
                 </Box>
-              </Box>
-              <Box mt={2} mb={2}>
-                <Typography variant="subtitle1">Status</Typography>
-                <Select
-                  label="Status"
-                  name="status"
-                  value={newBranch.status}
-                  onChange={handleInputChange}
-                  fullWidth
-                >
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Inactive">Inactive</MenuItem>
-                </Select>
+                <Box width="48%">
+                  <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField label="Close Time" name="closeTime" value={newBranch.closeTime} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField label="Weekday Price" name="weekdayPrice" value={newBranch.weekdayPrice} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField label="Weekend Price" name="weekendPrice" value={newBranch.weekendPrice} onChange={handleInputChange} fullWidth margin="normal" />
+                  <Box mt={2} mb={2}>
+                    <Typography variant="subtitle1">Open Day</Typography>
+                    <Box display="flex" justifyContent="space-between" mt={1}>
+                      <Select
+                        label="Day 1"
+                        name="day1"
+                        value={newBranch.openDay.day1}
+                        onChange={handleSelectChange}
+                        fullWidth
+                      >
+                        {daysOfWeek.map(day => (
+                          <MenuItem key={day} value={day}>
+                            {day}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <Select
+                        label="Day 2"
+                        name="day2"
+                        value={newBranch.openDay.day2}
+                        onChange={handleSelectChange}
+                        fullWidth
+                      >
+                        {daysOfWeek.map(day => (
+                          <MenuItem key={day} value={day}>
+                            {day}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Box>
+                  </Box>
+                </Box>
               </Box>
               <Button variant="contained" color="primary" onClick={handleCreateNew} fullWidth>Create</Button>
             </Box>
@@ -398,7 +389,7 @@ const Branches = () => {
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: 400,
+                width: '80%',
                 bgcolor: 'background.paper',
                 border: '2px solid #000',
                 boxShadow: 24,
@@ -406,58 +397,51 @@ const Branches = () => {
               }}
             >
               <Typography variant="h6" mb="20px">Edit Branch</Typography>
-              <TextField label="Branch Address" name="branchAddress" value={currentBranch.branchAddress} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Branch Name" name="branchName" value={currentBranch.branchName} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Branch Phone" name="branchPhone" value={currentBranch.branchPhone} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Description" name="description" value={currentBranch.description} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Branch Picture" name="branchPicture" value={currentBranch.branchPicture} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Open Time" name="openTime" value={currentBranch.openTime} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Close Time" name="closeTime" value={currentBranch.closeTime} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Weekday Price" name="weekdayPrice" value={currentBranch.weekdayPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <TextField label="Weekend Price" name="weekendPrice" value={currentBranch.weekendPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
-              <Box mt={2} mb={2}>
-                <Typography variant="subtitle1">Open Day</Typography>
-                <Box display="flex" justifyContent="space-between" mt={1}>
-                  <Select
-                    label="Day 1"
-                    name="day1"
-                    value={currentBranch.openDay.day1}
-                    onChange={handleEditSelectChange}
-                    fullWidth
-                  >
-                    {daysOfWeek.map(day => (
-                      <MenuItem key={day} value={day}>
-                        {day}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <Select
-                    label="Day 2"
-                    name="day2"
-                    value={currentBranch.openDay.day2}
-                    onChange={handleEditSelectChange}
-                    fullWidth
-                  >
-                    {daysOfWeek.map(day => (
-                      <MenuItem key={day} value={day}>
-                        {day}
-                      </MenuItem>
-                    ))}
-                  </Select>
+              <Box display="flex" justifyContent="space-between">
+                <Box width="48%">
+                  <TextField label="Branch Address" name="branchAddress" value={currentBranch.branchAddress} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField label="Branch Name" name="branchName" value={currentBranch.branchName} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField label="Branch Phone" name="branchPhone" value={currentBranch.branchPhone} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField label="Description" name="description" value={currentBranch.description} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField label="Branch Picture" name="branchPicture" value={currentBranch.branchPicture} onChange={handleEditInputChange} fullWidth margin="normal" />
                 </Box>
-              </Box>
-              <Box mt={2} mb={2}>
-                <Typography variant="subtitle1">Status</Typography>
-                <Select
-                  label="Status"
-                  name="status"
-                  value={currentBranch.status}
-                  onChange={handleEditInputChange}
-                  fullWidth
-                >
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Inactive">Inactive</MenuItem>
-                </Select>
+                <Box width="48%">
+                  <TextField label="Open Time" name="openTime" value={currentBranch.openTime} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField label="Close Time" name="closeTime" value={currentBranch.closeTime} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField label="Weekday Price" name="weekdayPrice" value={currentBranch.weekdayPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField label="Weekend Price" name="weekendPrice" value={currentBranch.weekendPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <Box mt={2} mb={2}>
+                    <Typography variant="subtitle1">Open Day</Typography>
+                    <Box display="flex" justifyContent="space-between" mt={1}>
+                      <Select
+                        label="Day 1"
+                        name="day1"
+                        value={currentBranch.openDay.day1}
+                        onChange={handleEditSelectChange}
+                        fullWidth
+                      >
+                        {daysOfWeek.map(day => (
+                          <MenuItem key={day} value={day}>
+                            {day}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <Select
+                        label="Day 2"
+                        name="day2"
+                        value={currentBranch.openDay.day2}
+                        onChange={handleEditSelectChange}
+                        fullWidth
+                      >
+                        {daysOfWeek.map(day => (
+                          <MenuItem key={day} value={day}>
+                            {day}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Box>
+                  </Box>
+                </Box>
               </Box>
               <Button variant="contained" color="primary" onClick={handleUpdateBranch} fullWidth>Save</Button>
             </Box>
