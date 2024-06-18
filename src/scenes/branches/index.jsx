@@ -101,12 +101,15 @@ const Branches = () => {
 
   const handleCreateNew = async () => {
     try {
-      const formattedBranch = {
-        ...newBranch,
-        openDay: `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`,
-        status: "Inactive" // Ensure status is set to Inactive
-      };
-      await createBranch(formattedBranch);
+      const formData = new FormData();
+      Object.keys(newBranch).forEach(key => {
+        if (key === 'openDay') {
+          formData.append(key, `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`);
+        } else {
+          formData.append(key, newBranch[key]);
+        }
+      });
+      await createBranch(formData);
       setOpenCreateModal(false);
       const data = await fetchBranches(pageQuery, sizeQuery);
       setBranchesData(data.items);
@@ -118,11 +121,15 @@ const Branches = () => {
 
   const handleUpdateBranch = async () => {
     try {
-      const formattedBranch = {
-        ...currentBranch,
-        openDay: `${currentBranch.openDay.day1} to ${currentBranch.openDay.day2}`
-      };
-      await updateBranch(currentBranch.branchId, formattedBranch);
+      const formData = new FormData();
+      Object.keys(currentBranch).forEach(key => {
+        if (key === 'openDay') {
+          formData.append(key, `${currentBranch.openDay.day1} to ${currentBranch.openDay.day2}`);
+        } else {
+          formData.append(key, currentBranch[key]);
+        }
+      });
+      await updateBranch(currentBranch.branchId, formData);
       setOpenEditModal(false);
       const data = await fetchBranches(pageQuery, sizeQuery);
       setBranchesData(data.items);
@@ -172,6 +179,14 @@ const Branches = () => {
     }));
   };
 
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    setNewBranch(prevState => ({
+      ...prevState,
+      branchPicture: file
+    }));
+  };
+
   const handleSelectChange = (event) => {
     const { name, value } = event.target;
     setNewBranch(prevState => ({
@@ -188,6 +203,14 @@ const Branches = () => {
     setCurrentBranch(prevState => ({
       ...prevState,
       [name]: value
+    }));
+  };
+
+  const handleEditFileChange = (event) => {
+    const file = event.target.files[0];
+    setCurrentBranch(prevState => ({
+      ...prevState,
+      branchPicture: file
     }));
   };
 
@@ -341,7 +364,8 @@ const Branches = () => {
                   <TextField label="Branch Name" name="branchName" value={newBranch.branchName} onChange={handleInputChange} fullWidth margin="normal" />
                   <TextField label="Branch Phone" name="branchPhone" value={newBranch.branchPhone} onChange={handleInputChange} fullWidth margin="normal" />
                   <TextField label="Description" name="description" value={newBranch.description} onChange={handleInputChange} fullWidth margin="normal" />
-                  <TextField label="Branch Picture" name="branchPicture" value={newBranch.branchPicture} onChange={handleInputChange} fullWidth margin="normal" />
+                  <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
+                  <input type="file" onChange={handleFileChange} />
                 </Box>
                 <Box width="48%">
                   <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
@@ -381,7 +405,11 @@ const Branches = () => {
                   </Box>
                 </Box>
               </Box>
-              <Button variant="contained" color="primary" onClick={handleCreateNew} fullWidth>Create</Button>
+              <Box display="flex" justifyContent="flex-end" mt={2}>
+                <Button variant="contained" sx={{backgroundColor: colors.greenAccent[700], color: 'white'}} onClick={handleCreateNew}>
+                Create
+                </Button>
+              </Box>
             </Box>
           </Modal>
 
@@ -406,7 +434,8 @@ const Branches = () => {
                   <TextField label="Branch Name" name="branchName" value={currentBranch.branchName} onChange={handleEditInputChange} fullWidth margin="normal" />
                   <TextField label="Branch Phone" name="branchPhone" value={currentBranch.branchPhone} onChange={handleEditInputChange} fullWidth margin="normal" />
                   <TextField label="Description" name="description" value={currentBranch.description} onChange={handleEditInputChange} fullWidth margin="normal" />
-                  <TextField label="Branch Picture" name="branchPicture" value={currentBranch.branchPicture} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
+                  <input type="file" onChange={handleEditFileChange} />
                 </Box>
                 <Box width="48%">
                   <TextField label="Open Time" name="openTime" value={currentBranch.openTime} onChange={handleEditInputChange} fullWidth margin="normal" />
@@ -459,7 +488,9 @@ const Branches = () => {
                   </Box>
                 </Box>
               </Box>
-              <Button variant="contained" color="primary" onClick={handleUpdateBranch} fullWidth>Save</Button>
+              <Box display="flex" justifyContent="flex-end" mt={2}>
+              <Button sx={{backgroundColor: colors.greenAccent[700], color: 'white'}}  onClick={handleUpdateBranch} >Save</Button>
+                </Box>
             </Box>
           </Modal>
         </Box>
@@ -468,4 +499,4 @@ const Branches = () => {
   );
 };
 
-export default Branches;
+export default Branches
