@@ -110,7 +110,7 @@ export const fetchRoleByUserId = async (userId) => {
 export const updateUserRole = async (userId, role) => {
   try {
     console.log('Sending update request:', { userId, role }); 
-    const response = await axios.put(`${url}/Roles/${userId}`,role,
+    const response = await axios.put(`${url}/Roles/${userId}`,`"${role}"`,
       {
         headers: {
           'Content-Type': 'application/json'

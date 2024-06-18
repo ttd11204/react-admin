@@ -6,6 +6,9 @@ import { tokens } from '../../theme';
 import { fetchRoleByUserId, fetchUserDetail, updateUserDetail, updateUserRole } from '../../api/userApi';
 import Header from '../../components/Header';
 import './style.css';
+import {storageDb} from '../../firebase';
+import {getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import {v4} from 'uuid'
 
 const UserDetails = () => {
   const theme = useTheme();
@@ -16,6 +19,8 @@ const UserDetails = () => {
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState(null);
   const [role, setRole] = useState(null);
+  const [image, setImage] = useState(null);
+  const [imageRef, setImageRef] = useState(null);
 
   useEffect(() => {
     const getUserDetail = async () => {
@@ -44,19 +49,36 @@ const UserDetails = () => {
 
   const handleProfilePictureChange = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        handleFieldChange('profilePicture', e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    setImage(file)
+    
+    setImageRef(ref(storageDb, `UserImage/${v4()}`));
+    
+    
+      
   };
 
   const handleSave = async () => {
     try {
+
+      if(!role && user.role){
+      setRole(user.role)
+      }
+      //khúc này là save mới lưu ảnh lên storage
+      uploadBytes(imageRef, image).then((snapshot) => {
+        return getDownloadURL(imageRef);}).then((url) => {
+          setUser((prevUser) => ({
+            ...prevUser,
+            ProfilePicture: url,
+          }));
+        })
+    .catch((error) => {
+      console.error('Failed to get download URL:', error);
+    });
+
+
       await updateUserDetail(id, user);
       await updateUserRole(id, role);
+      
       setEditMode(false);
     } catch (err) {
       setError(`Failed to update user details: ${err.message}`);
@@ -64,6 +86,7 @@ const UserDetails = () => {
   };
 
   const handleEditToggle = () => {
+    if(!editMode) setRole(user.role || role)
     setEditMode((prevState) => !prevState);
   };
 
