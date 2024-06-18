@@ -21,6 +21,8 @@ const UserDetails = () => {
   const [role, setRole] = useState(null);
   const [image, setImage] = useState(null);
   const [imageRef, setImageRef] = useState(null);
+  //ảnh tạm trước khi bấm save 
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     const getUserDetail = async () => {
@@ -49,7 +51,7 @@ const UserDetails = () => {
 
   const handleProfilePictureChange = (event) => {
     const file = event.target.files[0];
-    if (file) {
+    if (file && file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg') {
      
         if (file.size > 5 * 1024 * 1024) { // Giới hạn 5MB
           console.error('File size exceeds 5MB');
@@ -57,6 +59,9 @@ const UserDetails = () => {
         }
         setImage(file);
         setImageRef(ref(storageDb, `UserImage/${v4()}`));
+        const previewImage1 = URL.createObjectURL(file);
+        setPreviewImage(previewImage1);
+        console.log( previewImage1);
       } else {
         console.error('File is not a PNG image');
       }
@@ -65,29 +70,30 @@ const UserDetails = () => {
 
   const handleSave = async () => {
     try {
-      // Kiểm tra nếu role chưa được cập nhật thì giữ nguyên giá trị cũ
+      
       if (!role && user.role) {
         setRole(user.role);
       }
 
-      // Nếu có ảnh mới được chọn thì tải ảnh lên và cập nhật URL
+      
       if (image && imageRef) {
         const snapshot = await uploadBytes(imageRef, image);
         console.log('Uploaded a file!', snapshot);
         const url = await getDownloadURL(imageRef);
 
-        // Cập nhật trạng thái user với URL của ảnh mới
+        
         setUser((prevUser) => ({
           ...prevUser,
           profilePicture: url,
         }));
 
-        // Tiếp tục cập nhật thông tin user với URL mới
         await updateUserDetail(id, { ...user, profilePicture: url, role });
       } else {
-        // Cập nhật thông tin user mà không có ảnh mới
+      
         await updateUserDetail(id, { ...user, role });
       }
+      URL.revokeObjectURL(previewImage);
+      setPreviewImage(null);
 
       await updateUserRole(id, role);
 
@@ -159,7 +165,7 @@ const UserDetails = () => {
             </Box>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={4} display="flex" justifyContent="center" alignItems="center">
-                <Avatar src={user.profilePicture} alt="Profile Picture" sx={{ width: 150, height: 150 }} />
+              <Avatar src={previewImage || user.profilePicture} alt="Profile Picture" sx={{ width: 150, height: 150 }} />
               </Grid>
               <Grid item xs={12} sm={8}>
                 <Box mb={2}>
