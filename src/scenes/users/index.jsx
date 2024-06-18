@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase, Modal, TextField } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchTeamData, createUser, updateUserBanStatus } from '../../api/userApi';
+import { fetchTeamData, createUser, updateUserBanStatus, fetchRoleByUserId } from '../../api/userApi';
 import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
 import { GrView } from "react-icons/gr"; // Import GrView icon
 import './style.css';
-import {fetchRoleByUserId} from '../../api/userApi';
+
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
 };
@@ -31,44 +31,36 @@ const Users = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(query.get('search') || "");
 
-  const userRole = localStorage.getItem("userRole");
+  const userRole = useMemo(() => localStorage.getItem("userRole"), []);
+
+  const getTeamData = useCallback(async (page, pageSize, searchQuery = "") => {
+    try {
+      const data = await fetchTeamData(page + 1, pageSize, searchQuery.trim());
+      if (data.items && Array.isArray(data.items)) {
+        const itemsWithRoles = await Promise.all(data.items.map(async (item, index) => {
+          const role = await fetchRoleByUserId(item.id); // Fetch role for each user
+          return {
+            ...item,
+            rowNumber: index + 1 + page * pageSize,
+            banned: item.lockoutEnabled === false,
+            role: role // Add the role to the item
+          };
+        }));
+        setTeamData(itemsWithRoles);
+        setRowCount(data.totalCount);
+      } else {
+        throw new Error('Invalid data structure');
+      }
+    } catch (err) {
+      setError(`Failed to fetch team data: ${err.message}`);
+    }
+  }, []);
 
   useEffect(() => {
-    const getTeamData = async () => {
-      try {
-        const data = await fetchTeamData(page + 1, pageSize);
-        console.log('Fetched team data:', data);
-    
-        if (data.items && Array.isArray(data.items)) {
-          const itemsWithRoles = await Promise.all(data.items.map(async (item, index) => {
-            const role = await fetchRoleByUserId(item.id); // Fetch role for each user
-            return {
-              ...item,
-              rowNumber: index + 1 + page * pageSize,
-              banned: item.lockoutEnabled === false,
-              role: role // Add the role to the item
-            };
-          }));
-    
-          setTeamData(itemsWithRoles);
-          setRowCount(data.totalCount);
-          console.log('Items with roles:', itemsWithRoles);
-        } else {
-          throw new Error('Invalid data structure');
-        }
-      } catch (err) {
-        setError(`Failed to fetch team data: ${err.message}`);
-      }
-    };
-    getTeamData();
-  }, [page, pageSize]);
+    getTeamData(page, pageSize, searchQuery);
+  }, [page, pageSize, searchQuery, getTeamData]);
 
-
-  
-
-
-  const handlePageClick = (event) => {
-    console.log('Page change:', event.selected);
+  const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
     if (userRole === 'Admin') {
@@ -76,10 +68,9 @@ const Users = () => {
     } else if (userRole === 'Staff') {
       navigate(`/staff/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
     }
-  };
+  }, [navigate, pageSize, userRole]);
 
-  const handlePageSizeChange = (event) => {
-    console.log('Page size change:', event.target.value);
+  const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
@@ -88,36 +79,19 @@ const Users = () => {
     } else if (userRole === 'Staff') {
       navigate(`/staff/Users?pageNumber=1&pageSize=${newSize}`);
     }
-  };
+  }, [navigate, userRole]);
 
-  const handleSearchSubmit = async () => {
+  const handleSearchSubmit = useCallback(async () => {
     setPage(0);
     if (userRole === 'Admin') {
       navigate(`/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
     } else if (userRole === 'Staff') {
       navigate(`/staff/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
     }
-    try {
-      const data = await fetchTeamData(1, pageSize, searchQuery.trim());
-      console.log('Fetched team data:', data);
+    getTeamData(0, pageSize, searchQuery);
+  }, [getTeamData, navigate, pageSize, searchQuery, userRole]);
 
-      if (data.items && Array.isArray(data.items)) {
-        const numberedData = data.items.map((item, index) => ({
-          ...item,
-          rowNumber: index + 1,
-          banned: item.lockoutEnabled === false
-        }));
-        setTeamData(numberedData);
-        setRowCount(data.totalCount);
-      } else {
-        throw new Error('Invalid data structure');
-      }
-    } catch (err) {
-      setError(`Failed to fetch team data: ${err.message}`);
-    }
-  };
-
-  const handleBanToggle = async (id, currentStatus) => {
+  const handleBanToggle = useCallback(async (id, currentStatus) => {
     try {
       const updatedStatus = !currentStatus;
       await updateUserBanStatus(id, updatedStatus);
@@ -129,52 +103,43 @@ const Users = () => {
     } catch (error) {
       console.error('Failed to update user ban status:', error);
     }
-  };
+  }, []);
 
-  const handleSearchChange = (event) => {
+  const handleSearchChange = useCallback((event) => {
     setSearchQuery(event.target.value);
-  };
+  }, []);
 
-  const handleCreateNew = () => {
+  const handleCreateNew = useCallback(() => {
     setOpenCreateModal(true);
-  };
+  }, []);
 
-  const handleViewUser = (id) => {
+  const handleViewUser = useCallback((id) => {
     if (userRole === 'Admin') {
       navigate(`/Users/${id}`);
     } else if (userRole === 'Staff') {
       navigate(`/staff/Users/${id}`);
     }
-  };
+  }, [navigate, userRole]);
 
-  const handleCreateUserChange = (e) => {
+  const handleCreateUserChange = useCallback((e) => {
     const { name, value } = e.target;
     setNewUser((prevState) => ({ ...prevState, [name]: value }));
-  };
+  }, []);
 
-  const handleCreateUserSubmit = async () => {
+  const handleCreateUserSubmit = useCallback(async () => {
     try {
       await createUser(newUser);
       setOpenCreateModal(false);
       // Optionally, refetch the data to update the UI
-      const data = await fetchTeamData(page + 1, pageSize);
-      if (data.items && Array.isArray(data.items)) {
-        const numberedData = data.items.map((item, index) => ({
-          ...item,
-          rowNumber: index + 1 + page * pageSize,
-          banned: item.lockoutEnabled === false
-        }));
-        setTeamData(numberedData);
-        setRowCount(data.totalCount);
-      }
+      getTeamData(page, pageSize, searchQuery);
     } catch (error) {
       console.error('Failed to create user:', error);
     }
-  };
+  }, [createUser, getTeamData, newUser, page, pageSize, searchQuery]);
 
-  const handleCreateModalClose = () => {
+  const handleCreateModalClose = useCallback(() => {
     setOpenCreateModal(false);
-  };
+  }, []);
 
   return (
     <Box m="20px">
