@@ -7,6 +7,9 @@ import { fetchBranches, fetchBranchById, createBranch, updateBranch } from '../.
 import Header from '../../components/Header';
 import SearchIcon from '@mui/icons-material/Search';
 import '../users/style.css';
+import {storageDb} from  '../../firebase'
+import { ref, uploadBytesResumable, getDownloadURL, uploadBytes } from "firebase/storage";
+import { v4 } from 'uuid';
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -23,6 +26,9 @@ const Branches = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
+  const [image, setImage] = useState(null);
+  const [imageRef, setImageRef] = useState(null);
+  const [PreviewImages, setPreviewImages] = useState(null);
   const [newBranch, setNewBranch] = useState({
     branchAddress: "",
     branchName: "",
@@ -101,14 +107,41 @@ const Branches = () => {
 
   const handleCreateNew = async () => {
     try {
+      //hình ảnh 
+      const uploadimage = newBranch.branchPicture.map(async (image) => {
+        const imageRef = ref(storageDb, `BranchImage/${v4()}`);
+        await uploadBytes(imageRef, image);
+        const url = await getDownloadURL(imageRef);
+        return url;
+      
+      });
+
+      const imageUrls = await Promise.all(uploadimage);
+
+      const branchData = {
+        image: JSON.stringify(imageUrls),
+      }
+
+      
+
+
       const formData = new FormData();
-      Object.keys(newBranch).forEach(key => {
-        if (key === 'openDay') {
-          formData.append(key, `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`);
-        } else {
-          formData.append(key, newBranch[key]);
+    Object.keys(newBranch).forEach(key => {
+      if (key === 'openDay') {
+        formData.append(key, `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`);
+      } else if (key === 'branchPictures') {
+        newBranch.branchPictures.forEach(file => {
+          formData.append('BranchPictures', file);
+        });
+      } else {
+        formData.append(key, newBranch[key]);
         }
       });
+
+
+
+
+
       await createBranch(formData);
       setOpenCreateModal(false);
       const data = await fetchBranches(pageQuery, sizeQuery);
@@ -180,11 +213,32 @@ const Branches = () => {
   };
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
+    const file = Array.from(event.target.files);
+
+    const validPictureTypes = file.filter((file) => {
+      const isValidType = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg';
+      const isValidSize = file.size <= 5 * 1024 * 1024;
+
+      if(!isValidSize || !isValidType) {
+        console.error('File is not a correct type of image');
+      }
+      return isValidType && isValidSize;
+    });
+
+    
+    const previewUrls = validPictureTypes.map(file => URL.createObjectURL(file));
+
+
+
     setNewBranch(prevState => ({
       ...prevState,
-      branchPicture: file
+      branchPicture: validPictureTypes
     }));
+  
+console.log("previewurl là",previewUrls)
+
+    setPreviewImages(previewUrls)
+
   };
 
   const handleSelectChange = (event) => {
@@ -365,7 +419,7 @@ const Branches = () => {
                   <TextField label="Branch Phone" name="branchPhone" value={newBranch.branchPhone} onChange={handleInputChange} fullWidth margin="normal" />
                   <TextField label="Description" name="description" value={newBranch.description} onChange={handleInputChange} fullWidth margin="normal" />
                   <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
-                  <input type="file" onChange={handleFileChange} />
+                  <input type="file" accept='image/' multiple onChange={handleFileChange} />
                 </Box>
                 <Box width="48%">
                   <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
@@ -435,7 +489,7 @@ const Branches = () => {
                   <TextField label="Branch Phone" name="branchPhone" value={currentBranch.branchPhone} onChange={handleEditInputChange} fullWidth margin="normal" />
                   <TextField label="Description" name="description" value={currentBranch.description} onChange={handleEditInputChange} fullWidth margin="normal" />
                   <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
-                  <input type="file" onChange={handleEditFileChange} />
+                  <input type="file" accept='image/' multiple onChange={handleEditFileChange} />
                 </Box>
                 <Box width="48%">
                   <TextField label="Open Time" name="openTime" value={currentBranch.openTime} onChange={handleEditInputChange} fullWidth margin="normal" />
