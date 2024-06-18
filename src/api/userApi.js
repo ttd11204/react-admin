@@ -106,3 +106,19 @@ export const fetchRoleByUserId = async (userId) => {
   }
 };
 
+
+export const updateUserRole = async (userId, role) => {
+  try {
+    console.log('Sending update request:', { userId, role }); 
+    const response = await axios.put(`${url}/Roles/${userId}`,role,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+     );
+    console.log('API response status:', response.status);
+    console.log('API response data:', response.data);
+  } catch (error) {
+    throw new Error(`Failed to update user roles: ${error.message}`);
+  }};

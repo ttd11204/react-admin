@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, TextField, Card, CardContent, Avatar, Grid ,Select, MenuItem} from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, Avatar, Grid, Select, MenuItem } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
-import { fetchRoleByUserId, fetchUserDetail, updateUserDetail } from '../../api/userApi';
+import { fetchRoleByUserId, fetchUserDetail, updateUserDetail, updateUserRole } from '../../api/userApi';
 import Header from '../../components/Header';
+import './style.css';
 
 const UserDetails = () => {
   const theme = useTheme();
@@ -32,6 +33,9 @@ const UserDetails = () => {
   }, [id]);
 
   const handleFieldChange = (field, value) => {
+    if (field === 'role') {
+      setRole(value);
+    }
     setUser((prevUser) => ({
       ...prevUser,
       [field]: value,
@@ -52,6 +56,7 @@ const UserDetails = () => {
   const handleSave = async () => {
     try {
       await updateUserDetail(id, user);
+      await updateUserRole(id, role);
       setEditMode(false);
     } catch (err) {
       setError(`Failed to update user details: ${err.message}`);
@@ -138,9 +143,23 @@ const UserDetails = () => {
                   {editMode ? (
                     <TextField
                       fullWidth
+                      type="number"
                       value={user.yearOfBirth || ''}
                       onChange={(e) => handleFieldChange('yearOfBirth', e.target.value)}
                       size="small"
+                      sx={{
+                        '& input[type=number]': {
+                          MozAppearance: 'textfield',
+                          '&::-webkit-outer-spin-button': {
+                            WebkitAppearance: 'none',
+                            margin: 0,
+                          },
+                          '&::-webkit-inner-spin-button': {
+                            WebkitAppearance: 'none',
+                            margin: 0,
+                          },
+                        },
+                      }}
                     />
                   ) : (
                     <Typography>{user.yearOfBirth || 'N/A'}</Typography>
@@ -186,15 +205,14 @@ const UserDetails = () => {
                   <Typography variant="h6">Role</Typography>
                   {editMode ? (
                     <Select
-                    
                       fullWidth
-                      value={user.role || ''}
+                      value={role || ''}
                       onChange={(e) => handleFieldChange('role', e.target.value)}
                       size="small"
                     >
-                    <MenuItem value = "Customer"> Customer</MenuItem>
-                    <MenuItem value = "Staff"> Staff</MenuItem>
-                    <MenuItem value = "Admin"> Admin</MenuItem>
+                      <MenuItem value="Customer">Customer</MenuItem>
+                      <MenuItem value="Staff">Staff</MenuItem>
+                      <MenuItem value="Admin">Admin</MenuItem>
                     </Select>
                   ) : (
                     <Typography>{role || 'N/A'}</Typography>
