@@ -7,7 +7,7 @@ import { fetchRoleByUserId, fetchUserDetail, updateUserDetail, updateUserRole } 
 import Header from '../../components/Header';
 import './style.css';
 import { storageDb } from '../../firebase';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes ,deleteObject } from 'firebase/storage';
 import { v4 } from 'uuid';
 
 const UserDetails = () => {
@@ -73,15 +73,20 @@ const UserDetails = () => {
       
       if (!role && user.role) {
         setRole(user.role);
-      }
+      } 
 
       
       if (image && imageRef) {
+        if (user.profilePicture) {
+          const oldPath = user.profilePicture.split('court-callers.appspot.com/o/')[1].split('?')[0];
+          const imagebefore = ref(storageDb, decodeURIComponent(oldPath));
+          await deleteObject(imagebefore);
+        }
         const snapshot = await uploadBytes(imageRef, image);
         console.log('Uploaded a file!', snapshot);
-        const url = await getDownloadURL(imageRef);
-
         
+        
+        const url = await getDownloadURL(imageRef);
         setUser((prevUser) => ({
           ...prevUser,
           profilePicture: url,
