@@ -6,9 +6,9 @@ import { tokens } from '../../theme';
 import { fetchRoleByUserId, fetchUserDetail, updateUserDetail, updateUserRole } from '../../api/userApi';
 import Header from '../../components/Header';
 import './style.css';
-import {storageDb} from '../../firebase';
-import {getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import {v4} from 'uuid'
+import { storageDb } from '../../firebase';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { v4 } from 'uuid';
 
 const UserDetails = () => {
   const theme = useTheme();
@@ -49,36 +49,48 @@ const UserDetails = () => {
 
   const handleProfilePictureChange = (event) => {
     const file = event.target.files[0];
-    setImage(file)
+    if (file) {
+     
+        if (file.size > 5 * 1024 * 1024) { // Giới hạn 5MB
+          console.error('File size exceeds 5MB');
+          return;
+        }
+        setImage(file);
+        setImageRef(ref(storageDb, `UserImage/${v4()}`));
+      } else {
+        console.error('File is not a PNG image');
+      }
     
-    setImageRef(ref(storageDb, `UserImage/${v4()}`));
-    
-    
-      
   };
 
   const handleSave = async () => {
     try {
-
-      if(!role && user.role){
-      setRole(user.role)
+      // Kiểm tra nếu role chưa được cập nhật thì giữ nguyên giá trị cũ
+      if (!role && user.role) {
+        setRole(user.role);
       }
-      //khúc này là save mới lưu ảnh lên storage
-      uploadBytes(imageRef, image).then((snapshot) => {
-        return getDownloadURL(imageRef);}).then((url) => {
-          setUser((prevUser) => ({
-            ...prevUser,
-            ProfilePicture: url,
-          }));
-        })
-    .catch((error) => {
-      console.error('Failed to get download URL:', error);
-    });
 
+      // Nếu có ảnh mới được chọn thì tải ảnh lên và cập nhật URL
+      if (image && imageRef) {
+        const snapshot = await uploadBytes(imageRef, image);
+        console.log('Uploaded a file!', snapshot);
+        const url = await getDownloadURL(imageRef);
 
-      await updateUserDetail(id, user);
+        // Cập nhật trạng thái user với URL của ảnh mới
+        setUser((prevUser) => ({
+          ...prevUser,
+          profilePicture: url,
+        }));
+
+        // Tiếp tục cập nhật thông tin user với URL mới
+        await updateUserDetail(id, { ...user, profilePicture: url, role });
+      } else {
+        // Cập nhật thông tin user mà không có ảnh mới
+        await updateUserDetail(id, { ...user, role });
+      }
+
       await updateUserRole(id, role);
-      
+
       setEditMode(false);
     } catch (err) {
       setError(`Failed to update user details: ${err.message}`);
@@ -86,7 +98,9 @@ const UserDetails = () => {
   };
 
   const handleEditToggle = () => {
-    if(!editMode) setRole(user.role || role)
+    if (!editMode) {
+      setRole(role || user.role);
+    }
     setEditMode((prevState) => !prevState);
   };
 
