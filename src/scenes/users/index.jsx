@@ -8,7 +8,7 @@ import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
 import { GrView } from "react-icons/gr"; // Import GrView icon
 import './style.css';
-
+import {fetchRoleByUserId} from '../../api/userApi';
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
 };
@@ -38,15 +38,21 @@ const Users = () => {
       try {
         const data = await fetchTeamData(page + 1, pageSize);
         console.log('Fetched team data:', data);
-
+    
         if (data.items && Array.isArray(data.items)) {
-          const numberedData = data.items.map((item, index) => ({
-            ...item,
-            rowNumber: index + 1 + page * pageSize,
-            banned: item.lockoutEnabled === false
+          const itemsWithRoles = await Promise.all(data.items.map(async (item, index) => {
+            const role = await fetchRoleByUserId(item.id); // Fetch role for each user
+            return {
+              ...item,
+              rowNumber: index + 1 + page * pageSize,
+              banned: item.lockoutEnabled === false,
+              role: role // Add the role to the item
+            };
           }));
-          setTeamData(numberedData);
+    
+          setTeamData(itemsWithRoles);
           setRowCount(data.totalCount);
+          console.log('Items with roles:', itemsWithRoles);
         } else {
           throw new Error('Invalid data structure');
         }
@@ -56,6 +62,10 @@ const Users = () => {
     };
     getTeamData();
   }, [page, pageSize]);
+
+
+  
+
 
   const handlePageClick = (event) => {
     console.log('Page change:', event.selected);
@@ -207,10 +217,11 @@ const Users = () => {
                   <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>ID</TableCell>
                   <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>User Name</TableCell>
                   <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Email</TableCell>
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Email Confirmed</TableCell>
+                  
                   <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Phone Number</TableCell>
                   <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Phone Confirmed</TableCell>
                   <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>2FA Enabled</TableCell>
+                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Role</TableCell>
                   <TableCell align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Action</TableCell>
                   <TableCell align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Access</TableCell>
                 </TableRow>
@@ -226,12 +237,15 @@ const Users = () => {
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
                         {row.email}
                       </TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.emailConfirmed ? 'Yes' : 'No'}</TableCell>
+                      
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
                         {row.phoneNumber || 'N/A'}
                       </TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
+                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
+                        {row.role}
+                      </TableCell>
                       <TableCell align="center">
                         <IconButton onClick={() => handleViewUser(row.id)} style={{ color: colors.greenAccent[400] }}>
                           <GrView />

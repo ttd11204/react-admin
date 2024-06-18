@@ -96,3 +96,13 @@ export const fetchUserDetail = async (userId) => {
     throw new Error(`Failed to fetch user details: ${error.message}`);
   }
 };
+
+export const fetchRoleByUserId = async (userId) => {
+  try {
+    const response = await axios.get(`${url}/Roles/userId/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to fetch user roles: ${error.message}`);
+  }
+};
+

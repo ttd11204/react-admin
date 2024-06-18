@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, TextField, Card, CardContent, Avatar, Grid } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, Avatar, Grid ,Select, MenuItem} from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
-import { fetchUserDetail, updateUserDetail } from '../../api/userApi';
+import { fetchRoleByUserId, fetchUserDetail, updateUserDetail } from '../../api/userApi';
 import Header from '../../components/Header';
 
 const UserDetails = () => {
@@ -14,12 +14,16 @@ const UserDetails = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState(null);
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
     const getUserDetail = async () => {
       try {
         const data = await fetchUserDetail(id);
         setUser(data);
+        const userRole = await fetchRoleByUserId(id);
+        setRole(userRole);
+        console.log('Role:', userRole);
       } catch (err) {
         setError(`Failed to fetch user details: ${err.message}`);
       }
@@ -176,6 +180,24 @@ const UserDetails = () => {
                     />
                   ) : (
                     <Typography>{user.balance || 'N/A'}</Typography>
+                  )}
+                </Box>
+                <Box mb={2}>
+                  <Typography variant="h6">Role</Typography>
+                  {editMode ? (
+                    <Select
+                    
+                      fullWidth
+                      value={user.role || ''}
+                      onChange={(e) => handleFieldChange('role', e.target.value)}
+                      size="small"
+                    >
+                    <MenuItem value = "Customer"> Customer</MenuItem>
+                    <MenuItem value = "Staff"> Staff</MenuItem>
+                    <MenuItem value = "Admin"> Admin</MenuItem>
+                    </Select>
+                  ) : (
+                    <Typography>{role || 'N/A'}</Typography>
                   )}
                 </Box>
               </Grid>
