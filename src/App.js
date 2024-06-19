@@ -28,6 +28,8 @@ import PaymentDetail from "./staff/Payment/PaymentDetails";
 import {PaymentConfirmed} from "./staff/Payment/PaymentConfirmation";
 import { PaymentRejected } from "./staff/Payment/PaymentConfirmation";
 
+import Checkin from "./staff/Payment/Checkin";
+
 function App() {
   const [theme, colorMode] = useMode();
 
@@ -80,6 +82,7 @@ function App() {
             <Route path="ReviewForm" element={<ReviewForm />} />
             <Route path="confirm" element={< PaymentConfirmed/>} />
             <Route path="reject" element={<PaymentRejected />} />
+            <Route path="checkin" element={<Checkin />} />
           </Route>
         </Routes>
       </ThemeProvider>
