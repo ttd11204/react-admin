@@ -2,26 +2,28 @@ import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
 
-export const fetchTeamData = async (pageNumber = 1, pageSize = 10, userId = '') => {
+export const fetchTeamData = async (pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
     let response;
-    if (userId) {
-      response = await axios.get(`${url}/Users/${userId}`);
+    if (searchQuery) {
+      response = await axios.get(`${url}/Users`, { params: { searchQuery } });
       return {
-        items: [response.data],
-        totalCount: 1
+        items: Array.isArray(response.data) ? response.data : [response.data],
+        totalCount: response.headers['x-total-count'] ? parseInt(response.headers['x-total-count'], 10) : 1,
       };
     } else {
       const params = {
         pageNumber,
-        pageSize
+        pageSize,
       };
       response = await axios.get(`${url}/Users`, { params });
       console.log('API response full data:', response.data);
 
       if (Array.isArray(response.data)) {
         const items = response.data;
+        // console.log("aaaaaaaaaaaaaaaaaaa==============");
         const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
+        console.log(response.headers['x-total-count']);
 
         items.forEach((item, index) => {
           console.log(`User ${index + 1}:`, item);
@@ -29,7 +31,7 @@ export const fetchTeamData = async (pageNumber = 1, pageSize = 10, userId = '') 
 
         return {
           items,
-          totalCount
+          totalCount,
         };
       } else {
         throw new Error('Invalid API response structure');

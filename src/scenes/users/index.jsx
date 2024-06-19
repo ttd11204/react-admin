@@ -161,7 +161,7 @@ const Users = () => {
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase
                 sx={{ ml: 2, flex: 1 }}
-                placeholder="Search by User ID"
+                placeholder="Search by User Email"
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit() }}
@@ -244,7 +244,7 @@ const Users = () => {
               onChange={handlePageSizeChange}
               style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}
             >
-              {[10, 15, 20, 25, 50].map(size => (
+              {[10, 15, 20].map(size => (
                 <MenuItem key={size} value={size}>
                   {size}
                 </MenuItem>
