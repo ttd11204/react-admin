@@ -113,7 +113,7 @@ const Branches = () => {
 
     try {
 
-      if(validateForm() ) {
+      
       // Tải lên các ảnh và lấy URL
       const uploadimage = newBranch.branchPictures.map(async (image) => {
         const imageRef = ref(storageDb, `BranchImage/${v4()}`);
@@ -153,9 +153,7 @@ const Branches = () => {
       setBranchesData(data.items);
       setRowCount(data.totalCount);
 
-    } else {
-      console.log("Invalid form");
-    }
+    
     } catch (error) {
       setError('Failed to create branch');
     }
@@ -524,7 +522,7 @@ const Branches = () => {
               </Box>
               <Box display="flex" justifyContent="flex-end" mt={2}>
                 <Button variant="contained" sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }} onClick={handleCreateNew}
-                disabled= {!validateForm}>
+             >
                   Create
                 </Button>
               </Box>
