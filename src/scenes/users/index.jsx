@@ -1,49 +1,57 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase, Modal, TextField } from '@mui/material';
+import {
+  Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select,
+  MenuItem, IconButton, InputBase, Modal, TextField
+} from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchTeamData, createUser, updateUserBanStatus, fetchRoleByUserId } from '../../api/userApi';
+import {
+  fetchTeamData, createUser, updateUserBanStatus, fetchRoleByUserId
+} from '../../api/userApi';
 import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
-import { GrView } from "react-icons/gr"; // Import GrView icon
+import { GrView } from "react-icons/gr";
 import './style.css';
+import {
+  validateFullName as validateUsername,
+  validateEmail,
+  validatePhone
+} from '../login/formValidation';
 
-const useQuery = () => {
-  return new URLSearchParams(useLocation().search);
-};
+const useQuery = () => new URLSearchParams(useLocation().search);
 
 const Users = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [teamData, setTeamData] = useState([]);
-  const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', email: '', phone: '' });
   const query = useQuery();
   const navigate = useNavigate();
 
-  const pageQuery = parseInt(query.get('pageNumber')) || 1;
-  const sizeQuery = parseInt(query.get('pageSize')) || 10;
+  const userRole = useMemo(() => localStorage.getItem("userRole"), []);
 
-  const [page, setPage] = useState(pageQuery - 1);
-  const [pageSize, setPageSize] = useState(sizeQuery);
+  const [teamData, setTeamData] = useState([]);
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [newUser, setNewUser] = useState({ username: '', email: '', phone: '' });
+  const [usernameValidation, setUsernameValidation] = useState({ isValid: true, message: '' });
+  const [emailValidation, setEmailValidation] = useState({ isValid: true, message: '' });
+  const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
+  const [page, setPage] = useState(parseInt(query.get('pageNumber')) - 1 || 0);
+  const [pageSize, setPageSize] = useState(parseInt(query.get('pageSize')) || 10);
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(query.get('search') || "");
-
-  const userRole = useMemo(() => localStorage.getItem("userRole"), []);
 
   const getTeamData = useCallback(async (page, pageSize, searchQuery = "") => {
     try {
       const data = await fetchTeamData(page + 1, pageSize, searchQuery.trim());
       if (data.items && Array.isArray(data.items)) {
         const itemsWithRoles = await Promise.all(data.items.map(async (item, index) => {
-          const role = await fetchRoleByUserId(item.id); // Fetch role for each user
+          const role = await fetchRoleByUserId(item.id);
           return {
             ...item,
             rowNumber: index + 1 + page * pageSize,
             banned: item.lockoutEnabled === false,
-            role: role // Add the role to the item
+            role
           };
         }));
         setTeamData(itemsWithRoles);
@@ -63,31 +71,19 @@ const Users = () => {
   const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
-    if (userRole === 'Admin') {
-      navigate(`/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
-    } else if (userRole === 'Staff') {
-      navigate(`/staff/Users?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
-    }
+    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
   }, [navigate, pageSize, userRole]);
 
   const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
-    if (userRole === 'Admin') {
-      navigate(`/Users?pageNumber=1&pageSize=${newSize}`);
-    } else if (userRole === 'Staff') {
-      navigate(`/staff/Users?pageNumber=1&pageSize=${newSize}`);
-    }
+    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}?pageNumber=1&pageSize=${newSize}`);
   }, [navigate, userRole]);
 
-  const handleSearchSubmit = useCallback(async () => {
+  const handleSearchSubmit = useCallback(() => {
     setPage(0);
-    if (userRole === 'Admin') {
-      navigate(`/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
-    } else if (userRole === 'Staff') {
-      navigate(`/staff/Users?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
-    }
+    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
     getTeamData(0, pageSize, searchQuery);
   }, [getTeamData, navigate, pageSize, searchQuery, userRole]);
 
@@ -95,11 +91,7 @@ const Users = () => {
     try {
       const updatedStatus = !currentStatus;
       await updateUserBanStatus(id, updatedStatus);
-      setTeamData((prevData) =>
-        prevData.map((user) =>
-          user.id === id ? { ...user, banned: updatedStatus } : user
-        )
-      );
+      setTeamData((prevData) => prevData.map((user) => (user.id === id ? { ...user, banned: updatedStatus } : user)));
     } catch (error) {
       console.error('Failed to update user ban status:', error);
     }
@@ -114,28 +106,45 @@ const Users = () => {
   }, []);
 
   const handleViewUser = useCallback((id) => {
-    if (userRole === 'Admin') {
-      navigate(`/Users/${id}`);
-    } else if (userRole === 'Staff') {
-      navigate(`/staff/Users/${id}`);
-    }
+    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}/${id}`);
   }, [navigate, userRole]);
 
   const handleCreateUserChange = useCallback((e) => {
     const { name, value } = e.target;
     setNewUser((prevState) => ({ ...prevState, [name]: value }));
+
+    if (name === 'username') {
+      setUsernameValidation(validateUsername(value));
+    } else if (name === 'email') {
+      setEmailValidation(validateEmail(value));
+    } else if (name === 'phone') {
+      setPhoneValidation(validatePhone(value));
+    }
   }, []);
 
-  const handleCreateUserSubmit = useCallback(async () => {
+  const handleCreateUserSubmit = useCallback(async (e) => {
+    e.preventDefault();
+
+    const usernameValidation = validateUsername(newUser.username);
+    const emailValidation = validateEmail(newUser.email);
+    const phoneValidation = validatePhone(newUser.phone);
+
+    setUsernameValidation(usernameValidation);
+    setEmailValidation(emailValidation);
+    setPhoneValidation(phoneValidation);
+
+    if (!usernameValidation.isValid || !emailValidation.isValid || !phoneValidation.isValid) {
+      return;
+    }
+
     try {
       await createUser(newUser);
       setOpenCreateModal(false);
-      // Optionally, refetch the data to update the UI
       getTeamData(page, pageSize, searchQuery);
     } catch (error) {
       console.error('Failed to create user:', error);
     }
-  }, [createUser, getTeamData, newUser, page, pageSize, searchQuery]);
+  }, [newUser, getTeamData, page, pageSize, searchQuery]);
 
   const handleCreateModalClose = useCallback(() => {
     setOpenCreateModal(false);
@@ -179,38 +188,25 @@ const Users = () => {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>ID</TableCell>
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>User Name</TableCell>
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Email</TableCell>
-                  
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Phone Number</TableCell>
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Phone Confirmed</TableCell>
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>2FA Enabled</TableCell>
-                  <TableCell style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Role</TableCell>
-                  <TableCell align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Action</TableCell>
-                  <TableCell align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>Access</TableCell>
+                  {['ID', 'User Name', 'Email', 'Phone Number', 'Phone Confirmed', '2FA Enabled', 'Role', 'Action', 'Access']
+                    .map(header => (
+                      <TableCell key={header} style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>
+                        {header}
+                      </TableCell>
+                    ))}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {teamData.length > 0 ? (
                   teamData.map((row) => (
                     <TableRow key={row.id} style={row.banned ? { backgroundColor: colors.redAccent[100] } : null}>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.rowNumber}</TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
-                        {row.userName}
-                      </TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
-                        {row.email}
-                      </TableCell>
-                      
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
-                        {row.phoneNumber || 'N/A'}
-                      </TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
-                      <TableCell style={{ color: row.banned ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400]) : (theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000') }}>
-                        {row.role}
-                      </TableCell>
+                      <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.rowNumber}</TableCell>
+                      <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.userName}</TableCell>
+                      <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.email}</TableCell>
+                      <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.phoneNumber || 'N/A'}</TableCell>
+                      <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
+                      <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
+                      <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.role}</TableCell>
                       <TableCell align="center">
                         <IconButton onClick={() => handleViewUser(row.id)} style={{ color: colors.greenAccent[400] }}>
                           <GrView />
@@ -223,9 +219,7 @@ const Users = () => {
                           size="small"
                           style={{
                             marginLeft: 8,
-                            backgroundColor: row.banned
-                              ? (theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[400])
-                              : (theme.palette.mode === 'dark' ? colors.greenAccent[600] : colors.greenAccent[400]),
+                            backgroundColor: row.banned ? colors.redAccent[400] : colors.greenAccent[400],
                             color: colors.primary[900]
                           }}
                         >
@@ -236,7 +230,7 @@ const Users = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>
+                    <TableCell colSpan={9} align="center" style={{ color: theme.palette.text.primary }}>
                       No data available
                     </TableCell>
                   </TableRow>
@@ -270,7 +264,6 @@ const Users = () => {
           </Box>
         </Box>
       )}
-
       <Modal open={openCreateModal} onClose={handleCreateModalClose}>
         <Box
           sx={{
@@ -286,10 +279,46 @@ const Users = () => {
           }}
         >
           <Typography variant="h6" mb="20px">Create New User</Typography>
-          <TextField label="Username" name="username" value={newUser.username} onChange={handleCreateUserChange} fullWidth margin="normal" />
-          <TextField label="Email" name="email" value={newUser.email} onChange={handleCreateUserChange} fullWidth margin="normal" />
-          <TextField label="Phone" name="phone" value={newUser.phone} onChange={handleCreateUserChange} fullWidth margin="normal" />
-          <Button variant="contained" color="primary" onClick={handleCreateUserSubmit} fullWidth>Create</Button>
+          <form onSubmit={handleCreateUserSubmit}>
+            <TextField
+              label="Username"
+              name="username"
+              value={newUser.username}
+              onChange={handleCreateUserChange}
+              fullWidth
+              margin="normal"
+              error={!usernameValidation.isValid}
+              helperText={usernameValidation.message}
+            />
+            <TextField
+              label="Email"
+              name="email"
+              value={newUser.email}
+              onChange={handleCreateUserChange}
+              fullWidth
+              margin="normal"
+              error={!emailValidation.isValid}
+              helperText={emailValidation.message}
+            />
+            <TextField
+              label="Phone"
+              name="phone"
+              value={newUser.phone}
+              onChange={handleCreateUserChange}
+              fullWidth
+              margin="normal"
+              error={!phoneValidation.isValid}
+              helperText={phoneValidation.message}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              fullWidth
+            >
+              Create
+            </Button>
+          </form>
         </Box>
       </Modal>
     </Box>
