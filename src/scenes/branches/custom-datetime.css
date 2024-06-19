@@ -35,3 +35,7 @@
 .rdtPicker thead tr:first-child th:hover {
     background: none;
 }
+
+.hidden-file-input::first-selector-button {
+    display: none;
+  }

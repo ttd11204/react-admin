@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase, Modal, TextField } from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -7,9 +7,10 @@ import { fetchBranches, fetchBranchById, createBranch, updateBranch } from '../.
 import Header from '../../components/Header';
 import SearchIcon from '@mui/icons-material/Search';
 import '../users/style.css';
-import {storageDb} from  '../../firebase'
+import { storageDb } from '../../firebase'
 import { ref, uploadBytesResumable, getDownloadURL, uploadBytes } from "firebase/storage";
 import { v4 } from 'uuid';
+import './custom-datetime.css';
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -28,7 +29,10 @@ const Branches = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [image, setImage] = useState(null);
   const [imageRef, setImageRef] = useState(null);
-  const [PreviewImages, setPreviewImages] = useState(null);
+  const [previewImages, setPreviewImages] = useState(null);
+  const fileInputRef = useRef(null);
+  const [errors, setErrors] = useState({});
+
   const [newBranch, setNewBranch] = useState({
     branchAddress: "",
     branchName: "",
@@ -106,54 +110,71 @@ const Branches = () => {
   };
 
   const handleCreateNew = async () => {
+
     try {
-      //hình ảnh 
-      const uploadimage = newBranch.branchPicture.map(async (image) => {
+
+      if(validateForm() ) {
+      // Tải lên các ảnh và lấy URL
+      const uploadimage = newBranch.branchPictures.map(async (image) => {
         const imageRef = ref(storageDb, `BranchImage/${v4()}`);
         await uploadBytes(imageRef, image);
         const url = await getDownloadURL(imageRef);
         return url;
-      
       });
 
       const imageUrls = await Promise.all(uploadimage);
 
+      // Tạo dữ liệu chi nhánh mới
       const branchData = {
-        image: JSON.stringify(imageUrls),
-      }
-
-      
+        ...newBranch,
+        branchPicture: JSON.stringify(imageUrls),
+      };
 
 
       const formData = new FormData();
-    Object.keys(newBranch).forEach(key => {
-      if (key === 'openDay') {
-        formData.append(key, `${newBranch.openDay.day1} to ${newBranch.openDay.day2}`);
-      } else if (key === 'branchPictures') {
-        newBranch.branchPictures.forEach(file => {
-          formData.append('BranchPictures', file);
-        });
-      } else {
-        formData.append(key, newBranch[key]);
+      Object.keys(branchData).forEach(key => {
+        if (key === 'openDay') {
+          formData.append(key, `${branchData.openDay.day1} to ${branchData.openDay.day2}`);
+        } else if (key === 'branchPictures') {
+          branchData.branchPictures.forEach(file => {
+            formData.append('BranchPictures', file);
+          });
+        } else {
+          formData.append(key, branchData[key]);
         }
       });
 
-
-
-
-
+      // Gọi API để tạo chi nhánh mới
       await createBranch(formData);
       setOpenCreateModal(false);
+
+      // Cập nhật danh sách chi nhánh sau khi tạo mới
       const data = await fetchBranches(pageQuery, sizeQuery);
       setBranchesData(data.items);
       setRowCount(data.totalCount);
+
+    } else {
+      console.log("Invalid form");
+    }
     } catch (error) {
       setError('Failed to create branch');
     }
   };
 
+
   const handleUpdateBranch = async () => {
     try {
+      const uploadimage = newBranch.branchPictures.map(async (image) => {
+        const imageRef = ref(storageDb, `BranchImage/${v4()}`);
+        await uploadBytes(imageRef, image);
+        const url = await getDownloadURL(imageRef);
+        return url;
+      });
+
+
+
+
+
       const formData = new FormData();
       Object.keys(currentBranch).forEach(key => {
         if (key === 'openDay') {
@@ -213,33 +234,31 @@ const Branches = () => {
   };
 
   const handleFileChange = (event) => {
-    const file = Array.from(event.target.files);
+    const files = Array.from(event.target.files);
 
-    const validPictureTypes = file.filter((file) => {
+    const validPictureTypes = files.filter((file) => {
       const isValidType = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg';
       const isValidSize = file.size <= 5 * 1024 * 1024;
 
-      if(!isValidSize || !isValidType) {
-        console.error('File is not a correct type of image');
+      if (!isValidSize || !isValidType) {
+        console.error('File is not a correct type of image or exceeds the size limit');
       }
       return isValidType && isValidSize;
     });
 
-    
     const previewUrls = validPictureTypes.map(file => URL.createObjectURL(file));
-
-
 
     setNewBranch(prevState => ({
       ...prevState,
-      branchPicture: validPictureTypes
+      branchPictures: prevState.branchPictures ? [...prevState.branchPictures, ...validPictureTypes] : [...validPictureTypes]
     }));
-  
-console.log("previewurl là",previewUrls)
 
-    setPreviewImages(previewUrls)
-
+    setPreviewImages(prevState => prevState ? [...prevState, ...previewUrls] : [...previewUrls]);
   };
+
+
+
+
 
   const handleSelectChange = (event) => {
     const { name, value } = event.target;
@@ -251,6 +270,25 @@ console.log("previewurl là",previewUrls)
       }
     }));
   };
+
+
+  // Xử lý xóa ảnh
+  const handleImageRemove = (index) => {
+    setNewBranch(prevState => ({
+      ...prevState,
+      branchPictures: prevState.branchPictures.filter((_, i) => i !== index)
+    }));
+    setPreviewImages(prevState => prevState.filter((_, i) => i !== index));
+
+    // Đặt lại giá trị của input file để cập nhật số lượng tệp hiển thị
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+
+
+
 
   const handleEditInputChange = (event) => {
     const { name, value } = event.target;
@@ -324,8 +362,8 @@ console.log("previewurl là",previewUrls)
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
                   <TableCell>Branch ID</TableCell>
+                  <TableCell>Name</TableCell>
                   <TableCell>Address</TableCell>
-                  <TableCell>Description</TableCell>
                   <TableCell>Open Time</TableCell>
                   <TableCell>Close Time</TableCell>
                   <TableCell>Open Day</TableCell>
@@ -338,8 +376,8 @@ console.log("previewurl là",previewUrls)
                   branchesData.map((branch) => (
                     <TableRow key={branch.branchId}>
                       <TableCell>{branch.branchId}</TableCell>
+                      <TableCell>{branch.branchName}</TableCell>
                       <TableCell>{branch.branchAddress}</TableCell>
-                      <TableCell>{branch.description}</TableCell>
                       <TableCell>{branch.openTime}</TableCell>
                       <TableCell>{branch.closeTime}</TableCell>
                       <TableCell>{branch.openDay}</TableCell>
@@ -405,10 +443,12 @@ console.log("previewurl là",previewUrls)
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 width: '80%',
+                maxHeight: '90vh',
                 bgcolor: 'background.paper',
                 border: '2px solid #000',
                 boxShadow: 24,
                 p: 4,
+                overflowY: 'auto',
               }}
             >
               <Typography variant="h6" mb="20px">Create New Branch</Typography>
@@ -419,7 +459,30 @@ console.log("previewurl là",previewUrls)
                   <TextField label="Branch Phone" name="branchPhone" value={newBranch.branchPhone} onChange={handleInputChange} fullWidth margin="normal" />
                   <TextField label="Description" name="description" value={newBranch.description} onChange={handleInputChange} fullWidth margin="normal" />
                   <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
-                  <input type="file" accept='image/' multiple onChange={handleFileChange} />
+                  <input type="file" accept='image/' multiple onChange={handleFileChange} ref={fileInputRef} className="hidden-file-input" />
+                  <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
+                    {previewImages && previewImages.map((image, index) => (
+                      <Box key={index} position="relative" display="inline-block">
+                        <img src={image} alt={`Preview ${index}`} style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'cover' }} />
+                        <Button
+                          size="small"
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            color: 'red',
+                            minWidth: '24px',
+                            minHeight: '24px',
+                            padding: 0
+                          }}
+                          onClick={() => handleImageRemove(index)}
+                        >
+                          X
+                        </Button>
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
                 <Box width="48%">
                   <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
@@ -460,8 +523,9 @@ console.log("previewurl là",previewUrls)
                 </Box>
               </Box>
               <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Button variant="contained" sx={{backgroundColor: colors.greenAccent[700], color: 'white'}} onClick={handleCreateNew}>
-                Create
+                <Button variant="contained" sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }} onClick={handleCreateNew}
+                disabled= {!validateForm}>
+                  Create
                 </Button>
               </Box>
             </Box>
@@ -543,8 +607,8 @@ console.log("previewurl là",previewUrls)
                 </Box>
               </Box>
               <Box display="flex" justifyContent="flex-end" mt={2}>
-              <Button sx={{backgroundColor: colors.greenAccent[700], color: 'white'}}  onClick={handleUpdateBranch} >Save</Button>
-                </Box>
+                <Button sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }} onClick={handleUpdateBranch} >Save</Button>
+              </Box>
             </Box>
           </Modal>
         </Box>
