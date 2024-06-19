@@ -8,8 +8,12 @@ import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
+import { jwtDecode } from 'jwt-decode';
+import {fetchUserDetail} from "../../api/userApi";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -35,10 +39,31 @@ const StaffSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
   const [userRole, setUserRole] = useState("");
+  const [userId, setUserId] = useState("");
+  const [fullName, setFullName] = useState(null);
+  const [picture, setPicture] = useState(null);
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole");
+    
+    const role = localStorage.getItem('userRole');
     setUserRole(role);
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+       
+        const decoded = jwtDecode(token);
+        setUserId(decoded.Id);
+        fetchUserDetail(decoded.Id)
+          .then((userDetails) => {
+            setFullName(userDetails.fullName);
+            setPicture(userDetails.profilePicture);
+          })
+          
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+      }
+    }
   }, []);
 
   return (
@@ -64,7 +89,7 @@ const StaffSidebar = () => {
       <ProSidebar collapsed={isCollapsed}>
         <Menu iconShape="square">
           {/* LOGO AND MENU ICON */}
-          <MenuItem
+          <MenuItem 
             onClick={() => setIsCollapsed(!isCollapsed)}
             icon={isCollapsed ? <MenuOutlinedIcon /> : undefined}
             style={{
@@ -79,6 +104,8 @@ const StaffSidebar = () => {
                 alignItems="center"
                 ml="15px"
               >
+
+                
                 <Typography variant="h3" color={colors.grey[100]}>
                   {userRole === "Admin" ? "ADMIN" : "STAFF"}
                 </Typography>
@@ -92,13 +119,18 @@ const StaffSidebar = () => {
           {!isCollapsed && (
             <Box mb="25px">
               <Box display="flex" justifyContent="center" alignItems="center">
-                <img
-                  alt="profile-user"
-                  width="100px"
-                  height="100px"
-                  src={`../../assests/user.png`}
-                  style={{ cursor: "pointer", borderRadius: "50%" }}
-                />
+              {picture && (
+              <img
+                src={picture}
+                alt="User Picture"
+                style={{
+                  width: '150px',
+                  height: '150px',
+                  borderRadius: '50%',
+                  marginRight: '10px',
+                }}
+              />
+            )}
               </Box>
               <Box textAlign="center">
                 <Typography
@@ -107,7 +139,7 @@ const StaffSidebar = () => {
                   fontWeight="bold"
                   sx={{ m: "10px 0 0 0" }}
                 >
-                  John
+                  {fullName || "User"}
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
                   {userRole === "Admin" ? "Court Admin" : "Court Staff"}
@@ -170,6 +202,14 @@ const StaffSidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
+             <Item
+              title="Check In"
+              to="/staff/checkin"
+              icon={<CheckCircleOutlineIcon  />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
             <Item
               title="FAQ Page"
               to="/staff/faq"

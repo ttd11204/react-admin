@@ -99,8 +99,7 @@ const PaymentDetail = () => {
         
 
         const bookingForm = bookingRequests.map((request) => {
-          
-
+      
           return {
             courtId: null, 
             branchId: branchId, 

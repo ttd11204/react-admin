@@ -15,6 +15,7 @@ import PieChartOutlineOutlinedIcon from "@mui/icons-material/PieChartOutlineOutl
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
+import { jwtDecode } from 'jwt-decode';
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -40,10 +41,19 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
   const [userRole, setUserRole] = useState("");
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
     setUserRole(role);
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decoded = jwtDecode(token);
+      setUserId(decoded.Id);
+      console.log(decoded);
+      
+    }
+    
   }, []);
 
   return (
