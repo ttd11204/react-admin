@@ -23,12 +23,13 @@ import Layout from "./scenes/Layout";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StaffLayout from "./staff/StaffLayout";
-import ReserveSlot from "./staff/calendar/Byday";
+import ReserveSlot from "./staff/calendar/byday/Byday";
 import PaymentDetail from "./staff/Payment/PaymentDetails";
 import {PaymentConfirmed} from "./staff/Payment/PaymentConfirmation";
 import { PaymentRejected } from "./staff/Payment/PaymentConfirmation";
 
 import Checkin from "./staff/Payment/Checkin";
+import Flexible from "./staff/calendar/flex/Flexible";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -78,6 +79,7 @@ function App() {
             <Route path="Payments" element={<Payments />} />
             <Route path="Reviews" element={<Review />} />
             <Route path="ReserveSlot" element={<ReserveSlot />} />
+            <Route path="flex" element={<Flexible />} />
             <Route path="PaymentDetail" element={<PaymentDetail />} />
             <Route path="ReviewForm" element={<ReviewForm />} />
             <Route path="confirm" element={< PaymentConfirmed/>} />

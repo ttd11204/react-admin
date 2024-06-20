@@ -82,11 +82,6 @@ const PaymentDetail = () => {
     }
   };
 
-
-  
-
-
-
   const handleNext = async () => {
     if (activeStep === 0 && !userExists) {
       setErrorMessage('Please enter a valid email and check user existence.');

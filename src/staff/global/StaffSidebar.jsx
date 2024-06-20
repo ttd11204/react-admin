@@ -196,8 +196,15 @@ const StaffSidebar = () => {
             </Typography>
             
             <Item
-              title="Calendar"
+              title="By day"
               to="/staff/ReserveSlot"
+              icon={<CalendarTodayOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="Flexible"
+              to="/staff/flex"
               icon={<CalendarTodayOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}

@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Grid, Typography, Select, MenuItem, FormControl, IconButton } from "@mui/material";
-import { fetchBranches } from '../../api/branchApi';
-import { reserveSlots } from '../../api/bookingApi';
+import { fetchBranches } from '../../../api/branchApi';
+import { reserveSlots } from '../../../api/bookingApi';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import "./styles.css";
+// import "./styles.css";
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import { fetchPrice } from '../../api/priceApi';
-import { fetchBranchById } from '../../api/branchApi';
+import { fetchPrice } from '../../../api/priceApi';
+import { fetchBranchById } from '../../../api/branchApi';
 
 dayjs.extend(isSameOrBefore);
 
@@ -268,12 +268,7 @@ const ReserveSlot = () => {
       },
     });
   };
-  
-  
-
-
   const days = weekDays;
-
 
   return (
     <Box m="20px" className="max-width-box" sx={{ backgroundColor: "#F5F5F5", borderRadius: 2, p: 2 }}>
