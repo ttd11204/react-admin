@@ -1,102 +1,80 @@
-import React, { useEffect, useState } from "react";
-import { Box, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase, Button } from "@mui/material";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import {
+  Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select,
+  MenuItem, IconButton, InputBase
+} from "@mui/material";
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
-import { fetchBookings, deleteBooking, fetchBookingById } from "../../api/bookingApi";
-
+import { fetchBookings, fetchBookingById, deleteBooking } from "../../api/bookingApi";
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
-const useQuery = () => {
-  return new URLSearchParams(useLocation().search);
-};
+import {
+  validateRequired,
+  validateTime,
+  validateNumber
+} from "../formValidation";
+
+const useQuery = () => new URLSearchParams(useLocation().search);
 
 const Bookings = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [bookingsData, setBookingsData] = useState([]);
-  const [searchValue, setSearchValue] = useState("");
-  const [searchResult, setSearchResult] = useState(null);
   const query = useQuery();
   const navigate = useNavigate();
 
-  const pageQuery = parseInt(query.get("pageNumber")) || 1;
-  const sizeQuery = parseInt(query.get("pageSize")) || 10;
-
-  const [page, setPage] = useState(pageQuery - 1); // Convert page index to 0-based for ReactPaginate
-  const [pageSize, setPageSize] = useState(sizeQuery);
+  const [bookingsData, setBookingsData] = useState([]);
   const [rowCount, setRowCount] = useState(0);
+  const [page, setPage] = useState(parseInt(query.get('pageNumber')) - 1 || 0);
+  const [pageSize, setPageSize] = useState(parseInt(query.get('pageSize')) || 10);
   const [error, setError] = useState(null);
-
-  const userRole = localStorage.getItem("userRole");
+  const [searchQuery, setSearchQuery] = useState(query.get('searchQuery') || "");
+  const [searchResult, setSearchResult] = useState(null);
 
   useEffect(() => {
     const getBookingsData = async () => {
       try {
-        const data = await fetchBookings(page + 1, pageSize); // Convert page index to 1-based
-        console.log("Fetched bookings data:", data); // Log fetched data
-
-        if (data.items && Array.isArray(data.items)) {
-          const numberedData = data.items.map((item, index) => ({
-            ...item,
-            rowNumber: index + 1 + page * pageSize,
-          }));
-          setBookingsData(numberedData);
-          setRowCount(data.totalCount);
-        } else {
-          throw new Error("Invalid data structure");
-        }
+        const data = await fetchBookings(page + 1, pageSize, searchQuery);
+        setBookingsData(data.items);
+        setRowCount(data.totalCount);
       } catch (err) {
-        setError(`Failed to fetch bookings data: ${err.message}`);
+        setError('Failed to fetch bookings data');
       }
     };
     getBookingsData();
-  }, [page, pageSize]);
+  }, [page, pageSize, searchQuery]);
 
-  const handlePageClick = (event) => {
-    console.log("Page change:", event.selected); // Log new page index
+  const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
-    if (userRole === "Admin") {
-      navigate(`/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
-    } else if (userRole === "Staff") {
-      navigate(
-        `/staff/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}`
-      );
-    }
-  };
+    navigate(`/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
+  }, [navigate, pageSize, searchQuery]);
 
-  const handlePageSizeChange = (event) => {
-    console.log("Page size change:", event.target.value); // Log new page size
+  const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
-    setPage(0); // Reset to first page when pageSize changes
-    if (userRole === "Admin") {
-      navigate(`/Bookings?pageNumber=1&pageSize=${newSize}`);
-    } else if (userRole === "Staff") {
-      navigate(`/staff/Bookings?pageNumber=1&pageSize=${newSize}`);
-    }
-  };
+    setPage(0);
+    navigate(`/Bookings?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
+  }, [navigate, searchQuery]);
 
-  const handleSearchChange = (event) => {
-    setSearchValue(event.target.value);
-  };
+  const handleSearchChange = useCallback((event) => {
+    setSearchQuery(event.target.value);
+  }, []);
+
+  const handleSearchSubmit = useCallback(() => {
+    setPage(0);
+    navigate(`/Bookings?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
+  }, [navigate, pageSize, searchQuery]);
 
   const handleSearch = async () => {
-    if (searchValue.trim() === "") {
+    if (searchQuery.trim() === "") {
       setSearchResult(null);
       const getBookingsData = async () => {
         try {
-          const data = await fetchBookings(page + 1, pageSize); //convert page index to 1-based
-          console.log("Fetched bookings data:", data); //log fetched data
-
+          const data = await fetchBookings(page + 1, pageSize, searchQuery);
           if (data.items && Array.isArray(data.items)) {
-            const numberedData = data.items.map((item, index) => ({
-              ...item,
-              rowNumber: index + 1 + page * pageSize,
-            }));
-            setBookingsData(numberedData);
+            setBookingsData(data.items);
             setRowCount(data.totalCount);
           } else {
             throw new Error("Invalid data structure");
@@ -108,17 +86,11 @@ const Bookings = () => {
       getBookingsData();
     } else {
       try {
-        const result = await fetchBookingById(searchValue);
+        const result = await fetchBookingById(searchQuery);
         setSearchResult(result);
       } catch (err) {
         setError(`Failed to fetch booking data: ${err.message}`);
       }
-    }
-  };
-
-  const handleKeyPress = (event) => {
-    if (event.key === "Enter") {
-      handleSearch();
     }
   };
 
@@ -128,7 +100,9 @@ const Bookings = () => {
       setBookingsData((prevData) =>
         prevData.filter((booking) => booking.bookingId !== id)
       );
-      console.log(`Booking with id ${id} deleted successfully`);
+      const data = await fetchBookings(page + 1, pageSize, searchQuery);
+      setBookingsData(data.items);
+      setRowCount(data.totalCount);
     } catch (error) {
       console.error(`Failed to delete booking with id ${id}:`, error);
       setError(`Failed to delete booking with id ${id}: ${error.message}`);
@@ -158,19 +132,15 @@ const Bookings = () => {
       ) : (
         <Box m="40px 0 0 0" height="75vh">
           <Box display="flex" justifyContent="flex-end" mb={2}>
-            <Box
-              display="flex"
-              backgroundColor={colors.primary[400]}
-              borderRadius="3px"
-            >
+            <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase
                 sx={{ ml: 2, flex: 1 }}
                 placeholder="Search by Booking ID"
-                value={searchValue}
+                value={searchQuery}
                 onChange={handleSearchChange}
-                onKeyDown={handleKeyPress} // Add onKeyPress event
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit() }}
               />
-              <IconButton type="button" sx={{ p: 1 }} onClick={handleSearch}>
+              <IconButton type="button" sx={{ p: 1 }} onClick={handleSearchSubmit}>
                 <SearchIcon />
               </IconButton>
             </Box>
@@ -194,31 +164,18 @@ const Bookings = () => {
                   <TableRow key={searchResult.bookingId}>
                     <TableCell>{searchResult.bookingId}</TableCell>
                     <TableCell>{searchResult.id}</TableCell>
-                    <TableCell>
-                      {new Date(searchResult.bookingDate).toLocaleString()}
-                    </TableCell>
+                    <TableCell>{new Date(searchResult.bookingDate).toLocaleString()}</TableCell>
                     <TableCell>{searchResult.bookingType}</TableCell>
                     <TableCell>{searchResult.numberOfSlot}</TableCell>
                     <TableCell>{searchResult.totalPrice}</TableCell>
-                    <TableCell
-                      style={{ color: getStatusColor(searchResult.status) }}
-                    >
-                      {searchResult.status}
-                    </TableCell>
+                    <TableCell style={{ color: getStatusColor(searchResult.status) }}>{searchResult.status}</TableCell>
                     <TableCell align="center">
-                      <Box
-                        display="flex"
-                        justifyContent="center"
-                        alignItems="center"
-                      >
+                      <Box display="flex" justifyContent="center" alignItems="center">
                         <Button
                           onClick={() => handleDelete(searchResult.bookingId)}
                           variant="contained"
                           size="small"
-                          style={{
-                            backgroundColor: colors.redAccent[400],
-                            color: colors.primary[900],
-                          }}
+                          style={{ backgroundColor: colors.redAccent[400], color: colors.primary[900] }}
                         >
                           Delete
                         </Button>
@@ -230,29 +187,18 @@ const Bookings = () => {
                     <TableRow key={row.bookingId}>
                       <TableCell>{row.bookingId}</TableCell>
                       <TableCell>{row.id}</TableCell>
-                      <TableCell>
-                        {new Date(row.bookingDate).toLocaleString()}
-                      </TableCell>
+                      <TableCell>{new Date(row.bookingDate).toLocaleString()}</TableCell>
                       <TableCell>{row.bookingType}</TableCell>
                       <TableCell>{row.numberOfSlot}</TableCell>
                       <TableCell>{row.totalPrice}</TableCell>
-                      <TableCell style={{ color: getStatusColor(row.status) }}>
-                        {row.status}
-                      </TableCell>
+                      <TableCell style={{ color: getStatusColor(row.status) }}>{row.status}</TableCell>
                       <TableCell align="center">
-                        <Box
-                          display="flex"
-                          justifyContent="center"
-                          alignItems="center"
-                        >
+                        <Box display="flex" justifyContent="center" alignItems="center">
                           <Button
                             onClick={() => handleDelete(row.bookingId)}
                             variant="contained"
                             size="small"
-                            style={{
-                              backgroundColor: colors.redAccent[400],
-                              color: colors.primary[900],
-                            }}
+                            style={{ backgroundColor: colors.redAccent[400], color: colors.primary[900] }}
                           >
                             Delete
                           </Button>
@@ -270,33 +216,29 @@ const Bookings = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          {rowCount > 0 && (
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mt="20px"
+          <Box display="flex" justifyContent="space-between" alignItems="center" mt="20px">
+            <Select
+              value={pageSize}
+              onChange={handlePageSizeChange}
             >
-              <Select value={pageSize} onChange={handlePageSizeChange}>
-                {[10, 15, 20, 25, 50].map((size) => (
-                  <MenuItem key={size} value={size}>
-                    {size}
-                  </MenuItem>
-                ))}
-              </Select>
-              <ReactPaginate
-                breakLabel="..."
-                nextLabel="next >"
-                onPageChange={handlePageClick}
-                pageRangeDisplayed={5}
-                pageCount={Math.ceil(rowCount / pageSize)}
-                previousLabel="< previous"
-                renderOnZeroPageCount={null}
-                containerClassName={"pagination"}
-                activeClassName={"active"}
-              />
-            </Box>
-          )}
+              {[10, 15, 20, 25, 50].map(size => (
+                <MenuItem key={size} value={size}>
+                  {size}
+                </MenuItem>
+              ))}
+            </Select>
+            <ReactPaginate
+              breakLabel="..."
+              nextLabel="next >"
+              onPageChange={handlePageClick}
+              pageRangeDisplayed={5}
+              pageCount={Math.ceil(rowCount / pageSize)}
+              previousLabel="< previous"
+              renderOnZeroPageCount={null}
+              containerClassName={"pagination"}
+              activeClassName={"active"}
+            />
+          </Box>
         </Box>
       )}
     </Box>

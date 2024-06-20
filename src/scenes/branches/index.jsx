@@ -1,5 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, IconButton, InputBase, Modal, TextField } from '@mui/material';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import {
+  Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select,
+  MenuItem, IconButton, InputBase, Modal, TextField
+} from '@mui/material';
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
@@ -7,29 +10,38 @@ import { fetchBranches, fetchBranchById, createBranch, updateBranch } from '../.
 import Header from '../../components/Header';
 import SearchIcon from '@mui/icons-material/Search';
 import '../users/style.css';
-import { storageDb } from '../../firebase'
+import { storageDb } from '../../firebase';
 import { ref, uploadBytesResumable, getDownloadURL, uploadBytes } from "firebase/storage";
 import { v4 } from 'uuid';
-import './custom-datetime.css';
 
-const useQuery = () => {
-  return new URLSearchParams(useLocation().search);
-};
+import {
+  validateFullName,
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  validatePhone,
+  validateTime,
+  validateRequired,
+  validateNumber,
+} from '../formValidation';
+
+const useQuery = () => new URLSearchParams(useLocation().search);
 
 const Branches = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const query = useQuery();
+  const navigate = useNavigate();
+
   const [branchesData, setBranchesData] = useState([]);
   const [rowCount, setRowCount] = useState(0);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(parseInt(query.get('pageNumber')) - 1 || 0);
+  const [pageSize, setPageSize] = useState(parseInt(query.get('pageSize')) || 10);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState(query.get('searchQuery') || "");
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [image, setImage] = useState(null);
-  const [imageRef, setImageRef] = useState(null);
-  const [previewImages, setPreviewImages] = useState(null);
+  const [previewImages, setPreviewImages] = useState([]);
   const fileInputRef = useRef(null);
   const [errors, setErrors] = useState({});
 
@@ -38,7 +50,7 @@ const Branches = () => {
     branchName: "",
     branchPhone: "",
     description: "",
-    branchPicture: "",
+    branchPictures: [],
     openTime: "",
     closeTime: "",
     openDay: { day1: "", day2: "" },
@@ -63,16 +75,10 @@ const Branches = () => {
 
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-  const query = useQuery();
-  const navigate = useNavigate();
-
-  const pageQuery = parseInt(query.get('pageNumber')) || 1;
-  const sizeQuery = parseInt(query.get('pageSize')) || 10;
-
   useEffect(() => {
     const getBranchesData = async () => {
       try {
-        const data = await fetchBranches(pageQuery, sizeQuery);
+        const data = await fetchBranches(page + 1, pageSize, searchQuery);
         setBranchesData(data.items);
         setRowCount(data.totalCount);
       } catch (err) {
@@ -80,20 +86,29 @@ const Branches = () => {
       }
     };
     getBranchesData();
-  }, [page, pageSize, pageQuery, sizeQuery]);
+  }, [page, pageSize, searchQuery]);
 
-  const handlePageClick = (event) => {
+  const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Branches?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
-  };
+    navigate(`/Branches?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
+  }, [navigate, pageSize, searchQuery]);
 
-  const handlePageSizeChange = (event) => {
+  const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
-    navigate(`/Branches?pageNumber=1&pageSize=${newSize}`);
-  };
+    navigate(`/Branches?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
+  }, [navigate, searchQuery]);
+
+  const handleSearchChange = useCallback((event) => {
+    setSearchQuery(event.target.value);
+  }, []);
+
+  const handleSearchSubmit = useCallback(() => {
+    setPage(0);
+    navigate(`/Branches?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
+  }, [navigate, pageSize, searchQuery]);
 
   const handleView = (branchId) => {
     navigate(`/Courts?branchId=${branchId}`);
@@ -110,11 +125,36 @@ const Branches = () => {
   };
 
   const handleCreateNew = async () => {
+    const validationErrors = {};
+
+    if (!validateRequired(newBranch.branchAddress).isValid) {
+      validationErrors.branchAddress = validateRequired(newBranch.branchAddress).message;
+    }
+    if (!validateRequired(newBranch.branchName).isValid) {
+      validationErrors.branchName = validateRequired(newBranch.branchName).message;
+    }
+    if (!validatePhone(newBranch.branchPhone).isValid) {
+      validationErrors.branchPhone = validatePhone(newBranch.branchPhone).message;
+    }
+    if (!validateTime(newBranch.openTime).isValid) {
+      validationErrors.openTime = validateTime(newBranch.openTime).message;
+    }
+    if (!validateTime(newBranch.closeTime).isValid) {
+      validationErrors.closeTime = validateTime(newBranch.closeTime).message;
+    }
+    if (!validateNumber(newBranch.weekdayPrice).isValid) {
+      validationErrors.weekdayPrice = validateNumber(newBranch.weekdayPrice).message;
+    }
+    if (!validateNumber(newBranch.weekendPrice).isValid) {
+      validationErrors.weekendPrice = validateNumber(newBranch.weekendPrice).message;
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
 
     try {
-
-      
-      // Tải lên các ảnh và lấy URL
       const uploadimage = newBranch.branchPictures.map(async (image) => {
         const imageRef = ref(storageDb, `BranchImage/${v4()}`);
         await uploadBytes(imageRef, image);
@@ -124,12 +164,10 @@ const Branches = () => {
 
       const imageUrls = await Promise.all(uploadimage);
 
-      // Tạo dữ liệu chi nhánh mới
       const branchData = {
         ...newBranch,
         branchPicture: JSON.stringify(imageUrls),
       };
-
 
       const formData = new FormData();
       Object.keys(branchData).forEach(key => {
@@ -144,23 +182,47 @@ const Branches = () => {
         }
       });
 
-      // Gọi API để tạo chi nhánh mới
       await createBranch(formData);
       setOpenCreateModal(false);
 
-      // Cập nhật danh sách chi nhánh sau khi tạo mới
-      const data = await fetchBranches(pageQuery, sizeQuery);
+      const data = await fetchBranches(page + 1, pageSize, searchQuery);
       setBranchesData(data.items);
       setRowCount(data.totalCount);
-
-    
     } catch (error) {
       setError('Failed to create branch');
     }
   };
 
-
   const handleUpdateBranch = async () => {
+    const validationErrors = {};
+
+    if (!validateRequired(currentBranch.branchAddress).isValid) {
+      validationErrors.branchAddress = validateRequired(currentBranch.branchAddress).message;
+    }
+    if (!validateRequired(currentBranch.branchName).isValid) {
+      validationErrors.branchName = validateRequired(currentBranch.branchName).message;
+    }
+    if (!validatePhone(currentBranch.branchPhone).isValid) {
+      validationErrors.branchPhone = validatePhone(currentBranch.branchPhone).message;
+    }
+    if (!validateTime(currentBranch.openTime).isValid) {
+      validationErrors.openTime = validateTime(currentBranch.openTime).message;
+    }
+    if (!validateTime(currentBranch.closeTime).isValid) {
+      validationErrors.closeTime = validateTime(currentBranch.closeTime).message;
+    }
+    if (!validateNumber(currentBranch.weekdayPrice).isValid) {
+      validationErrors.weekdayPrice = validateNumber(currentBranch.weekdayPrice).message;
+    }
+    if (!validateNumber(currentBranch.weekendPrice).isValid) {
+      validationErrors.weekendPrice = validateNumber(currentBranch.weekendPrice).message;
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     try {
       const uploadimage = newBranch.branchPictures.map(async (image) => {
         const imageRef = ref(storageDb, `BranchImage/${v4()}`);
@@ -168,10 +230,6 @@ const Branches = () => {
         const url = await getDownloadURL(imageRef);
         return url;
       });
-
-
-
-
 
       const formData = new FormData();
       Object.keys(currentBranch).forEach(key => {
@@ -183,7 +241,7 @@ const Branches = () => {
       });
       await updateBranch(currentBranch.branchId, formData);
       setOpenEditModal(false);
-      const data = await fetchBranches(pageQuery, sizeQuery);
+      const data = await fetchBranches(page + 1, pageSize, searchQuery);
       setBranchesData(data.items);
       setRowCount(data.totalCount);
     } catch (error) {
@@ -191,44 +249,23 @@ const Branches = () => {
     }
   };
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleSearchSubmit = async () => {
-    if (!searchTerm.trim()) {
-      try {
-        const data = await fetchBranches(pageQuery, sizeQuery);
-        setBranchesData(data.items);
-        setRowCount(data.totalCount);
-      } catch (error) {
-        setError('Failed to fetch branches data');
-      }
-    } else {
-      try {
-        const branch = await fetchBranchById(searchTerm);
-        setBranchesData([branch]);
-        setRowCount(1);
-      } catch (error) {
-        setError('Failed to fetch branch data');
-        setBranchesData([]);
-        setRowCount(0);
-      }
-    }
-  };
-
-  const handleKeyPress = (event) => {
-    if (event.key === 'Enter') {
-      handleSearchSubmit();
-    }
-  };
-
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewBranch(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+    setNewBranch(prevState => {
+      const updatedBranch = {
+        ...prevState,
+        [name]: value
+      };
+
+      // Clear errors for the updated field
+      if (errors[name]) {
+        const updatedErrors = { ...errors };
+        delete updatedErrors[name];
+        setErrors(updatedErrors);
+      }
+
+      return updatedBranch;
+    });
   };
 
   const handleFileChange = (event) => {
@@ -254,23 +291,28 @@ const Branches = () => {
     setPreviewImages(prevState => prevState ? [...prevState, ...previewUrls] : [...previewUrls]);
   };
 
-
-
-
-
   const handleSelectChange = (event) => {
     const { name, value } = event.target;
-    setNewBranch(prevState => ({
-      ...prevState,
-      openDay: {
-        ...prevState.openDay,
-        [name]: value
+    setNewBranch(prevState => {
+      const updatedBranch = {
+        ...prevState,
+        openDay: {
+          ...prevState.openDay,
+          [name]: value
+        }
+      };
+
+      // Clear errors for the updated field
+      if (errors[name]) {
+        const updatedErrors = { ...errors };
+        delete updatedErrors[name];
+        setErrors(updatedErrors);
       }
-    }));
+
+      return updatedBranch;
+    });
   };
 
-
-  // Xử lý xóa ảnh
   const handleImageRemove = (index) => {
     setNewBranch(prevState => ({
       ...prevState,
@@ -278,22 +320,28 @@ const Branches = () => {
     }));
     setPreviewImages(prevState => prevState.filter((_, i) => i !== index));
 
-    // Đặt lại giá trị của input file để cập nhật số lượng tệp hiển thị
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-
-
-
-
   const handleEditInputChange = (event) => {
     const { name, value } = event.target;
-    setCurrentBranch(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+    setCurrentBranch(prevState => {
+      const updatedBranch = {
+        ...prevState,
+        [name]: value
+      };
+
+      // Clear errors for the updated field
+      if (errors[name]) {
+        const updatedErrors = { ...errors };
+        delete updatedErrors[name];
+        setErrors(updatedErrors);
+      }
+
+      return updatedBranch;
+    });
   };
 
   const handleEditFileChange = (event) => {
@@ -306,13 +354,24 @@ const Branches = () => {
 
   const handleEditSelectChange = (event) => {
     const { name, value } = event.target;
-    setCurrentBranch(prevState => ({
-      ...prevState,
-      openDay: {
-        ...prevState.openDay,
-        [name]: value
+    setCurrentBranch(prevState => {
+      const updatedBranch = {
+        ...prevState,
+        openDay: {
+          ...prevState.openDay,
+          [name]: value
+        }
+      };
+
+      // Clear errors for the updated field
+      if (errors[name]) {
+        const updatedErrors = { ...errors };
+        delete updatedErrors[name];
+        setErrors(updatedErrors);
       }
-    }));
+
+      return updatedBranch;
+    });
   };
 
   const handleCreateModalClose = () => {
@@ -334,10 +393,10 @@ const Branches = () => {
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase
                 sx={{ ml: 2, flex: 1 }}
-                placeholder="Search by Branch ID"
-                value={searchTerm}
+                placeholder="Search by Branch Name"
+                value={searchQuery}
                 onChange={handleSearchChange}
-                onKeyDown={handleKeyPress}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit() }}
               />
               <IconButton type="button" sx={{ p: 1 }} onClick={handleSearchSubmit}>
                 <SearchIcon />
@@ -452,10 +511,46 @@ const Branches = () => {
               <Typography variant="h6" mb="20px">Create New Branch</Typography>
               <Box display="flex" justifyContent="space-between">
                 <Box width="48%">
-                  <TextField label="Branch Address" name="branchAddress" value={newBranch.branchAddress} onChange={handleInputChange} fullWidth margin="normal" />
-                  <TextField label="Branch Name" name="branchName" value={newBranch.branchName} onChange={handleInputChange} fullWidth margin="normal" />
-                  <TextField label="Branch Phone" name="branchPhone" value={newBranch.branchPhone} onChange={handleInputChange} fullWidth margin="normal" />
-                  <TextField label="Description" name="description" value={newBranch.description} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField
+                    label="Branch Address"
+                    name="branchAddress"
+                    value={newBranch.branchAddress}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.branchAddress}
+                    helperText={errors.branchAddress}
+                  />
+                  <TextField
+                    label="Branch Name"
+                    name="branchName"
+                    value={newBranch.branchName}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.branchName}
+                    helperText={errors.branchName}
+                  />
+                  <TextField
+                    label="Branch Phone"
+                    name="branchPhone"
+                    value={newBranch.branchPhone}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.branchPhone}
+                    helperText={errors.branchPhone}
+                  />
+                  <TextField
+                    label="Description"
+                    name="description"
+                    value={newBranch.description}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.description}
+                    helperText={errors.description}
+                  />
                   <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
                   <input type="file" accept='image/' multiple onChange={handleFileChange} ref={fileInputRef} className="hidden-file-input" />
                   <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
@@ -483,10 +578,46 @@ const Branches = () => {
                   </Box>
                 </Box>
                 <Box width="48%">
-                  <TextField label="Open Time" name="openTime" value={newBranch.openTime} onChange={handleInputChange} fullWidth margin="normal" />
-                  <TextField label="Close Time" name="closeTime" value={newBranch.closeTime} onChange={handleInputChange} fullWidth margin="normal" />
-                  <TextField label="Weekday Price" name="weekdayPrice" value={newBranch.weekdayPrice} onChange={handleInputChange} fullWidth margin="normal" />
-                  <TextField label="Weekend Price" name="weekendPrice" value={newBranch.weekendPrice} onChange={handleInputChange} fullWidth margin="normal" />
+                  <TextField
+                    label="Open Time"
+                    name="openTime"
+                    value={newBranch.openTime}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.openTime}
+                    helperText={errors.openTime}
+                  />
+                  <TextField
+                    label="Close Time"
+                    name="closeTime"
+                    value={newBranch.closeTime}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.closeTime}
+                    helperText={errors.closeTime}
+                  />
+                  <TextField
+                    label="Weekday Price"
+                    name="weekdayPrice"
+                    value={newBranch.weekdayPrice}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.weekdayPrice}
+                    helperText={errors.weekdayPrice}
+                  />
+                  <TextField
+                    label="Weekend Price"
+                    name="weekendPrice"
+                    value={newBranch.weekendPrice}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.weekendPrice}
+                    helperText={errors.weekendPrice}
+                  />
                   <Box mt={2} mb={2}>
                     <Typography variant="subtitle1">Open Day</Typography>
                     <Box display="flex" justifyContent="space-between" mt={1}>
@@ -521,8 +652,11 @@ const Branches = () => {
                 </Box>
               </Box>
               <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Button variant="contained" sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }} onClick={handleCreateNew}
-             >
+                <Button
+                  variant="contained"
+                  sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }}
+                  onClick={handleCreateNew}
+                >
                   Create
                 </Button>
               </Box>
@@ -546,18 +680,90 @@ const Branches = () => {
               <Typography variant="h6" mb="20px">Edit Branch</Typography>
               <Box display="flex" justifyContent="space-between">
                 <Box width="48%">
-                  <TextField label="Branch Address" name="branchAddress" value={currentBranch.branchAddress} onChange={handleEditInputChange} fullWidth margin="normal" />
-                  <TextField label="Branch Name" name="branchName" value={currentBranch.branchName} onChange={handleEditInputChange} fullWidth margin="normal" />
-                  <TextField label="Branch Phone" name="branchPhone" value={currentBranch.branchPhone} onChange={handleEditInputChange} fullWidth margin="normal" />
-                  <TextField label="Description" name="description" value={currentBranch.description} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField
+                    label="Branch Address"
+                    name="branchAddress"
+                    value={currentBranch.branchAddress}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.branchAddress}
+                    helperText={errors.branchAddress}
+                  />
+                  <TextField
+                    label="Branch Name"
+                    name="branchName"
+                    value={currentBranch.branchName}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.branchName}
+                    helperText={errors.branchName}
+                  />
+                  <TextField
+                    label="Branch Phone"
+                    name="branchPhone"
+                    value={currentBranch.branchPhone}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.branchPhone}
+                    helperText={errors.branchPhone}
+                  />
+                  <TextField
+                    label="Description"
+                    name="description"
+                    value={currentBranch.description}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.description}
+                    helperText={errors.description}
+                  />
                   <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
                   <input type="file" accept='image/' multiple onChange={handleEditFileChange} />
                 </Box>
                 <Box width="48%">
-                  <TextField label="Open Time" name="openTime" value={currentBranch.openTime} onChange={handleEditInputChange} fullWidth margin="normal" />
-                  <TextField label="Close Time" name="closeTime" value={currentBranch.closeTime} onChange={handleEditInputChange} fullWidth margin="normal" />
-                  <TextField label="Weekday Price" name="weekdayPrice" value={currentBranch.weekdayPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
-                  <TextField label="Weekend Price" name="weekendPrice" value={currentBranch.weekendPrice} onChange={handleEditInputChange} fullWidth margin="normal" />
+                  <TextField
+                    label="Open Time"
+                    name="openTime"
+                    value={currentBranch.openTime}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.openTime}
+                    helperText={errors.openTime}
+                  />
+                  <TextField
+                    label="Close Time"
+                    name="closeTime"
+                    value={currentBranch.closeTime}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.closeTime}
+                    helperText={errors.closeTime}
+                  />
+                  <TextField
+                    label="Weekday Price"
+                    name="weekdayPrice"
+                    value={currentBranch.weekdayPrice}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.weekdayPrice}
+                    helperText={errors.weekdayPrice}
+                  />
+                  <TextField
+                    label="Weekend Price"
+                    name="weekendPrice"
+                    value={currentBranch.weekendPrice}
+                    onChange={handleEditInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.weekendPrice}
+                    helperText={errors.weekendPrice}
+                  />
                   <Box mt={2} mb={2}>
                     <Typography variant="subtitle1">Open Day</Typography>
                     <Box display="flex" justifyContent="space-between" mt={1}>
@@ -605,7 +811,7 @@ const Branches = () => {
                 </Box>
               </Box>
               <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Button sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }} onClick={handleUpdateBranch} >Save</Button>
+                <Button sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }} onClick={handleUpdateBranch}>Save</Button>
               </Box>
             </Box>
           </Modal>
@@ -615,4 +821,4 @@ const Branches = () => {
   );
 };
 
-export default Branches
+export default Branches;
