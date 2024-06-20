@@ -21,7 +21,6 @@ export const fetchTeamData = async (pageNumber = 1, pageSize = 10, searchQuery =
 
       if (Array.isArray(response.data)) {
         const items = response.data;
-        // console.log("aaaaaaaaaaaaaaaaaaa==============");
         const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
         console.log(response.headers['x-total-count']);
 
