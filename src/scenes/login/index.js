@@ -9,7 +9,7 @@ import {
   validateEmail,
   validatePassword,
   validateConfirmPassword,
-} from "../formValidation.js";
+} from "./formValidation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { GoogleLogin } from "@react-oauth/google";

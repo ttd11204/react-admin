@@ -42,7 +42,7 @@ const StaffSidebar = () => {
   }, []);
 
   return (
-    <Box 
+    <Box height= "100%"
       sx={{
         "& .pro-sidebar-inner": {
           background: `${colors.primary[400]} !important`,

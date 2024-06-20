@@ -17,7 +17,7 @@ import {
   validateFullName as validateUsername,
   validateEmail,
   validatePhone
-} from '../formValidation';
+} from '../login/formValidation';
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 
