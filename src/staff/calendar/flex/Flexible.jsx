@@ -1,62 +1,81 @@
 import React, { useState } from "react";
 import { Box, Typography, Button, TextField } from "@mui/material";
-import {
-  validateRequired,
-  validateNumber,
-} from "../../../scenes/formValidation";
-import { createBookingFlex } from "../../../api/bookingApi";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { validateRequired, validateNumber } from "../../../scenes/formValidation";
+import { fetchUserDetailByEmail } from "../../../api/userApi";
+import { fetchBranchById } from "../../../api/branchApi";
+import { useNavigate } from "react-router-dom";
 
 const Flexible = () => {
-  const [userId, setUserId] = useState('');
+  const [email, setEmail] = useState('');
   const [numberOfSlot, setNumberOfSlot] = useState('');
   const [branchId, setBranchId] = useState('');
   const [errors, setErrors] = useState({
-    userId: '',
+    email: '',
     numberOfSlot: '',
     branchId: '',
   });
 
-  const navigate = useNavigate(); // Use useNavigate for navigation
+  const navigate = useNavigate();
 
   const handleChange = (field, value) => {
     let error = '';
     if (field === 'numberOfSlot') {
       const validation = validateNumber(value);
       error = validation.isValid ? '' : validation.message;
-    } else if (field === 'userId' || field === 'branchId') {
+    } else if (field === 'email' || field === 'branchId') {
       const validation = validateRequired(value);
       error = validation.isValid ? '' : validation.message;
     }
     setErrors(prevErrors => ({ ...prevErrors, [field]: error }));
     
-    if (field === 'userId') setUserId(value);
+    if (field === 'email') setEmail(value);
     if (field === 'numberOfSlot') setNumberOfSlot(value);
     if (field === 'branchId') setBranchId(value);
   };
 
   const handleSubmit = async () => {
-    const userIdValidation = validateRequired(userId);
+    const emailValidation = validateRequired(email);
     const numberOfSlotValidation = validateNumber(numberOfSlot);
     const branchIdValidation = validateRequired(branchId);
 
-    if (!userIdValidation.isValid || !numberOfSlotValidation.isValid || !branchIdValidation.isValid) {
+    if (!emailValidation.isValid || !numberOfSlotValidation.isValid || !branchIdValidation.isValid) {
       setErrors({
-        userId: userIdValidation.message,
+        email: emailValidation.message,
         numberOfSlot: numberOfSlotValidation.message,
         branchId: branchIdValidation.message,
       });
       return;
     }
 
-    // Navigate to new booking page with the state
-    navigate("/staff/flexible-booking", {
-      state: {
-        userId,
-        numberOfSlot,
-        branchId
+    try {
+      const userResponse = await fetchUserDetailByEmail(email);
+      const branchResponse = await fetchBranchById(branchId);
+      if (userResponse && branchResponse) {
+        const userId = userResponse.id; // Assuming the user API response has an id field
+
+        navigate("/staff/flexible-booking", {
+          state: {
+            userId,
+            numberOfSlot,
+            branchId,
+            email
+          }
+        });
+      } else {
+        setErrors({
+          email: userResponse ? '' : 'Invalid email',
+          numberOfSlot: '',
+          branchId: branchResponse ? '' : 'Invalid branch ID',
+        });
       }
-    });
+    } catch (error) {
+      console.error('Error during validation:', error);
+      setErrors({
+        email: 'Error validating email',
+        numberOfSlot: '',
+        branchId: 'Error validating branch ID',
+      });
+    }
   };
 
   return (
@@ -80,15 +99,15 @@ const Flexible = () => {
       </Typography>
 
       <Typography mb="10px" variant="h5" color="black" fontWeight="bold">
-        User ID
+        Email
       </Typography>
       <TextField
-        placeholder="Enter User ID"
+        placeholder="Enter User Email"
         fullWidth
-        value={userId}
-        onChange={(e) => handleChange('userId', e.target.value)}
-        error={Boolean(errors.userId)}
-        helperText={errors.userId}
+        value={email}
+        onChange={(e) => handleChange('email', e.target.value)}
+        error={Boolean(errors.email)}
+        helperText={errors.email}
         InputProps={{
           style: {
             color: "#000000",
