@@ -36,7 +36,7 @@
    }
    
    .container span {
-       font-size: 12px;
+       font-size: 13px;
    }
    
    .container a {
@@ -145,14 +145,17 @@
    }
    
    .social-icons a {
+       background-color: #2067f5;
        border: 1px solid #ccc;
-       border-radius: 20%;
+       border-radius: 5px;
        display: inline-flex;
-       justify-content: center;
+       justify-content: flex-start;
        align-items: center;
-       margin: 0 3px;
-       width: 40px;
+       margin: 10px 3px;
+       padding: 5px;
+       width: 260px;
        height: 40px;
+       cursor: pointer;
    }
    
    .toggle-container {
@@ -253,3 +256,7 @@
        box-shadow: 1px 1px 5px 0 #58D68D;
    }
   }     
+
+  .login_register{
+    color: black;
+  }

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./loginTest.css";
-import { FaGoogle, FaFacebookF } from "react-icons/fa";
 import { loginApi } from "../../api/usersApi";
-import { registerApi } from "../../api/registerApi";
+import { registerStaffApi } from "../../api/registerApi";
+import ClipLoader from "react-spinners/ClipLoader";
 import {
   validateFullName,
   validateEmail,
@@ -12,11 +12,7 @@ import {
 } from "../formValidation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { GoogleLogin } from "@react-oauth/google";
-import { LoginSocialFacebook } from "reactjs-social-login";
-import { FacebookLoginButton } from "react-social-login-buttons";
-import { FacebookAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "../../firebase.js"
+import axios from "axios";
 
 const Login = () => {
   const [password, setPassword] = useState("");
@@ -72,71 +68,69 @@ const Login = () => {
     e.preventDefault();
 
     if (!email || !password) {
-        toast.error("Email/Password is required!");
-        return;
+      toast.error("Email/Password is required!");
+      return;
     }
 
     setLoading(true);
     try {
-        const res = await loginApi(email, password);
-        console.log(res); // In phản hồi từ API ra console để kiểm tra
+      const res = await loginApi(email, password);
+      console.log(res); // In phản hồi từ API ra console để kiểm tra
 
-        if (res && res.token) {
-            localStorage.setItem("token", res.token);
+      if (res && res.token) {
+        localStorage.setItem("token", res.token);
 
-            // Decode token để lấy thông tin role
-            const decodedToken = JSON.parse(atob(res.token.split('.')[1]));
-            const userRole = decodedToken.role;
-            localStorage.setItem("userRole", userRole);
+        // Decode token để lấy thông tin role
+        const decodedToken = JSON.parse(atob(res.token.split('.')[1]));
+        const userRole = decodedToken.role;
+        localStorage.setItem("userRole", userRole);
 
-            toast.success("Login successful!");
+        toast.success("Login successful!");
 
-            // Điều hướng dựa trên vai trò của người dùng
-            if (userRole === 'Admin') {
-                navigate("/");
-            } else if (userRole === 'Staff') {
-                navigate("/staff");
-            } else {
-                navigate("/login");
-                toast.error("Unauthorized role");
-            }
-        } else if (res && res.status === 401) {
-            toast.error(res.error || "Unauthorized");
-            setMessage("Login failed!");
-            setMessageType("error");
+        // Điều hướng dựa trên vai trò của người dùng
+        if (userRole === 'Admin') {
+          navigate("/");
+        } else if (userRole === 'Staff') {
+          navigate("/staff");
         } else {
-            toast.error("Login failed!");
-            setMessage("Login failed!");
-            setMessageType("error");
+          navigate("/login");
+          toast.error("Unauthorized role");
         }
-    } catch (error) {
-        console.error("Login error: ", error); // In ra chi tiết lỗi
+      } else if (res && res.status === 401) {
+        toast.error(res.error || "Unauthorized");
+        setMessage("Login failed!");
+        setMessageType("error");
+      } else {
         toast.error("Login failed!");
         setMessage("Login failed!");
         setMessageType("error");
+      }
+    } catch (error) {
+      console.error("Login error: ", error); // In ra chi tiết lỗi
+      toast.error("Login failed!");
+      setMessage("Login failed!");
+      setMessageType("error");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
-
-  
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-  
+
     const fullNameValidation = validateFullName(fullName);
-    const emailValidation = validateEmail(email);
+    const emailValidation = await validateEmail(email);
     const passwordValidation = validatePassword(password);
     const confirmPasswordValidation = validateConfirmPassword(
       password,
       confirmPassword
     );
-  
+
     setFullNameValidation(fullNameValidation);
     setEmailValidation(emailValidation);
     setPasswordValidation(passwordValidation);
     setConfirmPasswordValidation(confirmPasswordValidation);
-  
+
     if (
       !fullNameValidation.isValid ||
       !emailValidation.isValid ||
@@ -147,24 +141,20 @@ const Login = () => {
       setMessageType("error");
       return;
     }
-  
+
     setLoading(true);
-  
+
     try {
-      
+      const response = await registerStaffApi(
+        fullName,
+        email,
+        password,
+        confirmPassword
+      );
       toast.success("Registration successful!");
       setMessage("SIGN UP SUCCESSFULLY - LOG IN NOW !");
       setMessageType("success");
-      setIsLogin(true);  // Chuyển sang form đăng nhập
-  
-      // Kiểm tra và điều hướng dựa trên fullName
-      if (fullName.startsWith("Staff")) {
-        navigate("/login?role=staff");
-      } else if (fullName.startsWith("Admin")) {
-        navigate("/login?role=admin");
-      } else {
-        navigate("/login");
-      }
+      setIsLogin(true);
     } catch (error) {
       if (error.response) {
         toast.error(error.response.data.message || "Registration failed");
@@ -177,82 +167,6 @@ const Login = () => {
       setLoading(false);
     }
   };
-  
-  
-  const loginGoogle = async (response) => {
-    var token = response.credential; // Token này là một phần của response trả về từ Google sau khi đăng nhập thành công
-    console.log("Google Token:", token);
-
-    try {
-      const res = await fetch(
-        "https://courtcaller.azurewebsites.net/api/authentication/google-login?token=" +
-          token,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // body: { token }, 
-        }
-      );
-
-      const data = await res.json();
-
-      if (res.ok) {
-        console.log("Login successful:", data);
-        localStorage.setItem("token", token);
-        toast.success("Login Successfully");
-        navigate("/Users");
-       
-      } else {
-        console.error("Backend error:", data);
-        toast.error("Login Failed");
-        throw new Error(data.message || "Google login failed");
-      }
-    } catch (error) {
-      console.error("Error during login:", error);
-      toast.error("Login Failed");
-    }
-  };
-
-  
-  const loginFacebook = async (response) => {
-    try {
-      const provider = new FacebookAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-  
-      // Extract the access token from Firebase's stsTokenManager
-      const accessToken = result.user.stsTokenManager.accessToken;
-  
-      // Log the user info and token
-      console.log('Login successfully', result.user);
-      console.log('Access Token:', accessToken);
-  
-      // Send the access token to the back-end
-      const res = await fetch("https://courtcaller.azurewebsites.net/api/authentication/facebook-login?token=" + accessToken, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // body: JSON.stringify({ token: accessToken }),
-      });
-  
-      const data = await res.json();
-  
-      if (res.ok) {
-        console.log("Login successful:", data);
-        localStorage.setItem("token", accessToken);
-        toast.success("Login Successfully");
-        navigate("/Users");
-      } else {
-        console.error("Backend error:", data);
-        toast.error("Login Failed");
-      }
-    } catch (error) {
-      console.error("Error:", error.message);
-      toast.error('Facebook login failed');
-    }
-  };
 
   return (
     <div className="login-component">
@@ -260,20 +174,7 @@ const Login = () => {
         {isLogin ? (
           <div className="form-container sign-in">
             <form onSubmit={handleLogin}>
-              <h1>LOG IN</h1>
-              <div className="social-icons">
-                <GoogleLogin
-                  onSuccess={loginGoogle}
-                  onError={() => {
-                    console.log("Login Failed");
-                    toast.error("Google login failed");
-                  }}
-                />
-                
-                <a onClick={loginFacebook} className="icon" style={{ color: "blue" }}>
-                  <FaFacebookF />
-                </a> 
-              </div>
+              <h1 className="login_register">LOG IN</h1>
               <span>or use your account for login</span>
               <input
                 type="text"
@@ -304,16 +205,7 @@ const Login = () => {
         ) : (
           <div className="form-container sign-up">
             <form onSubmit={handleRegister}>
-              <h1>Create Account</h1>
-              <div className="social-icons">
-                <a href="#" className="icon" style={{ color: "red" }}>
-                  <FaGoogle />
-                </a>
-                <a href="#" className="icon" style={{ color: "blue" }}>
-                  <FaFacebookF />
-                </a>
-              </div>
-              <span>or use your email for registration</span>
+              <h1 className="login_register">Create Account</h1>
               <input
                 type="text"
                 value={fullName}
@@ -360,9 +252,8 @@ const Login = () => {
               {confirmPasswordValidation.message && (
                 <p className="errorVal">{confirmPasswordValidation.message}</p>
               )}
-              <button type="submit" className="signUpBtn">
-                {loading && <i className="fas fa-sync fa-spin"></i>}
-                Sign Up
+              <button type="submit" className="signUpBtn" disabled={loading}>
+                {loading ? <ClipLoader size={15} color="#fff" /> : "Sign Up"}
               </button>
               {message && (
                 <p className={messageType === "error" ? "error-message" : ""}>
