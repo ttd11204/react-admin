@@ -128,6 +128,7 @@ const ReserveSlot = () => {
         const response = await fetchBranches(1, 10);
         setBranches(response.items);
         setSelectedBranch('');
+        console.log('Branches:', response.items);
       } catch (error) {
         console.error('Error fetching branches data:', error);
       }
