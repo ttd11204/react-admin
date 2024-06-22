@@ -53,6 +53,7 @@ function App() {
 
           {/* Routes cho admin */}
           <Route path="/" element={<ProtectedRoute roles={["Admin"]}><Layout /></ProtectedRoute>}>
+          {/* <Route path="/" element={<Layout />}> */}
             <Route index element={<Users />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="Users" element={<Users />} />

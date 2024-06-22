@@ -7,16 +7,18 @@ import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
 import {
-  fetchTeamData, createUser, updateUserBanStatus, fetchRoleByUserId
+  fetchTeamData, updateUserBanStatus, fetchRoleByUserId
 } from '../../api/userApi';
+import { registerStaffApi } from '../../api/registerApi';
 import Header from '../../components/Header';
 import SearchIcon from "@mui/icons-material/Search";
 import { GrView } from "react-icons/gr";
 import './style.css';
 import {
-  validateFullName as validateUsername,
+  validateFullName,
   validateEmail,
-  validatePhone
+  validatePassword,
+  validateConfirmPassword
 } from '../formValidation';
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -31,10 +33,11 @@ const Users = () => {
 
   const [teamData, setTeamData] = useState([]);
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', email: '', phone: '' });
+  const [newUser, setNewUser] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
   const [usernameValidation, setUsernameValidation] = useState({ isValid: true, message: '' });
   const [emailValidation, setEmailValidation] = useState({ isValid: true, message: '' });
-  const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
+  const [passwordValidation, setPasswordValidation] = useState({ isValid: true, message: '' });
+  const [confirmPasswordValidation, setConfirmPasswordValidation] = useState({ isValid: true, message: '' });
   const [page, setPage] = useState(parseInt(query.get('pageNumber')) - 1 || 0);
   const [pageSize, setPageSize] = useState(parseInt(query.get('pageSize')) || 10);
   const [rowCount, setRowCount] = useState(0);
@@ -113,32 +116,36 @@ const Users = () => {
     const { name, value } = e.target;
     setNewUser((prevState) => ({ ...prevState, [name]: value }));
 
-    if (name === 'username') {
-      setUsernameValidation(validateUsername(value));
+    if (name === 'fullName') {
+      setUsernameValidation(validateFullName(value));
     } else if (name === 'email') {
       setEmailValidation(validateEmail(value));
-    } else if (name === 'phone') {
-      setPhoneValidation(validatePhone(value));
+    } else if (name === 'password') {
+      setPasswordValidation(validatePassword(value));
+    } else if (name === 'confirmPassword') {
+      setConfirmPasswordValidation(validateConfirmPassword(newUser.password, value));
     }
-  }, []);
+  }, [newUser.password]);
 
   const handleCreateUserSubmit = useCallback(async (e) => {
     e.preventDefault();
 
-    const usernameValidation = validateUsername(newUser.username);
-    const emailValidation = validateEmail(newUser.email);
-    const phoneValidation = validatePhone(newUser.phone);
+    const fullNameValidation = validateFullName(newUser.fullName);
+    const emailValidation = await validateEmail(newUser.email);
+    const passwordValidation = validatePassword(newUser.password);
+    const confirmPasswordValidation = validateConfirmPassword(newUser.password, newUser.confirmPassword);
 
-    setUsernameValidation(usernameValidation);
+    setUsernameValidation(fullNameValidation);
     setEmailValidation(emailValidation);
-    setPhoneValidation(phoneValidation);
+    setPasswordValidation(passwordValidation);
+    setConfirmPasswordValidation(confirmPasswordValidation);
 
-    if (!usernameValidation.isValid || !emailValidation.isValid || !phoneValidation.isValid) {
+    if (!fullNameValidation.isValid || !emailValidation.isValid || !passwordValidation.isValid || !confirmPasswordValidation.isValid) {
       return;
     }
 
     try {
-      await createUser(newUser);
+      await registerStaffApi(newUser.fullName, newUser.email, newUser.password, newUser.confirmPassword);
       setOpenCreateModal(false);
       getTeamData(page, pageSize, searchQuery);
     } catch (error) {
@@ -173,12 +180,12 @@ const Users = () => {
             {userRole === 'Admin' && (
               <Button
                 variant="contained"
+                onClick={handleCreateNew}
                 style={{
-                  marginLeft: 8,
                   backgroundColor: colors.greenAccent[400],
                   color: colors.primary[900],
+                  marginLeft: 8
                 }}
-                onClick={handleCreateNew}
               >
                 Create New
               </Button>
@@ -242,7 +249,6 @@ const Users = () => {
             <Select
               value={pageSize}
               onChange={handlePageSizeChange}
-              style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}
             >
               {[10, 15, 20].map(size => (
                 <MenuItem key={size} value={size}>
@@ -278,12 +284,12 @@ const Users = () => {
             p: 4,
           }}
         >
-          <Typography variant="h6" mb="20px">Create New User</Typography>
+          <Typography variant="h6" mb="20px">Create New Staff</Typography>
           <form onSubmit={handleCreateUserSubmit}>
             <TextField
-              label="Username"
-              name="username"
-              value={newUser.username}
+              label="Full Name"
+              name="fullName"
+              value={newUser.fullName}
               onChange={handleCreateUserChange}
               fullWidth
               margin="normal"
@@ -301,14 +307,26 @@ const Users = () => {
               helperText={emailValidation.message}
             />
             <TextField
-              label="Phone"
-              name="phone"
-              value={newUser.phone}
+              label="Password"
+              name="password"
+              value={newUser.password}
               onChange={handleCreateUserChange}
               fullWidth
               margin="normal"
-              error={!phoneValidation.isValid}
-              helperText={phoneValidation.message}
+              error={!passwordValidation.isValid}
+              helperText={passwordValidation.message}
+              type="password"
+            />
+            <TextField
+              label="Confirm Password"
+              name="confirmPassword"
+              value={newUser.confirmPassword}
+              onChange={handleCreateUserChange}
+              fullWidth
+              margin="normal"
+              error={!confirmPasswordValidation.isValid}
+              helperText={confirmPasswordValidation.message}
+              type="password"
             />
             <Button
               variant="contained"
