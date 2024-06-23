@@ -9,7 +9,6 @@ import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import { jwtDecode } from 'jwt-decode';
@@ -104,8 +103,6 @@ const StaffSidebar = () => {
                 alignItems="center"
                 ml="15px"
               >
-
-                
                 <Typography variant="h3" color={colors.grey[100]}>
                   {userRole === "Admin" ? "ADMIN" : "STAFF"}
                 </Typography>

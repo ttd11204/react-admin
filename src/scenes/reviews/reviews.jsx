@@ -137,7 +137,7 @@ const Reviews = () => {
         </Typography>
       ) : (
         <Box m="40px 0 0 0" height="75vh">
-          <Box display="flex" justifyContent="space-between" mb={2}>
+          <Box display="flex" justifyContent="flex-end" mb={2}>
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search by Rating" value={searchRating} onChange={(e) => setSearchRating(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }} />
               <IconButton type="button" sx={{ p: 1 }} onClick={handleSearch}>
