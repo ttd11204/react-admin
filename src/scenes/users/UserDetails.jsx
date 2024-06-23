@@ -7,7 +7,7 @@ import { fetchRoleByUserId, fetchUserDetail, updateUserDetail, updateUserRole } 
 import Header from '../../components/Header';
 import './style.css';
 import { storageDb } from '../../firebase';
-import { getDownloadURL, ref, uploadBytes ,deleteObject } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 } from 'uuid';
 
 const UserDetails = () => {
@@ -21,7 +21,6 @@ const UserDetails = () => {
   const [role, setRole] = useState(null);
   const [image, setImage] = useState(null);
   const [imageRef, setImageRef] = useState(null);
-  //ảnh tạm trước khi bấm save 
   const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
@@ -51,31 +50,27 @@ const UserDetails = () => {
 
   const handleProfilePictureChange = (event) => {
     const file = event.target.files[0];
-    if (file && file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg') {
-     
-        if (file.size > 5 * 1024 * 1024) { // Giới hạn 5MB
-          console.error('File size exceeds 5MB');
-          return;
-        }
-        setImage(file);
-        setImageRef(ref(storageDb, `UserImage/${v4()}`));
-        const previewImage1 = URL.createObjectURL(file);
-        setPreviewImage(previewImage1);
-        console.log( previewImage1);
-      } else {
-        console.error('File is not a PNG image');
+    if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
+      if (file.size > 5 * 1024 * 1024) { // Limit 5MB
+        console.error('File size exceeds 5MB');
+        return;
       }
-    
+      setImage(file);
+      setImageRef(ref(storageDb, `UserImage/${v4()}`));
+      const previewImage1 = URL.createObjectURL(file);
+      setPreviewImage(previewImage1);
+      console.log(previewImage1);
+    } else {
+      console.error('File is not a PNG, JPEG, or JPG image');
+    }
   };
 
   const handleSave = async () => {
     try {
-      
       if (!role && user.role) {
         setRole(user.role);
-      } 
+      }
 
-      
       if (image && imageRef) {
         if (user.profilePicture) {
           const oldPath = user.profilePicture.split('court-callers.appspot.com/o/')[1].split('?')[0];
@@ -84,8 +79,7 @@ const UserDetails = () => {
         }
         const snapshot = await uploadBytes(imageRef, image);
         console.log('Uploaded a file!', snapshot);
-        
-        
+
         const url = await getDownloadURL(imageRef);
         setUser((prevUser) => ({
           ...prevUser,
@@ -94,7 +88,6 @@ const UserDetails = () => {
 
         await updateUserDetail(id, { ...user, profilePicture: url, role });
       } else {
-      
         await updateUserDetail(id, { ...user, role });
       }
       URL.revokeObjectURL(previewImage);
@@ -170,7 +163,7 @@ const UserDetails = () => {
             </Box>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={4} display="flex" justifyContent="center" alignItems="center">
-              <Avatar src={previewImage || user.profilePicture} alt="Profile Picture" sx={{ width: 150, height: 150 }} />
+                <Avatar src={previewImage || user.profilePicture} alt="Profile Picture" sx={{ width: 150, height: 150 }} />
               </Grid>
               <Grid item xs={12} sm={8}>
                 <Box mb={2}>
@@ -238,16 +231,11 @@ const UserDetails = () => {
                 )}
                 <Box mb={2}>
                   <Typography variant="h6">Balance</Typography>
-                  {editMode ? (
-                    <TextField
-                      fullWidth
-                      value={user.balance || ''}
-                      onChange={(e) => handleFieldChange('balance', e.target.value)}
-                      size="small"
-                    />
-                  ) : (
-                    <Typography>{user.balance || 'N/A'}</Typography>
-                  )}
+                  <Typography>{user.balance || 'N/A'}</Typography>
+                </Box>
+                <Box mb={2}>
+                  <Typography variant="h6">Point</Typography>
+                  <Typography>{user.point || 'N/A'}</Typography>
                 </Box>
                 <Box mb={2}>
                   <Typography variant="h6">Role</Typography>
