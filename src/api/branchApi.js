@@ -5,7 +5,7 @@ const url = 'https://courtcaller.azurewebsites.net/api';
 export const fetchBranches = async (pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
     const params = { pageNumber, pageSize, searchQuery };
-    const response = await axios.get(`${url}/Branches?pageNumber=1&pageSize=10`, { params });
+    const response = await axios.get(`${url}/Branches`, { params });
 
     if (Array.isArray(response.data)) {
       const items = response.data;

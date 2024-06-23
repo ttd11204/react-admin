@@ -110,8 +110,8 @@ const Bookings = () => {
   };
 
   const getStatusColor = (status) => {
-    const yellow = colors.yellow ? colors.yellow[700] : "#FFFF00"; // Fall back to yellow color
-    const red = colors.redAccent ? colors.redAccent[700] : "#FF0000"; // Fall back to red color
+    const yellow = colors.yellow ? colors.yellow[700] : "#FFFF00";
+    const red = colors.redAccent ? colors.redAccent[700] : "#FF0000";
     switch (status) {
       case "Pending":
         return yellow;

@@ -24,7 +24,7 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10, searchQuery =
 // Delete a booking by ID
 export const deleteBooking = async (id) => {
   try {
-    const response = await axios.delete(`${url}/Bookings/${id}`);
+    const response = await axios.delete(`${url}/Bookings/delete/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting booking:', error.response ? error.response.data : error.message);
