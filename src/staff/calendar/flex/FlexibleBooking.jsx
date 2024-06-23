@@ -2,12 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Button, Grid, Typography, IconButton } from "@mui/material";
 import { fetchBranchById } from "../../../api/branchApi";
-import { fetchUserDetailByEmail } from "../../../api/userApi";
 import dayjs from 'dayjs';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import { fetchPrice } from '../../../api/priceApi';
 
 dayjs.extend(isSameOrBefore);
 
@@ -76,14 +74,13 @@ const timeStringToDecimal = (timeString) => {
   return hours + minutes / 60 + seconds / 3600;
 };
 
-const FlexibleBooking = () => {
+const ReserveSlot = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { email, numberOfSlot, branchId } = location.state;
+  const { email, numberOfSlot, branchId, userChecked, userInfo,userId } = location.state;
 
   const [branch, setBranch] = useState(null);
-  const [userId, setUserId] = useState(null);
   const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week'));
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [weekDays, setWeekDays] = useState([]);
@@ -93,23 +90,21 @@ const FlexibleBooking = () => {
   const currentDate = dayjs();
 
   useEffect(() => {
-    const fetchUserAndBranchDetails = async () => {
+    const fetchBranchDetails = async () => {
       try {
-        const userResponse = await fetchUserDetailByEmail(email);
         const branchDetails = await fetchBranchById(branchId);
-        if (userResponse && branchDetails) {
-          setUserId(userResponse.id); // Assuming the user API response has an id field
+        if (branchDetails) {
           setBranch(branchDetails);
         } else {
-          console.error('Invalid user or branch details');
+          console.error('Invalid branch details');
         }
       } catch (error) {
-        console.error('Error fetching user or branch details:', error);
+        console.error('Error fetching branch details:', error);
       }
     };
 
-    fetchUserAndBranchDetails();
-  }, [email, branchId]);
+    fetchBranchDetails();
+  }, [branchId]);
 
   useEffect(() => {
     if (branch) {
@@ -173,9 +168,11 @@ const FlexibleBooking = () => {
 
     navigate("/staff/PaymentDetail", {
       state: {
-        userId,
+        userChecked,
+        userInfo,
         branchId,
         bookingRequests,
+        userId
       }
     });
   };
@@ -192,7 +189,7 @@ const FlexibleBooking = () => {
     <Box m="20px" className="max-width-box" sx={{ backgroundColor: "#F5F5F5", borderRadius: 2, p: 2 }}>
       <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
         <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
-          Booking for User Email: {email}
+          Booking for User Email: {userInfo.userId}
         </Typography>
         <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
           Branch ID: {branchId}
@@ -352,4 +349,4 @@ const FlexibleBooking = () => {
   );
 };
 
-export default FlexibleBooking;
+export default ReserveSlot;
