@@ -74,11 +74,11 @@ const timeStringToDecimal = (timeString) => {
   return hours + minutes / 60 + seconds / 3600;
 };
 
-const ReserveSlot = () => {
+const FlexibleBooking = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { email, numberOfSlot, branchId, userChecked, userInfo,userId } = location.state;
+  const { email, numberOfSlot, branchId, userChecked, userInfo, userId } = location.state;
 
   const [branch, setBranch] = useState(null);
   const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week'));
@@ -127,20 +127,19 @@ const ReserveSlot = () => {
 
   const handleSlotClick = (slot, day) => {
     const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
-    const isSelected = selectedSlots.some(selectedSlot => selectedSlot.slotId === slotId);
-    if (isSelected) {
-      setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== slotId));
+    const slotCount = selectedSlots.filter(selectedSlot => selectedSlot.slotId === slotId).length;
+    const totalSelectedSlots = selectedSlots.length;
+
+    if (slotCount < numberOfSlot && totalSelectedSlots < numberOfSlot) {
+      setSelectedSlots([...selectedSlots, { slotId, slot, day }]);
     } else {
-      if (selectedSlots.length < numberOfSlot) {
-        setSelectedSlots([...selectedSlots, { slotId, slot, day }]);
-      } else {
-        alert(`You can select up to ${numberOfSlot} slots only`);
-      }
+      alert(`You can select up to ${numberOfSlot} slots only`);
     }
   };
 
   const handleRemoveSlot = (slotId) => {
-    setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== slotId));
+    const newSelectedSlots = selectedSlots.filter(selectedSlot => selectedSlot.slotId !== slotId);
+    setSelectedSlots(newSelectedSlots);
   };
 
   const handlePreviousWeek = () => {
@@ -262,7 +261,8 @@ const ReserveSlot = () => {
 
           {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
             const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
-            const isSelected = selectedSlots.some(selectedSlot => selectedSlot.slotId === slotId);
+            const slotCount = selectedSlots.filter(selectedSlot => selectedSlot.slotId === slotId).length;
+            const isSelected = slotCount > 0;
             const isPast = day.isBefore(currentDate, 'day') || (day.isSame(currentDate, 'day') && timeStringToDecimal(slot.split(' - ')[1]) <= timeStringToDecimal(currentDate.format('HH:mm:ss')));
 
             return (
@@ -298,6 +298,27 @@ const ReserveSlot = () => {
                       {slot}
                     </Typography>
                     {isSelected && (
+                      <Typography
+                        sx={{
+                          position: 'absolute',
+                          top: 5,
+                          right: 5,
+                          backgroundColor: '#FFFFFF',
+                          color: '#1976d2',
+                          borderRadius: '50%',
+                          width: 20,
+                          height: 20,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {slotCount}
+                      </Typography>
+                    )}
+                    {isSelected &&  (
                       <IconButton
                         onClick={(e) => { e.stopPropagation(); handleRemoveSlot(slotId); }}
                         sx={{
@@ -349,4 +370,4 @@ const ReserveSlot = () => {
   );
 };
 
-export default ReserveSlot;
+export default FlexibleBooking;
