@@ -9,6 +9,7 @@ import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { fetchPrice } from '../../../api/priceApi';
 import { fetchBranchById } from '../../../api/branchApi';
+import * as signalR from '@microsoft/signalr';
 
 dayjs.extend(isSameOrBefore);
 
@@ -100,8 +101,44 @@ const ReserveSlot = () => {
   const [weekDays, setWeekDays] = useState([]);
   const [morningTimeSlots, setMorningTimeSlots] = useState([]);
   const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
+  const [connection, setConnection] = useState(null);
+const [lockedSlots, setLockedSlots] = useState([]);
   const navigate = useNavigate();
   const currentDate = dayjs();
+
+  // thêm signalR (v1)
+  useEffect(() => {
+    const newConnection = new signalR.HubConnectionBuilder()
+        .withUrl('https://courtcaller.azurewebsites.net/timeslotHub')
+        .withAutomaticReconnect()
+        .build();
+
+        setConnection(newConnection);
+
+        newConnection.start()
+            .then(() => {
+                console.log('Connected to SignalR Hub');
+                newConnection.on('LockingSlot', slotInfo => {
+                    setLockedSlots(prev => [...prev, slotInfo]);
+                });
+                newConnection.on('ReleaseSlot', slotInfo => {
+                    setLockedSlots(prev => prev.filter(slot => 
+                        !(slot.BranchId === slotInfo.BranchId && 
+                          slot.SlotDate === slotInfo.SlotDate && 
+                          slot.TimeSlot.StartTime === slotInfo.TimeSlot.StartTime && 
+                          slot.TimeSlot.EndTime === slotInfo.TimeSlot.EndTime)));
+                });
+            })
+            .catch(err => console.error('Error connecting to SignalR Hub', err));
+
+        return () => {
+            if (newConnection) {
+                newConnection.stop()
+                    .then(() => console.log('Disconnected from SignalR Hub'))
+                    .catch(err => console.error('Error disconnecting from SignalR Hub', err));
+            }
+        };
+    }, []);
 
 
   //fetch branch theo id
