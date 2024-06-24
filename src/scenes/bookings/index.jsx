@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select,
   MenuItem, IconButton, InputBase
@@ -10,12 +10,6 @@ import { fetchBookings, fetchBookingById, deleteBooking } from "../../api/bookin
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
-import {
-  validateRequired,
-  validateTime,
-  validateNumber
-} from "../formValidation";
-
 const useQuery = () => new URLSearchParams(useLocation().search);
 
 const Bookings = () => {
@@ -24,6 +18,7 @@ const Bookings = () => {
   const query = useQuery();
   const navigate = useNavigate();
 
+  const userRole = useMemo(() => localStorage.getItem("userRole"), []);
   const [bookingsData, setBookingsData] = useState([]);
   const [rowCount, setRowCount] = useState(0);
   const [page, setPage] = useState(parseInt(query.get('pageNumber')) - 1 || 0);
@@ -48,15 +43,15 @@ const Bookings = () => {
   const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Bookings?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
-  }, [navigate, pageSize, searchQuery]);
+    navigate(`/${userRole === 'Admin' ? 'Bookings' : 'staff/Bookings'}?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
+  }, [navigate, pageSize, searchQuery, userRole]);
 
   const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
-    navigate(`/Bookings?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
-  }, [navigate, searchQuery]);
+    navigate(`/${userRole === 'Admin' ? 'Bookings' : 'staff/Bookings'}?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
+  }, [navigate, searchQuery, userRole]);
 
   const handleSearchChange = useCallback((event) => {
     setSearchQuery(event.target.value);
@@ -64,35 +59,8 @@ const Bookings = () => {
 
   const handleSearchSubmit = useCallback(() => {
     setPage(0);
-    navigate(`/Bookings?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
-  }, [navigate, pageSize, searchQuery]);
-
-  const handleSearch = async () => {
-    if (searchQuery.trim() === "") {
-      setSearchResult(null);
-      const getBookingsData = async () => {
-        try {
-          const data = await fetchBookings(page + 1, pageSize, searchQuery);
-          if (data.items && Array.isArray(data.items)) {
-            setBookingsData(data.items);
-            setRowCount(data.totalCount);
-          } else {
-            throw new Error("Invalid data structure");
-          }
-        } catch (err) {
-          setError(`Failed to fetch bookings data: ${err.message}`);
-        }
-      };
-      getBookingsData();
-    } else {
-      try {
-        const result = await fetchBookingById(searchQuery);
-        setSearchResult(result);
-      } catch (err) {
-        setError(`Failed to fetch booking data: ${err.message}`);
-      }
-    }
-  };
+    navigate(`/${userRole === 'Admin' ? 'Bookings' : 'staff/Bookings'}?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
+  }, [navigate, pageSize, searchQuery, userRole]);
 
   const handleDelete = async (id) => {
     try {

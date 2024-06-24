@@ -31,6 +31,7 @@ import { PaymentRejected } from "./staff/Payment/PaymentConfirmation";
 import Checkin from "./staff/Payment/Checkin";
 import Flexible from "./staff/calendar/flex/Flexible";
 import FlexibleBooking from "./staff/calendar/flex/FlexibleBooking";
+import FixedBooking from "./staff/calendar/fixed/Fix";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -83,6 +84,7 @@ function App() {
             <Route path="ReserveSlot" element={<ReserveSlot />} />
             <Route path="flex" element={<Flexible />} />
             <Route path="flexible-booking" element={<FlexibleBooking />} />
+            <Route path="fixed" element={<FixedBooking />} />
             <Route path="PaymentDetail" element={<PaymentDetail />} />
             <Route path="ReviewForm" element={<ReviewForm />} />
             <Route path="confirm" element={< PaymentConfirmed/>} />
