@@ -188,7 +188,7 @@ const FlexibleBooking = () => {
     <Box m="20px" className="max-width-box" sx={{ backgroundColor: "#F5F5F5", borderRadius: 2, p: 2 }}>
       <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
         <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
-          Booking for User Email: {userInfo.userId}
+          Booking for User Id: {userInfo.userId}
         </Typography>
         <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
           Branch ID: {branchId}
