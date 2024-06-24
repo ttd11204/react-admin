@@ -54,7 +54,7 @@ const Branches = () => {
     openTime: "",
     closeTime: "",
     openDay: { day1: "", day2: "" },
-    status: "Inactive",
+    status: "Active",
     weekdayPrice: "",
     weekendPrice: ""
   });

@@ -66,9 +66,9 @@ export const createBookingFlex = async (userId, numberOfSlot, branchId) => {
   }
 };
 
-export const checkavailableSlotByTypeFlex = async (userId) => {
+export const checkavailableSlotByTypeFlex = async (userId, branchId) => {
   try {
-    const response = await axios.get(`${url}/Bookings/CheckAvaiableSlotsFromBookingTypeFlex/${userId}`);
+    const response = await axios.get(`${url}/Bookings/CheckAvailableSlotsFromBookingTypeFlex/`, { params: { userId, branchId } });
     return response.data;
   } catch (error) {
     console.error('Error checking available slot:', error.response ? error.response.data : error.message);

@@ -4,6 +4,7 @@ import { validateRequired, validateNumber } from "../../../scenes/formValidation
 import { fetchBranches, fetchBranchById } from '../../../api/branchApi';
 import { fetchUserDetailByEmail, fetchUserDetail } from "../../../api/userApi";
 import { useNavigate } from "react-router-dom";
+import {checkavailableSlotByTypeFlex} from "../../../api/bookingApi";
 
 const Flexible = () => {
   const [email, setEmail] = useState('');
@@ -68,6 +69,10 @@ const Flexible = () => {
       const branchResponse = await fetchBranchById(selectedBranch);
       if (userResponse && branchResponse) {
         const userId = user.userId; 
+       
+
+
+
         console.log('userId:', userId);
 
         navigate("/staff/flexible-booking", {
@@ -106,6 +111,10 @@ const Flexible = () => {
       if (userData && userData.length > 0) {
         const user = userData[0];
         const detailedUserInfo = await fetchUserDetail(user.id);
+ // check booking đi nè
+ const availableSlot = await checkavailableSlotByTypeFlex(user.id,  selectedBranch);
+ console.log('availableSlot:', availableSlot);
+
         if (detailedUserInfo) {
           setUserExists(true);
           setUserInfo({
