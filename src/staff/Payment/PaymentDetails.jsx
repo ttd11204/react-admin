@@ -27,7 +27,7 @@ const steps = ['Payment Details', 'Payment Confirmation'];
 
 const PaymentDetail = () => {
   const location = useLocation();
-  const { branchId, bookingRequests, totalPrice, userChecked, userInfo: locationUserInfo , userId} = location.state || {};
+  const { branchId, bookingRequests, totalPrice, userChecked, userInfo: locationUserInfo, userId } = location.state || {};
   const sortedBookingRequests = bookingRequests ? [...bookingRequests].sort((a, b) => {
     const dateA = new Date(`${a.slotDate}T${a.timeSlot.slotStartTime}`);
     const dateB = new Date(`${b.slotDate}T${b.timeSlot.slotStartTime}`);
@@ -199,7 +199,7 @@ const PaymentDetail = () => {
                       Bill
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Branch ID:</strong> {branchId}
+                      <strong>Branch ID:</strong> {branchId} {/* Added to display branch ID */}
                     </Typography>
                     <Typography variant="h6" color="black" sx={{ marginTop: '20px' }}>
                       <strong>Time Slot:</strong>
@@ -216,13 +216,13 @@ const PaymentDetail = () => {
                           <strong>End Time:</strong> {request.timeSlot.slotEndTime}
                         </Typography>
                         <Typography variant="body1" color="black">
-                          <strong>Price:</strong> {request.price} USD
+                          <strong>Price:</strong> {request.price} USD {/* Added to display slot price */}
                         </Typography>
                       </Box>
                     ))}
                     <Divider sx={{ marginY: '10px' }} />
                     <Typography variant="h6" color="black">
-                      <strong>Total Price:</strong> {totalPrice} USD
+                      <strong>Total Price:</strong> {totalPrice} USD {/* Added to display total price */}
                     </Typography>
                   </Box>
                 </Grid>

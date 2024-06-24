@@ -75,7 +75,7 @@ const timeStringToDecimal = (timeString) => {
   return hours + minutes / 60 + seconds / 3600;
 };
 
-const CalendarView = ({ selectedBranch, setSelectedBranch }) => {
+const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
   const [branches, setBranches] = useState([]);
   const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week'));
   const [weekDays, setWeekDays] = useState([]);
@@ -290,6 +290,7 @@ const CalendarView = ({ selectedBranch, setSelectedBranch }) => {
                     mt: 1,  // Add margin-top to increase vertical spacing
                   }}
                   m="10px"
+                //   onClick={() => onSlotSelect({ day: day.format('YYYY-MM-DD'), price })}
                 >
                   <Typography
                     sx={{

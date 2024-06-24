@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useNavigate } from 'react-router-dom';
 import { createFixedBooking } from '../../../api/bookingApi';
 import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Checkbox, Grid, Paper, ThemeProvider, createTheme } from "@mui/material";
 import CalendarView from '../CalendarView';
+import { fetchPrice } from '../../../api/priceApi';
 
 const theme = createTheme({
   palette: {
@@ -33,6 +35,25 @@ const FixedBooking = () => {
   const [branchId, setBranchId] = useState('');
   const [slotStartTime, setSlotStartTime] = useState('');
   const [slotEndTime, setSlotEndTime] = useState('');
+  const [weekdayPrice, setWeekdayPrice] = useState(0);
+  const [weekendPrice, setWeekendPrice] = useState(0);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchBranchPrices = async () => {
+      if (branchId) {
+        try {
+          const prices = await fetchPrice(branchId);
+          setWeekdayPrice(prices.weekdayPrice);
+          setWeekendPrice(prices.weekendPrice);
+        } catch (error) {
+          console.error('Error fetching prices:', error);
+        }
+      }
+    };
+
+    fetchBranchPrices();
+  }, [branchId]);
 
   const handleDayOfWeekChange = (event) => {
     const { value, checked } = event.target;
@@ -55,7 +76,31 @@ const FixedBooking = () => {
         slotEndTime
       );
       console.log('Booking successful:', response);
-      // Optionally, clear the form fields here
+
+      const isWeekday = (day) => {
+        const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        return weekdays.includes(day);
+      };
+
+      const bookingRequests = daysOfWeek.map(day => ({
+        slotDate: formattedStartDate,
+        timeSlot: {
+          slotStartTime,
+          slotEndTime,
+        },
+        price: isWeekday(day) ? weekdayPrice : weekendPrice,
+      }));
+
+      const totalPrice = bookingRequests.reduce((total, request) => total + request.price, 0);
+
+      navigate("/staff/PaymentDetail", {
+        state: {
+          branchId,
+          bookingRequests,
+          totalPrice,
+          userId,
+        },
+      });
     } catch (error) {
       console.error('Error booking slot:', error);
     }
@@ -168,7 +213,7 @@ const FixedBooking = () => {
                   </FormControl>
                 </Grid>
                 <Grid item xs={12}>
-                  <Button variant="contained" color="primary" type="submit" fullWidth>Create</Button>
+                  <Button variant="contained" color="primary" type="submit" fullWidth>Continue</Button>
                 </Grid>
               </Grid>
             </Paper>
