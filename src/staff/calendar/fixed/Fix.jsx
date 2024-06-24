@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { createFixedBooking } from '../../../api/bookingApi'; // Adjust the import path as necessary
+import { createFixedBooking } from '../../../api/bookingApi';
 import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Checkbox, Grid, Paper, ThemeProvider, createTheme } from "@mui/material";
+import CalendarView from '../CalendarView';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#009B65', // Customize primary color
+      main: '#009B65',
     },
     secondary: {
-      main: '#f50057', // Customize secondary color
+      main: '#f50057',
     },
   },
   typography: {
@@ -25,13 +26,13 @@ const theme = createTheme({
 });
 
 const FixedBooking = () => {
-  const [numberOfMonths, setNumberOfMonths] = useState(''); // Số tháng
-  const [daysOfWeek, setDaysOfWeek] = useState([]); // Các ngày trong tuần
-  const [startDate, setStartDate] = useState(new Date()); // Ngày bắt đầu
-  const [userId, setUserId] = useState(''); // ID người dùng
-  const [branchId, setBranchId] = useState(''); // ID chi nhánh
-  const [slotStartTime, setSlotStartTime] = useState(''); // Thời gian bắt đầu
-  const [slotEndTime, setSlotEndTime] = useState(''); // Thời gian kết thúc
+  const [numberOfMonths, setNumberOfMonths] = useState('');
+  const [daysOfWeek, setDaysOfWeek] = useState([]);
+  const [startDate, setStartDate] = useState(new Date());
+  const [userId, setUserId] = useState('');
+  const [branchId, setBranchId] = useState('');
+  const [slotStartTime, setSlotStartTime] = useState('');
+  const [slotEndTime, setSlotEndTime] = useState('');
 
   const handleDayOfWeekChange = (event) => {
     const { value, checked } = event.target;
@@ -62,123 +63,117 @@ const FixedBooking = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box
-        sx={{
-          backgroundColor: '#CEFCEC',
-          color: 'black',
-          p: 4,
-          borderRadius: 2,
-          boxShadow: 3,
-          maxWidth: 600,
-          margin: 'auto',
-          mt: 4,
-        }}
-      >
-        <Typography variant="h4" mb={2} sx={{ textAlign: 'center', color: 'primary.main' }}>Fixed Booking</Typography>
-        <form onSubmit={handleSubmit}>
-          <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <TextField
-                    label="Number of Months"
-                    type="number"
-                    value={numberOfMonths}
-                    onChange={(e) => setNumberOfMonths(e.target.value)}
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
+        <Box sx={{ flex: 2, marginRight: 4 }}>
+          <CalendarView selectedBranch={branchId} setSelectedBranch={setBranchId} />
+        </Box>
+        <Box sx={{ flex: 1, maxWidth: '400px', height: '100%' }}>
+          <form onSubmit={handleSubmit}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
+              <Typography variant="h4" mb={2} sx={{ textAlign: 'center', color: 'primary.main', fontWeight: 'bold' }}>Fixed Booking</Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <TextField
+                      label="Number of Months"
+                      type="number"
+                      value={numberOfMonths}
+                      onChange={(e) => setNumberOfMonths(e.target.value)}
+                      required
+                      InputLabelProps={{ style: { color: 'black' } }}
+                      InputProps={{ style: { color: 'black' } }}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography sx={{ color: 'black' }}>Day of Week:</Typography>
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                    <FormControlLabel
+                      key={day}
+                      control={
+                        <Checkbox
+                          value={day}
+                          onChange={handleDayOfWeekChange}
+                          checked={daysOfWeek.includes(day)}
+                          sx={{ color: 'primary.main' }}
+                        />
+                      }
+                      label={day}
+                      sx={{ color: 'black' }}
+                    />
+                  ))}
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography sx={{ color: 'black' }}>Start Date:</Typography>
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)}
+                    dateFormat="yyyy-MM-dd"
                     required
-                    InputLabelProps={{ style: { color: 'black' } }}
-                    InputProps={{ style: { color: 'black' } }}
+                    popperPlacement="right-start"
+                    minDate={new Date()}
+                    customInput={<TextField sx={{ width: '100%' }} />}
                   />
-                </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <TextField
+                      label="User ID"
+                      type="text"
+                      value={userId}
+                      onChange={(e) => setUserId(e.target.value)}
+                      required
+                      InputLabelProps={{ style: { color: 'black' } }}
+                      InputProps={{ style: { color: 'black' } }}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <TextField
+                      label="Branch ID"
+                      type="text"
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                      required
+                      InputLabelProps={{ style: { color: 'black' } }}
+                      InputProps={{ style: { color: 'black' } }}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <TextField
+                      label="Slot Start Time"
+                      type="text"
+                      value={slotStartTime}
+                      onChange={(e) => setSlotStartTime(e.target.value)}
+                      required
+                      InputLabelProps={{ style: { color: 'black' } }}
+                      InputProps={{ style: { color: 'black' } }}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <TextField
+                      label="Slot End Time"
+                      type="text"
+                      value={slotEndTime}
+                      onChange={(e) => setSlotEndTime(e.target.value)}
+                      required
+                      InputLabelProps={{ style: { color: 'black' } }}
+                      InputProps={{ style: { color: 'black' } }}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <Button variant="contained" color="primary" type="submit" fullWidth>Create</Button>
+                </Grid>
               </Grid>
-              <Grid item xs={12}>
-                <Typography sx={{ color: 'black' }}>Day of Week:</Typography>
-                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                  <FormControlLabel
-                    key={day}
-                    control={
-                      <Checkbox
-                        value={day}
-                        onChange={handleDayOfWeekChange}
-                        checked={daysOfWeek.includes(day)}
-                        sx={{ color: 'primary.main' }}
-                      />
-                    }
-                    label={day}
-                    sx={{ color: 'black' }}
-                  />
-                ))}
-              </Grid>
-              <Grid item xs={12}>
-                <Typography sx={{ color: 'black' }}>Start Date:</Typography>
-                <DatePicker
-                  selected={startDate}
-                  onChange={(date) => setStartDate(date)}
-                  dateFormat="yyyy-MM-dd"
-                  required
-                  popperPlacement="right-start"
-                  minDate={new Date()} // Không cho phép chọn ngày quá khứ
-                  customInput={<TextField sx={{ width: '100%' }} />}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <TextField
-                    label="User ID"
-                    type="text"
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
-                    required
-                    InputLabelProps={{ style: { color: 'black' } }}
-                    InputProps={{ style: { color: 'black' } }}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <TextField
-                    label="Branch ID"
-                    type="text"
-                    value={branchId}
-                    onChange={(e) => setBranchId(e.target.value)}
-                    required
-                    InputLabelProps={{ style: { color: 'black' } }}
-                    InputProps={{ style: { color: 'black' } }}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <TextField
-                    label="Slot Start Time"
-                    type="text"
-                    value={slotStartTime}
-                    onChange={(e) => setSlotStartTime(e.target.value)}
-                    required
-                    InputLabelProps={{ style: { color: 'black' } }}
-                    InputProps={{ style: { color: 'black' } }}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <TextField
-                    label="Slot End Time"
-                    type="text"
-                    value={slotEndTime}
-                    onChange={(e) => setSlotEndTime(e.target.value)}
-                    required
-                    InputLabelProps={{ style: { color: 'black' } }}
-                    InputProps={{ style: { color: 'black' } }}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <Button variant="contained" color="primary" type="submit" fullWidth>Create</Button>
-              </Grid>
-            </Grid>
-          </Paper>
-        </form>
+            </Paper>
+          </form>
+        </Box>
       </Box>
     </ThemeProvider>
   );
