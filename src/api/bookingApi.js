@@ -75,3 +75,29 @@ export const checkavailableSlotByTypeFlex = async (userId) => {
     throw error;
   }
 }
+
+// Create a fixed booking
+export const createFixedBooking = async (numberOfMonths, daysOfWeek, startDate, userId, branchId, slotStartTime, slotEndTime) => {
+  try {
+    const response = await axios.post(
+      `${url}/Bookings/fix-slot`,
+      {
+        slotStartTime,
+        slotEndTime,
+      },
+      {
+        params: {
+          numberOfMonths,
+          dayOfWeek: daysOfWeek,
+          startDate,
+          userId,
+          branchId,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error creating fixed booking:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
