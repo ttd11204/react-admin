@@ -3,17 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { Box, Button, Grid, Typography, Select, MenuItem, FormControl, IconButton } from "@mui/material";
 import { fetchBranches } from '../../../api/branchApi';
 import { reserveSlots } from '../../../api/bookingApi';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { fetchPrice } from '../../../api/priceApi';
 import { fetchBranchById } from '../../../api/branchApi';
 import * as signalR from '@microsoft/signalr';
+import ArrowBackIos from '@mui/icons-material/ArrowBackIos';
+import ArrowForwardIos from '@mui/icons-material/ArrowForwardIos';
+import Delete from '@mui/icons-material/Delete';
 
 dayjs.extend(isSameOrBefore);
 
-// quy ước các ngày trong tuần thành số
 const dayToNumber = {
   "Monday": 1,
   "Tuesday": 2,
@@ -22,9 +23,8 @@ const dayToNumber = {
   "Friday": 5,
   "Saturday": 6,
   "Sunday": 7
-}; 
+};
 
-//trả về mảng 2 cái ngày bắt đầu và kết thúc dạng số
 const parseOpenDay = (openDay) => {
   if (!openDay || typeof openDay !== 'string') {
     console.error('Invalid openDay:', openDay);
@@ -37,11 +37,8 @@ const parseOpenDay = (openDay) => {
   }
   const [startDay, endDay] = days;
   return [dayToNumber[startDay], dayToNumber[endDay]];
-
 };
 
-
-// tạo ra mảng các ngày trong tuần
 const getDaysOfWeek = (startOfWeek, openDay) => {
   let days = [];
   const [startDay, endDay] = parseOpenDay(openDay);
@@ -51,16 +48,12 @@ const getDaysOfWeek = (startOfWeek, openDay) => {
   }
 
   for (var i = startDay; i <= endDay; i++) {
-
     days.push(dayjs(startOfWeek).add(i, 'day'));
-
   }
 
   return days;
 };
 
-
-// hàm generate các slot từ openTime đến closeTime
 const generateTimeSlots = (openTime, closeTime) => {
   let slots = [];
   for (let hour = openTime; hour < closeTime; hour++) {
@@ -102,46 +95,179 @@ const ReserveSlot = () => {
   const [morningTimeSlots, setMorningTimeSlots] = useState([]);
   const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
   const [connection, setConnection] = useState(null);
-const [lockedSlots, setLockedSlots] = useState([]);
+  const [lockedSlots, setLockedSlots] = useState([]);
   const navigate = useNavigate();
   const currentDate = dayjs();
 
-  // thêm signalR (v1)
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
-        .withUrl('https://courtcaller.azurewebsites.net/timeslotHub')
-        .withAutomaticReconnect()
-        .build();
+      .withUrl('https://courtcaller.azurewebsites.net/timeslotHub', {
+        withCredentials: true
+      })
+      .withAutomaticReconnect()
+      .build();
 
-        setConnection(newConnection);
+    setConnection(newConnection);
 
-        newConnection.start()
-            .then(() => {
-                console.log('Connected to SignalR Hub');
-                newConnection.on('LockingSlot', slotInfo => {
-                    setLockedSlots(prev => [...prev, slotInfo]);
-                });
-                newConnection.on('ReleaseSlot', slotInfo => {
-                    setLockedSlots(prev => prev.filter(slot => 
-                        !(slot.BranchId === slotInfo.BranchId && 
-                          slot.SlotDate === slotInfo.SlotDate && 
-                          slot.TimeSlot.StartTime === slotInfo.TimeSlot.StartTime && 
-                          slot.TimeSlot.EndTime === slotInfo.TimeSlot.EndTime)));
-                });
-            })
-            .catch(err => console.error('Error connecting to SignalR Hub', err));
+    newConnection.start()
+      .then(() => {
+        console.log('Connected to SignalR Hub');
 
-        return () => {
-            if (newConnection) {
-                newConnection.stop()
-                    .then(() => console.log('Disconnected from SignalR Hub'))
-                    .catch(err => console.error('Error disconnecting from SignalR Hub', err));
-            }
-        };
-    }, []);
+        newConnection.on('LockingSlot', slotInfo => {
+          setLockedSlots(prev => [...prev, slotInfo]);
+        });
+
+        newConnection.on('ReleaseSlot', slotInfo => {
+          setLockedSlots(prev => prev.filter(slot => 
+            !(slot.BranchId === slotInfo.BranchId &&
+              slot.SlotDate === slotInfo.SlotDate &&
+              slot.TimeSlot.StartTime === slotInfo.TimeSlot.StartTime &&
+              slot.TimeSlot.EndTime === slotInfo.TimeSlot.EndTime)));
+        });
+      })
+      .catch(err => console.error('Error connecting to SignalR Hub', err));
+
+    return () => {
+      if (newConnection) {
+        newConnection.stop()
+          .then(() => console.log('Disconnected from SignalR Hub'))
+          .catch(err => console.error('Error disconnecting from SignalR Hub', err));
+      }
+    };
+  }, []);
+  
+
+  useEffect(() => {
+    // Fetch locked slots from server on initial load
+    const fetchLockedSlots = async () => {
+      try {
+        const response = await fetch('https://courtcaller.azurewebsites.net/api/timeslots/locked');
+        const data = await response.json();
+        setLockedSlots(data);
+      } catch (error) {
+        console.error('Error fetching locked slots', error);
+      }
+    };
+
+    fetchLockedSlots();
+  }, [selectedBranch]);
+
+  
+
+  const lockSlot = async (slotInfo) => {
+    if (connection && connection.state === signalR.HubConnectionState.Connected) {
+      try {
+        await connection.invoke('LockSlot', slotInfo);
+      } catch (error) {
+        console.error('Error locking slot', error);
+        if (error.message === 'Slot is already booked.') {
+          setLockedSlots(prev => [...prev, slotInfo]);
+        }
+      }
+    } else {
+      console.error('Cannot send data if the connection is not in the "Connected" State.');
+    }
+  };
 
 
-  //fetch branch theo id
+  const handleSlotClick = (slot, day, price) => {
+    const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
+    const slotInfo = {
+      CourtId: null,
+      BranchId: selectedBranch,
+      SlotDate: day.format('YYYY-MM-DD'),
+      TimeSlot: {
+        StartTime: slot.split(' - ')[0],
+        EndTime: slot.split(' - ')[1]
+      }
+    };
+
+    if (lockedSlots.some(lockedSlot => 
+        lockedSlot.BranchId === slotInfo.BranchId &&
+        lockedSlot.SlotDate === slotInfo.SlotDate &&
+        lockedSlot.TimeSlot.StartTime === slotInfo.TimeSlot.StartTime &&
+        lockedSlot.TimeSlot.EndTime === slotInfo.TimeSlot.EndTime)) {
+      console.warn('Slot is locked and cannot be selected.');
+      return;
+    }
+
+  // Tìm tất cả các slot cùng thời gian đã được chọn
+  const sameTimeSlots = selectedSlots.filter(selectedSlot => selectedSlot.slotId.startsWith(`${day.format('YYYY-MM-DD')}_${slot}`));
+
+  // Nếu slot đã chọn tồn tại và đã chọn đủ 2 slot cùng thời gian, hủy chọn slot đầu tiên
+  if (sameTimeSlots.length >= 2) {
+      const firstSlotId = sameTimeSlots[0].slotId;
+      setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== firstSlotId));
+  } else {
+      // Nếu tổng số slot đã chọn nhỏ hơn 3, thêm slot mới và khóa slot
+      if (selectedSlots.length < 3) {
+          setSelectedSlots([...selectedSlots, { slotId, slot, day, price }]);
+          if (connection && connection.state === signalR.HubConnectionState.Connected) {
+              lockSlot(slotInfo);
+          } else {
+              console.error('Connection is not in the "Connected" State.');
+          }
+      } else {
+          alert("You can select up to 3 slots only");
+      }
+  }
+};
+
+
+  
+
+  const handleRemoveSlot = (slotId) => {
+    setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== slotId));
+  };
+
+  const handleToggleMorning = () => {
+    setShowAfternoon(false);
+  };
+
+  const handleToggleAfternoon = () => {
+    setShowAfternoon(true);
+  };
+
+  const handlePreviousWeek = () => {
+    const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
+    if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
+      setStartOfWeek(oneWeekBeforeCurrentWeek);
+    }
+  };
+
+  const handleNextWeek = () => {
+    setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
+  };
+
+  const handleContinue = async () => {
+    if (!selectedBranch) {
+      alert("Please select a branch first");
+      return;
+    }
+
+    const bookingRequests = selectedSlots.map((slot) => {
+      const { day, slot: timeSlot, price } = slot;
+      const [slotStartTime, slotEndTime] = timeSlot.split(' - ');
+
+      return {
+        slotDate: day.format('YYYY-MM-DD'),
+        timeSlot: {
+          slotStartTime: `${slotStartTime}:00`,
+          slotEndTime: `${slotEndTime}:00`,
+        },
+        price: parseFloat(price),
+      };
+    });
+
+    navigate("/staff/PaymentDetail", {
+      state: {
+        branchId: selectedBranch,
+        bookingRequests,
+        totalPrice: bookingRequests.reduce((totalprice, object) => totalprice + parseFloat(object.price), 0),
+      },
+    });
+  };
+
   useEffect(() => {
     const fetchBranchesById = async () => {
       try {
@@ -158,7 +284,6 @@ const [lockedSlots, setLockedSlots] = useState([]);
     }
   }, [selectedBranch]);
 
-  ////fetch branch để hiện ra select các branch
   useEffect(() => {
     const fetchBranchesData = async () => {
       try {
@@ -174,8 +299,6 @@ const [lockedSlots, setLockedSlots] = useState([]);
     fetchBranchesData();
   }, []);
 
-
-  //fetch giá theo tuấn cùi
   useEffect(() => {
     const fetchPrices = async () => {
       if (!selectedBranch) return;
@@ -192,8 +315,6 @@ const [lockedSlots, setLockedSlots] = useState([]);
     fetchPrices();
   }, [selectedBranch]);
 
-
-  // Parse openDay and get days of the week
   useEffect(() => {
     if (openDay) {
       const days = getDaysOfWeek(startOfWeek, openDay);
@@ -202,7 +323,6 @@ const [lockedSlots, setLockedSlots] = useState([]);
     }
   }, [openDay, startOfWeek]);
 
-  // tạo ra các slot nhỏ sáng từ opentime đến 14h 
   useEffect(() => {
     if (openTime && '14:00:00') {
       const decimalOpenTime = timeStringToDecimal(openTime);
@@ -215,7 +335,6 @@ const [lockedSlots, setLockedSlots] = useState([]);
     }
   }, [openTime]);
 
-  // tạo ra các slot nhỏ chiều từ 14h đến closeTime
   useEffect(() => {
     if (closeTime && '14:00:00') {
       const decimalOpenTime = timeStringToDecimal('14:00:00');
@@ -228,85 +347,16 @@ const [lockedSlots, setLockedSlots] = useState([]);
     }
   }, [closeTime]);
 
-  //xử lý lúc click vào slot
-  const handleSlotClick = (slot, day, price) => {
-    const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
-    
-    // Tìm tất cả các slot cùng thời gian đã được chọn
-    const sameTimeSlots = selectedSlots.filter(selectedSlot => selectedSlot.slotId.startsWith(`${day.format('YYYY-MM-DD')}_${slot}`));
-  
-    // Nếu slot đã chọn tồn tại và đã chọn đủ 2 slot cùng thời gian, hủy chọn slot đầu tiên
-    if (sameTimeSlots.length >= 2) {
-      const firstSlotId = sameTimeSlots[0].slotId;
-      setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== firstSlotId));
-    } else {
-      // Nếu tổng số slot đã chọn nhỏ hơn 3, thêm slot mới
-      if (selectedSlots.length < 3) {
-        setSelectedSlots([...selectedSlots, { slotId, slot, day, price }]);
-      } else {
-        alert("You can select up to 3 slots only");
-      }
-    }
-  };
-  
-  const handleRemoveSlot = (slotId) => {
-    setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== slotId));
-  };
-  
-  // xử lý nút sáng chiều
-  const handleToggleMorning = () => {
-    setShowAfternoon(false);
+  const isSlotLocked = (branchId, date, timeSlot) => {
+    return lockedSlots.some(lockedSlot =>
+      lockedSlot.BranchId === branchId &&
+      lockedSlot.SlotDate === date &&
+      lockedSlot.TimeSlot.StartTime === timeSlot.split(' - ')[0] &&
+      lockedSlot.TimeSlot.EndTime === timeSlot.split(' - ')[1]
+    );
   };
 
-  const handleToggleAfternoon = () => {
-    setShowAfternoon(true);
-  };
-
-  //xử lý chỉ hiện 1 tuần trước và các tuần sau
-  const handlePreviousWeek = () => {
-
-    const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
-    if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
-      setStartOfWeek(oneWeekBeforeCurrentWeek);
-    }
-  };
-
-  const handleNextWeek = () => {
-    setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
-  };
-
-  //xử lý khi click vào nút continue qua trang tiếp theo (Nhân lấy về cần chú ý là chỉ lấy các slot đã click qua trang mới chứ chưa post api booking, và chưa lấy userid)
-  const handleContinue = async () => {
-    if (!selectedBranch) {
-      alert("Please select a branch first");
-      return;
-    }
-  
-    const bookingRequests = selectedSlots.map((slot) => {
-      const { day, slot: timeSlot, price } = slot;
-      const [slotStartTime, slotEndTime] = timeSlot.split(' - ');
-  
-      return {
-        slotDate: day.format('YYYY-MM-DD'),
-        timeSlot: {
-          
-          slotStartTime: `${slotStartTime}:00`,
-          slotEndTime: `${slotEndTime}:00`,
-          },
-        price: parseFloat(price),
-      };
-    });
-  
-    navigate("/staff/PaymentDetail", {
-      state: {
-        branchId: selectedBranch,
-        bookingRequests,
-        totalPrice: bookingRequests.reduce((totalprice, object) => totalprice + parseFloat(object.price), 0),
-      },
-    });
-  };
-  const days = weekDays;
-
+ 
   return (
     <Box m="20px" className="max-width-box" sx={{ backgroundColor: "#F5F5F5", borderRadius: 2, p: 2 }}>
       <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
@@ -329,21 +379,21 @@ const [lockedSlots, setLockedSlots] = useState([]);
           </Select>
         </FormControl>
 
-
-        {/* Khung ngày */}
-        <>{selectedBranch && (
+        {selectedBranch && (
           <Box display="flex" alignItems="center" sx={{ backgroundColor: "#E0E0E0", p: 1, borderRadius: 2 }}>
-            <IconButton onClick={handlePreviousWeek} size="small" >
-              <ArrowBackIosIcon fontSize="inherit" />
+            <IconButton onClick={handlePreviousWeek} size="small">
+              <ArrowBackIos fontSize="inherit" />
             </IconButton>
             <Typography variant="h6" sx={{ color: "#0D1B34", mx: 1 }}>
               From {dayjs(startOfWeek).add(1, 'day').format('D/M')} To {dayjs(startOfWeek).add(7, 'day').format('D/M')}
             </Typography>
             <IconButton onClick={handleNextWeek} size="small">
-              <ArrowForwardIosIcon fontSize="inherit" />
+              <ArrowForwardIos fontSize="inherit" />
             </IconButton>
-          </Box>)}</>
-        <>{selectedBranch && (
+          </Box>
+        )}
+
+        {selectedBranch && (
           <Box>
             <Button
               variant="contained"
@@ -370,12 +420,13 @@ const [lockedSlots, setLockedSlots] = useState([]);
             >
               Afternoon
             </Button>
-          </Box>)}</>
+          </Box>
+        )}
       </Box>
 
-      {days.map((day, dayIndex) => (
-        <Grid container spacing={2} key={dayIndex} alignItems="center" >
-          <Grid item xs={1} padding= "8px">
+      {weekDays.map((day, dayIndex) => (
+        <Grid container spacing={2} key={dayIndex} alignItems="center">
+          <Grid item xs={1} padding="8px">
             <Box
               sx={{
                 backgroundColor: "#0D61F2",
@@ -388,7 +439,6 @@ const [lockedSlots, setLockedSlots] = useState([]);
                 flexDirection: 'column',
                 justifyContent: 'center',
                 height: '100%',
-                
               }}
             >
               <Typography variant="body2" component="div">
@@ -400,108 +450,105 @@ const [lockedSlots, setLockedSlots] = useState([]);
             </Box>
           </Grid>
 
-          { (showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
-  const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice; // Monday to Friday for weekdays, Saturday to Sunday for weekends
-  const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
-  const isSelected = selectedSlots.some(selectedSlot => selectedSlot.slotId === slotId);
-  const slotCount = selectedSlots.filter(selectedSlot => selectedSlot.slotId === slotId).length;
+          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
+            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice;
+            const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
+            const isSelected = selectedSlots.some(selectedSlot => selectedSlot.slotId === slotId);
+            const isLocked = isSlotLocked(selectedBranch, day.format('YYYY-MM-DD'), slot);
 
-  return (
-    <Grid item xs key={slotIndex}>
-      <Button
-        onClick={() => handleSlotClick(slot, day, price)}
-        sx={{
-          backgroundColor: day.isBefore(currentDate, 'day') ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
-          color: isSelected ? "#FFFFFF" : "#0D1B34",
-          p: 2,
-          borderRadius: 2,
-          width: "100%",
-          textTransform: "none",
-          border: isSelected ? '2px solid #0D61F2' : '1px solid #90CAF9',
-          textAlign: 'center',
-          marginBottom: '16px',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          position: 'relative'
-        }}
-        m="10px"
-        disabled={day.isBefore(currentDate, 'day')}
-      >
-        <Box>
-          <Typography
-            sx={{
-              fontWeight: 'bold',
-              color: isSelected ? "#FFFFFF" : "#0D1B34"
-            }}
-          >
-            {slot}
-          </Typography>
-          <Typography
-            sx={{
-              color: isSelected ? "#FFFFFF" : "#0D1B34"
-            }}
-          >
-            {price}k
-          </Typography>
-          { isSelected &&  (
-                    <IconButton
-                    onClick={(e) => { e.stopPropagation(); handleRemoveSlot(slotId); }}
+            return (
+              <Grid item xs key={slotIndex}>
+                <Button
+                  onClick={() => handleSlotClick(slot, day, price)}
+                  sx={{
+                    backgroundColor: day.isBefore(currentDate, 'day') || isLocked ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
+                    color: isSelected ? "#FFFFFF" : "#0D1B34",
+                    p: 2,
+                    borderRadius: 2,
+                    width: "100%",
+                    textTransform: "none",
+                    border: isSelected ? '2px solid #0D61F2' : '1px solid #90CAF9',
+                    textAlign: 'center',
+                    marginBottom: '16px',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    position: 'relative'
+                  }}
+                  m="10px"
+                  disabled={day.isBefore(currentDate, 'day') || isLocked}
+                >
+                  <Box>
+                    <Typography
                       sx={{
-                        position: 'absolute',
-                        top: 5,
-                        left: 5,
-                        backgroundColor: '#FFFFFF',
-                        color: '#1976d2',
-                        borderRadius: '50%',
-                        width: 20,
-                        height: 20,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        color: isSelected ? "#FFFFFF" : "#0D1B34"
                       }}
                     >
-                      -
-                    </IconButton>
-                  )}
-          {isSelected && (
-            
-            <Typography
-              sx={{
-                position: 'absolute',
-                top: 5,
-                right: 5,
-                backgroundColor: '#FFFFFF',
-                color: '#1976d2',
-                borderRadius: '50%',
-                width: 20,
-                height: 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}
-             >
-              {slotCount}
-            </Typography>
-            
-          )}
-        </Box>
-      </Button>
-    </Grid>
-  );
-})}
+                      {slot}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        color: isSelected ? "#FFFFFF" : "#0D1B34"
+                      }}
+                    >
+                      {price}k
+                    </Typography>
+                    {isSelected && (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 5,
+                          left: 5,
+                          backgroundColor: '#FFFFFF',
+                          color: '#1976d2',
+                          borderRadius: '50%',
+                          width: 20,
+                          height: 20,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                        onClick={(e) => { e.stopPropagation(); handleRemoveSlot(slotId); }}
+                      >
+                        <Delete />
+                      </Box>
+                    )}
+                    {isSelected && (
+                      <Typography
+                        sx={{
+                          position: 'absolute',
+                          top: 5,
+                          right: 5,
+                          backgroundColor: '#FFFFFF',
+                          color: '#1976d2',
+                          borderRadius: '50%',
+                          width: 20,
+                          height: 20,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {selectedSlots.filter(selectedSlot => selectedSlot.slotId === slotId).length}
+                      </Typography>
+                    )}
+                  </Box>
+                </Button>
+              </Grid>
+            );
+          })}
         </Grid>
       ))}
-      <>{selectedBranch && (
-        <Box display="flex" justifyContent="end" mt={1} marginRight={'12px'}  >
+      {selectedBranch && (
+        <Box display="flex" justifyContent="end" mt={1} marginRight={'12px'}>
           <Button
             variant="contained"
-
             sx={{
               color: "#white",
               backgroundColor: "#1976d2",
@@ -511,13 +558,13 @@ const [lockedSlots, setLockedSlots] = useState([]);
               ':active': {
                 backgroundColor: '#1976d2',
               },
-            }
-            }
+            }}
             onClick={handleContinue}
           >
             Continue
           </Button>
-        </Box>)}</>
+        </Box>
+      )}
     </Box>
   );
 };
