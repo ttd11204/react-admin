@@ -8,7 +8,6 @@ import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { fetchPrice } from '../../../api/priceApi';
 import { fetchBranchById } from '../../../api/branchApi';
-import * as signalR from '@microsoft/signalr';
 import ArrowBackIos from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIos from '@mui/icons-material/ArrowForwardIos';
 import Delete from '@mui/icons-material/Delete';
@@ -94,127 +93,26 @@ const ReserveSlot = () => {
   const [weekDays, setWeekDays] = useState([]);
   const [morningTimeSlots, setMorningTimeSlots] = useState([]);
   const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
-  const [connection, setConnection] = useState(null);
-  const [lockedSlots, setLockedSlots] = useState([]);
   const navigate = useNavigate();
   const currentDate = dayjs();
 
-  useEffect(() => {
-    const newConnection = new signalR.HubConnectionBuilder()
-      .withUrl('https://courtcaller.azurewebsites.net/timeslotHub', {
-        withCredentials: true
-      })
-      .withAutomaticReconnect()
-      .build();
-
-    setConnection(newConnection);
-
-    newConnection.start()
-      .then(() => {
-        console.log('Connected to SignalR Hub');
-
-        newConnection.on('LockingSlot', slotInfo => {
-          setLockedSlots(prev => [...prev, slotInfo]);
-        });
-
-        newConnection.on('ReleaseSlot', slotInfo => {
-          setLockedSlots(prev => prev.filter(slot => 
-            !(slot.BranchId === slotInfo.BranchId &&
-              slot.SlotDate === slotInfo.SlotDate &&
-              slot.TimeSlot.StartTime === slotInfo.TimeSlot.StartTime &&
-              slot.TimeSlot.EndTime === slotInfo.TimeSlot.EndTime)));
-        });
-      })
-      .catch(err => console.error('Error connecting to SignalR Hub', err));
-
-    return () => {
-      if (newConnection) {
-        newConnection.stop()
-          .then(() => console.log('Disconnected from SignalR Hub'))
-          .catch(err => console.error('Error disconnecting from SignalR Hub', err));
-      }
-    };
-  }, []);
-  
-
-  useEffect(() => {
-    // Fetch locked slots from server on initial load
-    const fetchLockedSlots = async () => {
-      try {
-        const response = await fetch('https://courtcaller.azurewebsites.net/api/timeslots/locked');
-        const data = await response.json();
-        setLockedSlots(data);
-      } catch (error) {
-        console.error('Error fetching locked slots', error);
-      }
-    };
-
-    fetchLockedSlots();
-  }, [selectedBranch]);
-
-  
-
-  const lockSlot = async (slotInfo) => {
-    if (connection && connection.state === signalR.HubConnectionState.Connected) {
-      try {
-        await connection.invoke('LockSlot', slotInfo);
-      } catch (error) {
-        console.error('Error locking slot', error);
-        if (error.message === 'Slot is already booked.') {
-          setLockedSlots(prev => [...prev, slotInfo]);
-        }
-      }
-    } else {
-      console.error('Cannot send data if the connection is not in the "Connected" State.');
-    }
-  };
-
+ 
 
   const handleSlotClick = (slot, day, price) => {
     const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
-    const slotInfo = {
-      CourtId: null,
-      BranchId: selectedBranch,
-      SlotDate: day.format('YYYY-MM-DD'),
-      TimeSlot: {
-        StartTime: slot.split(' - ')[0],
-        EndTime: slot.split(' - ')[1]
-      }
-    };
+    const sameTimeSlots = selectedSlots.filter(selectedSlot => selectedSlot.slotId.startsWith(`${day.format('YYYY-MM-DD')}_${slot}`));
 
-    if (lockedSlots.some(lockedSlot => 
-        lockedSlot.BranchId === slotInfo.BranchId &&
-        lockedSlot.SlotDate === slotInfo.SlotDate &&
-        lockedSlot.TimeSlot.StartTime === slotInfo.TimeSlot.StartTime &&
-        lockedSlot.TimeSlot.EndTime === slotInfo.TimeSlot.EndTime)) {
-      console.warn('Slot is locked and cannot be selected.');
-      return;
-    }
-
-  // Tìm tất cả các slot cùng thời gian đã được chọn
-  const sameTimeSlots = selectedSlots.filter(selectedSlot => selectedSlot.slotId.startsWith(`${day.format('YYYY-MM-DD')}_${slot}`));
-
-  // Nếu slot đã chọn tồn tại và đã chọn đủ 2 slot cùng thời gian, hủy chọn slot đầu tiên
-  if (sameTimeSlots.length >= 2) {
+    if (sameTimeSlots.length >= 2) {
       const firstSlotId = sameTimeSlots[0].slotId;
       setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== firstSlotId));
-  } else {
-      // Nếu tổng số slot đã chọn nhỏ hơn 3, thêm slot mới và khóa slot
+    } else {
       if (selectedSlots.length < 3) {
-          setSelectedSlots([...selectedSlots, { slotId, slot, day, price }]);
-          if (connection && connection.state === signalR.HubConnectionState.Connected) {
-              lockSlot(slotInfo);
-          } else {
-              console.error('Connection is not in the "Connected" State.');
-          }
+        setSelectedSlots([...selectedSlots, { slotId, slot, day, price }]);
       } else {
-          alert("You can select up to 3 slots only");
+        alert("You can select up to 3 slots only");
       }
-  }
-};
-
-
-  
+    }
+  };
 
   const handleRemoveSlot = (slotId) => {
     setSelectedSlots(selectedSlots.filter(selectedSlot => selectedSlot.slotId !== slotId));
@@ -347,16 +245,15 @@ const ReserveSlot = () => {
     }
   }, [closeTime]);
 
-  const isSlotLocked = (branchId, date, timeSlot) => {
-    return lockedSlots.some(lockedSlot =>
-      lockedSlot.BranchId === branchId &&
-      lockedSlot.SlotDate === date &&
-      lockedSlot.TimeSlot.StartTime === timeSlot.split(' - ')[0] &&
-      lockedSlot.TimeSlot.EndTime === timeSlot.split(' - ')[1]
-    );
+  const getSlotColor = (day, slot, isSelected) => {
+    const isPastSlot = day.isBefore(currentDate, 'day') || (day.isSame(currentDate, 'day') &&
+      timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25);
+
+    if (isSelected) return "#1976d2";
+    if (isPastSlot) return "#E0E0E0";
+    return "#D9E9FF";
   };
 
- 
   return (
     <Box m="20px" className="max-width-box" sx={{ backgroundColor: "#F5F5F5", borderRadius: 2, p: 2 }}>
       <Box display="flex" justifyContent="space-between" mb={2} alignItems="center">
@@ -454,17 +351,13 @@ const ReserveSlot = () => {
             const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice;
             const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
             const isSelected = selectedSlots.some(selectedSlot => selectedSlot.slotId === slotId);
-            const isLocked = isSlotLocked(selectedBranch, day.format('YYYY-MM-DD'), slot);
 
             return (
               <Grid item xs key={slotIndex}>
                 <Button
                   onClick={() => handleSlotClick(slot, day, price)}
                   sx={{
-
-                     //check đến tận ngày hôm nay luôn 
-                    backgroundColor: day.isBefore(currentDate, 'day') ||(day.isSame(currentDate, 'day') && 
-                    timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25) || isLocked ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
+                    backgroundColor: getSlotColor(day, slot, isSelected),
                     color: isSelected ? "#FFFFFF" : "#0D1B34",
                     p: 2,
                     borderRadius: 2,
@@ -480,9 +373,8 @@ const ReserveSlot = () => {
                     position: 'relative'
                   }}
                   m="10px"
-                  //check đến tận ngày hôm nay luôn 
-                  disabled={day.isBefore(currentDate, 'day')  || (day.isSame(currentDate, 'day') && 
-                    timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25) || isLocked}
+                  disabled={day.isBefore(currentDate, 'day')  || (day.isSame(currentDate, 'day') &&
+                    timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25)}
                 >
                   <Box>
                     <Typography
