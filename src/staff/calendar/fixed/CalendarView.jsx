@@ -5,8 +5,8 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import { fetchBranches, fetchBranchById } from '../../api/branchApi';
-import { fetchPrice } from '../../api/priceApi';
+import { fetchBranches, fetchBranchById } from '../../../api/branchApi';
+import { fetchPrice } from '../../../api/priceApi';
 
 dayjs.extend(isSameOrBefore);
 

@@ -4,7 +4,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from 'react-router-dom';
 import { createFixedBooking } from '../../../api/bookingApi';
 import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Checkbox, Grid, Paper, ThemeProvider, createTheme } from "@mui/material";
-import CalendarView from '../CalendarView';
+import CalendarView from './CalendarView';
 import { fetchPrice } from '../../../api/priceApi';
 
 const theme = createTheme({
