@@ -11,7 +11,7 @@ import { fetchBranchById } from '../../../api/branchApi';
 import ArrowBackIos from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIos from '@mui/icons-material/ArrowForwardIos';
 import Delete from '@mui/icons-material/Delete';
-
+import * as signalR from '@microsoft/signalr';
 dayjs.extend(isSameOrBefore);
 
 const dayToNumber = {
@@ -93,6 +93,10 @@ const ReserveSlot = () => {
   const [weekDays, setWeekDays] = useState([]);
   const [morningTimeSlots, setMorningTimeSlots] = useState([]);
   const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
+  const [connection, setConnection] = useState(null);
+  const [message, setMessage] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [isSlotBooked, setIsSlotBooked] = useState(false);
   const navigate = useNavigate();
   const currentDate = dayjs();
 
@@ -165,6 +169,43 @@ const ReserveSlot = () => {
       },
     });
   };
+
+  //phần để kết nối với signalR
+  useEffect(() => {
+    const newConnection = new signalR.HubConnectionBuilder()
+        .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
+        .withAutomaticReconnect()
+        .build();
+
+    setConnection(newConnection);
+}, []);
+
+ //phần để kết nối với signalR
+useEffect(() => {
+  if (connection) {
+      connection.start()
+          .then(result => {
+              console.log("Connected!");
+              setIsConnected(true);
+          })
+          .catch(e => {
+              console.log("Connection failed: ", e);
+              setIsConnected(false);
+          });
+
+      connection.on("SlotBooked", (isBooked) => {
+          setMessage(isBooked ? "Slot booked successfully!" : "No available slots!");
+          if (isBooked) {
+              setIsSlotBooked(true);
+          }
+      });
+
+      connection.on("UpdateSlotStatus", (status) => {
+          setIsSlotBooked(!status);
+      });
+  }
+}, [connection]);
+
 
   useEffect(() => {
     const fetchBranchesById = async () => {
