@@ -76,28 +76,60 @@ export const checkavailableSlotByTypeFlex = async (userId, branchId) => {
   }
 }
 
+const isValidTime = (time) => {
+  const timePattern = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+  return timePattern.test(time);
+};
+
 // Create a fixed booking
-export const createFixedBooking = async (numberOfMonths, daysOfWeek, startDate, userId, branchId, slotStartTime, slotEndTime) => {
+export const createFixedBooking = async (numberOfMonths, daysOfWeek, formattedStartDate, userId, branchId, slotStartTime, slotEndTime) => {
   try {
+    // Check if slotStartTime and slotEndTime are valid
+    if (!isValidTime(slotStartTime) || !isValidTime(slotEndTime)) {
+      throw new Error('Invalid time format. Time should be in HH:MM:SS format.');
+    }
+
+    const params = new URLSearchParams();
+    params.append('numberOfMonths', numberOfMonths);
+    daysOfWeek.forEach(day => {
+      params.append('dayOfWeek', day);
+    });
+    params.append('startDate', formattedStartDate);
+    params.append('userId', userId);
+    params.append('branchId', branchId);
+
+    const urlWithParams = `${url}/Bookings/fix-slot?${params.toString()}`;
+
+    console.log('URL with params:', urlWithParams);
+    console.log('Request body:', {
+      slotStartTime,
+      slotEndTime,
+    });
+
     const response = await axios.post(
-      `${url}/Bookings/fix-slot`,
+      urlWithParams,
       {
         slotStartTime,
         slotEndTime,
       },
       {
-        params: {
-          numberOfMonths,
-          dayOfWeek: daysOfWeek,
-          startDate,
-          userId,
-          branchId,
+        headers: {
+          'Content-Type': 'application/json',
         },
       }
     );
+
     return response.data;
   } catch (error) {
-    console.error('Error creating fixed booking:', error.response ? error.response.data : error.message);
-    throw error;
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      console.error('Error response status:', error.response.status);
+      console.error('Error response headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('Error request:', error.request);
+    } else {
+      console.error('General Error:', error.message);
+    }
+    throw new Error('Error creating fixed booking. Please check the logs for more details.');
   }
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from 'react-router-dom';
-import { createFixedBooking } from '../../../api/bookingApi';
 import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Checkbox, Grid, Paper, ThemeProvider, createTheme } from "@mui/material";
 import CalendarView from './CalendarView';
 import { fetchPrice } from '../../../api/priceApi';
@@ -62,53 +61,39 @@ const FixedBooking = () => {
     );
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
-    try {
-      const formattedStartDate = startDate.toISOString().split('T')[0];
-      const response = await createFixedBooking(
+    const formattedStartDate = startDate.toISOString().split('T')[0]; // Convert startDate to ISO string and split to get the date part
+
+    const isWeekday = (day) => {
+      const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      return weekdays.includes(day);
+    };
+
+    const bookingRequests = daysOfWeek.map(day => ({
+      slotDate: formattedStartDate,
+      timeSlot: {
+        slotStartTime,
+        slotEndTime,
+      },
+      price: isWeekday(day) ? weekdayPrice : weekendPrice,
+    }));
+
+    const totalPrice = bookingRequests.reduce((total, request) => total + request.price, 0);
+
+    navigate("/staff/fixed-payment", {
+      state: {
+        branchId,
+        bookingRequests,
+        totalPrice,
+        userId,
         numberOfMonths,
         daysOfWeek,
-        formattedStartDate,
-        userId,
-        branchId,
+        startDate: formattedStartDate, // Pass the formatted startDate
         slotStartTime,
-        slotEndTime
-      );
-      console.log('Booking successful:', response);
-
-      const isWeekday = (day) => {
-        const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        return weekdays.includes(day);
-      };
-
-      const bookingRequests = daysOfWeek.map(day => ({
-        slotDate: formattedStartDate,
-        timeSlot: {
-          slotStartTime,
-          slotEndTime,
-        },
-        price: isWeekday(day) ? weekdayPrice : weekendPrice,
-      }));
-
-      const totalPrice = bookingRequests.reduce((total, request) => total + request.price, 0);
-
-      navigate("/staff/fixed-payment", {
-        state: {
-          branchId,
-          bookingRequests,
-          totalPrice,
-          userId,
-          numberOfMonths,
-          daysOfWeek,
-          startDate: formattedStartDate, // Chuyển đổi startDate thành chuỗi
-          slotStartTime,
-          slotEndTime,
-        },
-      });
-    } catch (error) {
-      console.error('Error booking slot:', error);
-    }
+        slotEndTime,
+      },
+    });
   };
 
   return (

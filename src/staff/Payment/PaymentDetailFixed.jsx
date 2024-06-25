@@ -6,7 +6,7 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import { fetchUserDetailByEmail, fetchUserDetail } from '../../api/userApi';
 import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
-import { reserveSlots } from '../../api/bookingApi';
+import { createFixedBooking } from '../../api/bookingApi';
 
 const theme = createTheme({
   components: {
@@ -25,37 +25,34 @@ const theme = createTheme({
 
 const steps = ['Payment Details', 'Payment Confirmation'];
 
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+};
+
 const PaymentDetailFixed = () => {
   const location = useLocation();
-  const {
-    branchId,
-    bookingRequests,
-    totalPrice,
-    userId,
-    numberOfMonths,
-    daysOfWeek,
-    startDate,
-    slotStartTime,
-    slotEndTime
-  } = location.state || {};
+  const { branchId, bookingRequests, totalPrice, userChecked, userInfo: locationUserInfo, userId, numberOfMonths, daysOfWeek, startDate, slotStartTime, slotEndTime } = location.state || {};
 
   const [activeStep, setActiveStep] = useState(0);
   const [email, setEmail] = useState('');
   const [userExists, setUserExists] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  const [userInfo, setUserInfo] = useState(locationUserInfo || null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (location.state.userInfo) {
-      setUserInfo(location.state.userInfo);
+    if (userChecked && locationUserInfo) {
       setUserExists(true);
     }
-  }, [location.state.userInfo]);
+  }, [userChecked, locationUserInfo]);
 
   const handleEmailCheck = async () => {
     if (!email) {
-      setErrorMessage('Please enter an email.');
+      setErrorMessage('Vui lòng nhập email.');
       return;
     }
 
@@ -79,16 +76,16 @@ const PaymentDetailFixed = () => {
         } else {
           setUserExists(false);
           setUserInfo(null);
-          setErrorMessage('User details not found.');
+          setErrorMessage('Không tìm thấy thông tin chi tiết người dùng.');
         }
       } else {
         setUserExists(false);
         setUserInfo(null);
-        setErrorMessage('User does not exist. Please register.');
+        setErrorMessage('Người dùng không tồn tại. Vui lòng đăng ký.');
       }
     } catch (error) {
-      console.error('Error checking user existence:', error);
-      setErrorMessage('Error checking user existence. Please try again.');
+      console.error('Lỗi kiểm tra tồn tại người dùng:', error);
+      setErrorMessage('Lỗi kiểm tra tồn tại người dùng. Vui lòng thử lại.');
     }
   };
 
@@ -97,10 +94,11 @@ const PaymentDetailFixed = () => {
       setErrorMessage('Please enter a valid email and check user existence.');
       return;
     }
-
+  
     if (activeStep === 0) {
-      setIsLoading(true); // Hiển thị trang loading
+      setIsLoading(true); // Show loading page
       try {
+        const formattedStartDate = formatDate(startDate); // Format startDate to MM/DD/YYYY
         const bookingForm = bookingRequests.map((request) => ({
           courtId: null,
           branchId: branchId,
@@ -110,26 +108,37 @@ const PaymentDetailFixed = () => {
             slotEndTime: request.timeSlot.slotEndTime,
           },
         }));
-
+  
         console.log('Formatted Requests:', bookingForm);
-
-        const booking = await reserveSlots(userInfo.userId, bookingForm);
-        const bookingId = booking.bookingId;
+  
+        const response = await createFixedBooking(
+          numberOfMonths,
+          daysOfWeek,
+          formattedStartDate,
+          userId,
+          branchId,
+          slotStartTime,
+          slotEndTime
+        );
+  
+        const bookingId = response.bookingId;
         const tokenResponse = await generatePaymentToken(bookingId);
         const token = tokenResponse.token;
         const paymentResponse = await processPayment(token);
         const paymentUrl = paymentResponse;
-
+  
         window.location.href = paymentUrl;
       } catch (error) {
         console.error('Error processing payment:', error);
         setErrorMessage('Error processing payment. Please try again.');
-        setIsLoading(false); // Ẩn trang loading nếu có lỗi
+        setIsLoading(false); // Hide loading page if there's an error
       }
     } else {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
     }
   };
+  
+  
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
@@ -140,10 +149,10 @@ const PaymentDetailFixed = () => {
       case 0:
         return (
           <>
-            {!userExists && (
+            {!userChecked && (
               <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
                 <Typography variant="h5" gutterBottom color="black">
-                  Customer Information
+                  Thông Tin Khách Hàng
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <TextField
@@ -155,7 +164,7 @@ const PaymentDetailFixed = () => {
                     onChange={(e) => setEmail(e.target.value)}
                   />
                   <Button variant="contained" color="primary" onClick={handleEmailCheck}>
-                    Check
+                    Kiểm Tra
                   </Button>
                 </Box>
                 {errorMessage && (
@@ -166,13 +175,13 @@ const PaymentDetailFixed = () => {
                 {userExists && userInfo && (
                   <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2, marginTop: '20px' }}>
                     <Typography variant="h6" color="black">
-                      <strong>Username:</strong> {userInfo.userName ? userInfo.userName : 'N/A'}
+                      <strong>Tên Người Dùng:</strong> {userInfo.userName ? userInfo.userName : 'N/A'}
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Full Name:</strong> {userInfo.fullName ? userInfo.fullName : 'N/A'}
+                      <strong>Họ và Tên:</strong> {userInfo.fullName ? userInfo.fullName : 'N/A'}
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Phone:</strong> {userInfo.phoneNumber ? userInfo.phoneNumber : 'N/A'}
+                      <strong>Điện Thoại:</strong> {userInfo.phoneNumber ? userInfo.phoneNumber : 'N/A'}
                     </Typography>
                     <Typography variant="h6" color="black">
                       <strong>Coin:</strong> {userInfo.balance ? userInfo.balance : 'N/A'}
@@ -182,19 +191,18 @@ const PaymentDetailFixed = () => {
               </Box>
             )}
 
-            {/* Phương thức thanh toán và thông tin hóa đơn */}
             <Box sx={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                   <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2, maxHeight: '400px', overflowY: 'auto' }}>
                     <Typography variant="h5" gutterBottom color="black" display="flex" alignItems="center">
-                      <PaymentIcon sx={{ marginRight: '8px' }} /> Payment Method
+                      <PaymentIcon sx={{ marginRight: '8px' }} /> Phương Thức Thanh Toán
                     </Typography>
                     <FormControl component="fieldset">
-                      <FormLabel component="legend" sx={{ color: 'black' }}>Select Payment Method</FormLabel>
+                      <FormLabel component="legend" sx={{ color: 'black' }}>Chọn Phương Thức Thanh Toán</FormLabel>
                       <RadioGroup aria-label="payment method" name="paymentMethod">
-                        <FormControlLabel value="cash" control={<Radio />} label="Cash" sx={{ color: 'black' }} />
-                        <FormControlLabel value="creditCard" control={<Radio />} label="Credit Card" sx={{ color: 'black' }} />
+                        <FormControlLabel value="cash" control={<Radio />} label="Tiền Mặt" sx={{ color: 'black' }} />
+                        <FormControlLabel value="creditCard" control={<Radio />} label="Thẻ Tín Dụng" sx={{ color: 'black' }} />
                       </RadioGroup>
                     </FormControl>
                   </Box>
@@ -202,29 +210,29 @@ const PaymentDetailFixed = () => {
                 <Grid item xs={12} md={6}>
                   <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
                     <Typography variant="h5" gutterBottom color="black">
-                      Bill
+                      Hóa Đơn
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Branch ID:</strong> {branchId} {/* Thêm để hiển thị Branch ID */}
+                      <strong>Branch ID:</strong> {branchId}
                     </Typography>
                     <Typography variant="h6" color="black" sx={{ marginTop: '20px' }}>
-                      <strong>Number of Months:</strong> {numberOfMonths}
+                      <strong>Số Tháng:</strong> {numberOfMonths}
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Day of Week:</strong> {daysOfWeek.join(', ')}
+                      <strong>Ngày Trong Tuần:</strong> {daysOfWeek.join(', ')}
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Start Date:</strong> {startDate}
+                      <strong>Ngày Bắt Đầu:</strong> {startDate}
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Slot Start Time:</strong> {slotStartTime}
+                      <strong>Giờ Bắt Đầu:</strong> {slotStartTime}
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Slot End Time:</strong> {slotEndTime}
+                      <strong>Giờ Kết Thúc:</strong> {slotEndTime}
                     </Typography>
                     <Divider sx={{ marginY: '10px' }} />
                     <Typography variant="h6" color="black">
-                      <strong>Total Price:</strong> {totalPrice} USD {/* Thêm để hiển thị tổng giá */}
+                      <strong>Tổng Giá:</strong> {totalPrice} USD
                     </Typography>
                   </Box>
                 </Grid>
@@ -233,7 +241,7 @@ const PaymentDetailFixed = () => {
           </>
         );
       case 1:
-        return <LoadingPage />; // Hiển thị trang loading
+        return <LoadingPage />;
       default:
         return 'Unknown step';
     }
@@ -243,7 +251,7 @@ const PaymentDetailFixed = () => {
     <ThemeProvider theme={theme}>
       <Box m="20px" p="20px" sx={{ backgroundColor: "#F5F5F5", borderRadius: 2 }}>
         <Typography variant="h4" gutterBottom color="black">
-          Payment Details
+          Chi Tiết Thanh Toán
         </Typography>
         <Stepper activeStep={activeStep} sx={{ marginBottom: '20px' }}>
           {steps.map((label) => (
@@ -259,15 +267,15 @@ const PaymentDetailFixed = () => {
             onClick={handleBack}
             sx={{ marginRight: '20px' }}
           >
-            Back
+            Quay Lại
           </Button>
           <Button
             variant="contained"
             color="primary"
             onClick={handleNext}
-            disabled={isLoading} // Vô hiệu hóa nút khi đang loading
+            disabled={isLoading}
           >
-            {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+            {activeStep === steps.length - 1 ? 'Hoàn Tất' : 'Tiếp Theo'}
           </Button>
         </Box>
       </Box>
