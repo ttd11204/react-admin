@@ -461,7 +461,10 @@ const ReserveSlot = () => {
                 <Button
                   onClick={() => handleSlotClick(slot, day, price)}
                   sx={{
-                    backgroundColor: day.isBefore(currentDate, 'day') || isLocked ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
+
+                     //check đến tận ngày hôm nay luôn 
+                    backgroundColor: day.isBefore(currentDate, 'day') ||(day.isSame(currentDate, 'day') && 
+                    timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25) || isLocked ? "#E0E0E0" : isSelected ? "#1976d2" : "#D9E9FF",
                     color: isSelected ? "#FFFFFF" : "#0D1B34",
                     p: 2,
                     borderRadius: 2,
@@ -477,7 +480,9 @@ const ReserveSlot = () => {
                     position: 'relative'
                   }}
                   m="10px"
-                  disabled={day.isBefore(currentDate, 'day') || isLocked}
+                  //check đến tận ngày hôm nay luôn 
+                  disabled={day.isBefore(currentDate, 'day')  || (day.isSame(currentDate, 'day') && 
+                    timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25) || isLocked}
                 >
                   <Box>
                     <Typography
