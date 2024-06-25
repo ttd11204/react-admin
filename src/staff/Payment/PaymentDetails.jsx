@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, Stepper, Step, StepLabel, Typography, Divider, Grid, TextField } from '@mui/material';
+import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Grid } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -25,33 +25,27 @@ const theme = createTheme({
 
 const steps = ['Payment Details', 'Payment Confirmation'];
 
-const PaymentDetailFixed = () => {
+const PaymentDetail = () => {
   const location = useLocation();
-  const {
-    branchId,
-    bookingRequests,
-    totalPrice,
-    userId,
-    numberOfMonths,
-    daysOfWeek,
-    startDate,
-    slotStartTime,
-    slotEndTime
-  } = location.state || {};
-
+  const { branchId, bookingRequests, totalPrice, userChecked, userInfo: locationUserInfo, userId } = location.state || {};
+  const sortedBookingRequests = bookingRequests ? [...bookingRequests].sort((a, b) => {
+    const dateA = new Date(`${a.slotDate}T${a.timeSlot.slotStartTime}`);
+    const dateB = new Date(`${b.slotDate}T${b.timeSlot.slotStartTime}`);
+    return dateA - dateB;
+  }) : [];
   const [activeStep, setActiveStep] = useState(0);
+
   const [email, setEmail] = useState('');
   const [userExists, setUserExists] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  const [userInfo, setUserInfo] = useState(locationUserInfo || null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (location.state.userInfo) {
-      setUserInfo(location.state.userInfo);
+    if (userChecked && locationUserInfo) {
       setUserExists(true);
     }
-  }, [location.state.userInfo]);
+  }, [userChecked, locationUserInfo]);
 
   const handleEmailCheck = async () => {
     if (!email) {
@@ -99,7 +93,7 @@ const PaymentDetailFixed = () => {
     }
 
     if (activeStep === 0) {
-      setIsLoading(true); // Hiển thị trang loading
+      setIsLoading(true); // Show loading page
       try {
         const bookingForm = bookingRequests.map((request) => ({
           courtId: null,
@@ -124,7 +118,7 @@ const PaymentDetailFixed = () => {
       } catch (error) {
         console.error('Error processing payment:', error);
         setErrorMessage('Error processing payment. Please try again.');
-        setIsLoading(false); // Ẩn trang loading nếu có lỗi
+        setIsLoading(false); // Hide loading page if there's an error
       }
     } else {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -140,7 +134,7 @@ const PaymentDetailFixed = () => {
       case 0:
         return (
           <>
-            {!userExists && (
+            {!userChecked && (
               <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
                 <Typography variant="h5" gutterBottom color="black">
                   Customer Information
@@ -182,7 +176,7 @@ const PaymentDetailFixed = () => {
               </Box>
             )}
 
-            {/* Phương thức thanh toán và thông tin hóa đơn */}
+            {/* Payment method and bill information */}
             <Box sx={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
@@ -205,26 +199,30 @@ const PaymentDetailFixed = () => {
                       Bill
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Branch ID:</strong> {branchId} {/* Thêm để hiển thị Branch ID */}
+                      <strong>Branch ID:</strong> {branchId} {/* Added to display branch ID */}
                     </Typography>
                     <Typography variant="h6" color="black" sx={{ marginTop: '20px' }}>
-                      <strong>Number of Months:</strong> {numberOfMonths}
+                      <strong>Time Slot:</strong>
                     </Typography>
-                    <Typography variant="h6" color="black">
-                      <strong>Day of Week:</strong> {daysOfWeek.join(', ')}
-                    </Typography>
-                    <Typography variant="h6" color="black">
-                      <strong>Start Date:</strong> {startDate}
-                    </Typography>
-                    <Typography variant="h6" color="black">
-                      <strong>Slot Start Time:</strong> {slotStartTime}
-                    </Typography>
-                    <Typography variant="h6" color="black">
-                      <strong>Slot End Time:</strong> {slotEndTime}
-                    </Typography>
+                    {bookingRequests && sortedBookingRequests.map((request, index) => (
+                      <Box key={index} sx={{ marginBottom: '15px', padding: '10px', backgroundColor: '#FFFFFF', borderRadius: 2, boxShadow: 1 }}>
+                        <Typography variant="body1" color="black">
+                          <strong>Date:</strong> {request.slotDate}
+                        </Typography>
+                        <Typography variant="body1" color="black">
+                          <strong>Start Time:</strong> {request.timeSlot.slotStartTime}
+                        </Typography>
+                        <Typography variant="body1" color="black">
+                          <strong>End Time:</strong> {request.timeSlot.slotEndTime}
+                        </Typography>
+                        <Typography variant="body1" color="black">
+                          <strong>Price:</strong> {request.price} USD {/* Added to display slot price */}
+                        </Typography>
+                      </Box>
+                    ))}
                     <Divider sx={{ marginY: '10px' }} />
                     <Typography variant="h6" color="black">
-                      <strong>Total Price:</strong> {totalPrice} USD {/* Thêm để hiển thị tổng giá */}
+                      <strong>Total Price:</strong> {totalPrice} USD {/* Added to display total price */}
                     </Typography>
                   </Box>
                 </Grid>
@@ -233,7 +231,7 @@ const PaymentDetailFixed = () => {
           </>
         );
       case 1:
-        return <LoadingPage />; // Hiển thị trang loading
+        return <LoadingPage />; // Show loading page
       default:
         return 'Unknown step';
     }
@@ -265,7 +263,7 @@ const PaymentDetailFixed = () => {
             variant="contained"
             color="primary"
             onClick={handleNext}
-            disabled={isLoading} // Vô hiệu hóa nút khi đang loading
+            disabled={isLoading} // Disable button while loading
           >
             {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
           </Button>
@@ -275,4 +273,4 @@ const PaymentDetailFixed = () => {
   );
 };
 
-export default PaymentDetailFixed;
+export default PaymentDetail;
