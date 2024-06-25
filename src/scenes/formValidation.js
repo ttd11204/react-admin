@@ -1,3 +1,5 @@
+const API_URL = 'https://courtcaller.azurewebsites.net/api/Users?pageNumber=1&pageSize=100';
+
 export const validateFullName = (fullName) => {
   if (fullName.length >= 6) return { isValid: true, message: '' };
   return { isValid: false, message: 'More than 6 characters!' };

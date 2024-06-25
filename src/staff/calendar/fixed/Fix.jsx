@@ -93,12 +93,17 @@ const FixedBooking = () => {
 
       const totalPrice = bookingRequests.reduce((total, request) => total + request.price, 0);
 
-      navigate("/staff/PaymentDetail", {
+      navigate("/staff/fixed-payment", {
         state: {
           branchId,
           bookingRequests,
           totalPrice,
           userId,
+          numberOfMonths,
+          daysOfWeek,
+          startDate: formattedStartDate, // Chuyển đổi startDate thành chuỗi
+          slotStartTime,
+          slotEndTime,
         },
       });
     } catch (error) {
