@@ -155,7 +155,7 @@ const StaffSidebar = () => {
             </Typography>
             <Item
               title="User"
-              to="/staff/Users"
+              to="/Users"
               icon={<PeopleOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -163,7 +163,7 @@ const StaffSidebar = () => {
 
             <Item
               title="Bookings"
-              to="/staff/Bookings"
+              to="/Bookings"
               icon={<ContactsOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -171,14 +171,14 @@ const StaffSidebar = () => {
 
             <Item
               title="Payments"
-              to="/staff/Payments"
+              to="/Payments"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Reviews"
-              to="/staff/Reviews"
+              to="/Reviews"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -194,28 +194,28 @@ const StaffSidebar = () => {
             
             <Item
               title="By day"
-              to="/staff/ReserveSlot"
+              to="/ReserveSlot"
               icon={<CalendarTodayOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Flexible"
-              to="/staff/flex"
+              to="/flex"
               icon={<CalendarTodayOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="fixed"
-              to="/staff/fixed"
+              to="/fixed"
               icon={<CalendarTodayOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
              <Item
               title="Check In"
-              to="/staff/checkin"
+              to="/checkin"
               icon={<CheckCircleOutlineIcon  />}
               selected={selected}
               setSelected={setSelected}
@@ -223,7 +223,7 @@ const StaffSidebar = () => {
 
             <Item
               title="FAQ Page"
-              to="/staff/faq"
+              to="/faq"
               icon={<HelpOutlineOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}

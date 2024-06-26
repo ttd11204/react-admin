@@ -91,14 +91,14 @@ const Branches = () => {
   const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/Branches?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
+    navigate(`/admin/Branches?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
   }, [navigate, pageSize, searchQuery]);
 
   const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
-    navigate(`/Branches?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
+    navigate(`/admin/Branches?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
   }, [navigate, searchQuery]);
 
   const handleSearchChange = useCallback((event) => {
@@ -107,11 +107,11 @@ const Branches = () => {
 
   const handleSearchSubmit = useCallback(() => {
     setPage(0);
-    navigate(`/Branches?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
+    navigate(`/admin/Branches?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
   }, [navigate, pageSize, searchQuery]);
 
   const handleView = (branchId) => {
-    navigate(`/Courts?branchId=${branchId}`);
+    navigate(`/admin/Courts?branchId=${branchId}`);
   };
 
   const handleEdit = async (branchId) => {

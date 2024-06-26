@@ -75,7 +75,7 @@ const Flexible = () => {
 
         console.log('userId:', userId);
 
-        navigate("/staff/flexible-booking", {
+        navigate("/flexible-booking", {
           state: {
             userChecked: true,
             userId,

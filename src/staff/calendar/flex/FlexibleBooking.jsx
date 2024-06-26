@@ -165,7 +165,7 @@ const FlexibleBooking = () => {
       };
     });
 
-    navigate("/staff/PaymentDetail", {
+    navigate("/PaymentDetail", {
       state: {
         userChecked,
         userInfo,

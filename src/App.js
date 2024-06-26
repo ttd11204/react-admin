@@ -25,7 +25,7 @@ import "react-toastify/dist/ReactToastify.css";
 import StaffLayout from "./staff/StaffLayout";
 import ReserveSlot from "./staff/calendar/byday/Byday";
 import PaymentDetail from "./staff/Payment/PaymentDetails";
-import {PaymentConfirmed} from "./staff/Payment/PaymentConfirmation";
+import { PaymentConfirmed } from "./staff/Payment/PaymentConfirmation";
 import { PaymentRejected } from "./staff/Payment/PaymentConfirmation";
 
 import Checkin from "./staff/Payment/Checkin";
@@ -51,12 +51,11 @@ function App() {
         <CssBaseline />
         <ToastContainer />
         <Routes>
+          <Route index element={<Login />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Routes cho admin */}
-          <Route path="/" element={<ProtectedRoute roles={["Admin"]}><Layout /></ProtectedRoute>}>
-          {/* <Route path="/" element={<Layout />}> */}
-            <Route index element={<Users />} />
+          {/* Routes for admin */}
+          <Route path="/admin/*" element={<ProtectedRoute roles={["Admin"]}><Layout /></ProtectedRoute>}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="Users" element={<Users />} />
             <Route path="Users/:id" element={<UserDetails />} />
@@ -74,9 +73,8 @@ function App() {
             <Route path="geography" element={<Geography />} />
           </Route>
 
-          {/* Routes cho staff */}
-          <Route path="/staff/*" element={<ProtectedRoute roles={["Staff"]}><StaffLayout /></ProtectedRoute>}>
-            <Route index element={<Users />} />
+          {/* Routes for staff */}
+          <Route path="/" element={<ProtectedRoute roles={["Staff"]}><StaffLayout /></ProtectedRoute>}>
             <Route path="Users" element={<Users />} />
             <Route path="Users/:id" element={<UserDetails />} />
             <Route path="Bookings" element={<Bookings />} />
@@ -89,7 +87,7 @@ function App() {
             <Route path="fixed-payment" element={<PaymentDetailFixed />} />
             <Route path="PaymentDetail" element={<PaymentDetail />} />
             <Route path="ReviewForm" element={<ReviewForm />} />
-            <Route path="confirm" element={< PaymentConfirmed/>} />
+            <Route path="confirm" element={<PaymentConfirmed />} />
             <Route path="reject" element={<PaymentRejected />} />
             <Route path="checkin" element={<Checkin />} />
           </Route>

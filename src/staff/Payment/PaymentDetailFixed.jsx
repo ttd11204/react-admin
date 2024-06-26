@@ -120,12 +120,19 @@ const PaymentDetailFixed = () => {
           slotStartTime,
           slotEndTime
         );
-  
+        
+        console.log('Booking Response:', response);
+        
         const bookingId = response.bookingId;
+        console.log('Booking ID:', bookingId);
         const tokenResponse = await generatePaymentToken(bookingId);
+        console.log('Token Response:', tokenResponse);
         const token = tokenResponse.token;
+        console.log('Token:', token);
         const paymentResponse = await processPayment(token);
+        console.log('Payment Response:', paymentResponse);
         const paymentUrl = paymentResponse;
+        console.log('Payment URL:', paymentUrl);
   
         window.location.href = paymentUrl;
       } catch (error) {

@@ -19,7 +19,7 @@ import {
   Modal,
 } from "@mui/material";
 import ReactPaginate from "react-paginate";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
 import {
   fetchCourts,
@@ -31,9 +31,7 @@ import {
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
-const useQuery = () => {
-  return new URLSearchParams(useLocation().search);
-};
+const useQuery = () => new URLSearchParams(useLocation().search);
 
 const Courts = () => {
   const theme = useTheme();
@@ -41,8 +39,7 @@ const Courts = () => {
   const [courtsData, setCourtsData] = useState([]);
   const query = useQuery();
   const navigate = useNavigate();
-  const { branchId } = useParams();
-  const branchIdQuery = query.get("branchId") || branchId;
+  const branchIdQuery = query.get("branchId");
 
   const pageQuery = parseInt(query.get("pageNumber")) || 1;
   const sizeQuery = parseInt(query.get("pageSize")) || 10;
@@ -97,7 +94,7 @@ const Courts = () => {
     const newPage = event.selected;
     setPage(newPage);
     navigate(
-      `/Courts?pageNumber=${
+      `/admin/Courts?pageNumber=${
         newPage + 1
       }&pageSize=${pageSize}&branchId=${branchIdQuery}`
     );
@@ -108,12 +105,12 @@ const Courts = () => {
     setPageSize(newSize);
     setPage(0);
     navigate(
-      `/Courts?pageNumber=1&pageSize=${newSize}&branchId=${branchIdQuery}`
+      `/admin/Courts?pageNumber=1&pageSize=${newSize}&branchId=${branchIdQuery}`
     );
   };
 
   const handleView = (courtId) => {
-    navigate(`/TimeSlots?courtId=${courtId}`);
+    navigate(`/admin/TimeSlots?courtId=${courtId}`);
   };
 
   const handleEdit = async (courtId) => {
@@ -159,8 +156,13 @@ const Courts = () => {
         setRowCount(filteredData.length);
       } else {
         const court = await fetchCourtById(searchId);
-        setCourtsData([court]);
-        setRowCount(1);
+        if (court.branchId === branchIdQuery) {
+          setCourtsData([court]);
+          setRowCount(1);
+        } else {
+          setCourtsData([]);
+          setRowCount(0);
+        }
       }
     } catch (err) {
       setError(`Failed to fetch court data: ${err.message}`);

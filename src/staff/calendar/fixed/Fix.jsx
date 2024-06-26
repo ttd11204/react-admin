@@ -81,7 +81,7 @@ const FixedBooking = () => {
 
     const totalPrice = bookingRequests.reduce((total, request) => total + request.price, 0);
 
-    navigate("/staff/fixed-payment", {
+    navigate("/fixed-payment", {
       state: {
         branchId,
         bookingRequests,

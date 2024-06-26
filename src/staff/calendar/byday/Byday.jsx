@@ -161,7 +161,7 @@ const ReserveSlot = () => {
       };
     });
 
-    navigate("/staff/PaymentDetail", {
+    navigate("/PaymentDetail", {
       state: {
         branchId: selectedBranch,
         bookingRequests,

@@ -55,9 +55,9 @@ const Payments = () => {
     const newPage = event.selected;
     setPage(newPage);
     if (userRole === 'Admin') {
-      navigate(`/Payments?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+      navigate(`/admin/Payments?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
     } else if (userRole === 'Staff') {
-      navigate(`/staff/Payments?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+      navigate(`/Payments?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
     }
   };
 
@@ -67,9 +67,9 @@ const Payments = () => {
     setPageSize(newSize);
     setPage(0); // Reset to first page when pageSize changes
     if (userRole === 'Admin') {
-      navigate(`/Payments?pageNumber=1&pageSize=${newSize}`);
+      navigate(`/admin/Payments?pageNumber=1&pageSize=${newSize}`);
     } else if (userRole === 'Staff') {
-      navigate(`/staff/Payments?pageNumber=1&pageSize=${newSize}`);
+      navigate(`/Payments?pageNumber=1&pageSize=${newSize}`);
     }
   };
 

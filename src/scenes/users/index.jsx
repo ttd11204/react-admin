@@ -74,19 +74,19 @@ const Users = () => {
   const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
+    navigate(`/${userRole === 'Admin' ? 'admin/Users' : 'Users'}?pageNumber=${newPage + 1}&pageSize=${pageSize}`);
   }, [navigate, pageSize, userRole]);
 
   const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
-    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}?pageNumber=1&pageSize=${newSize}`);
+    navigate(`/${userRole === 'Admin' ? 'admin/Users' : 'Users'}?pageNumber=1&pageSize=${newSize}`);
   }, [navigate, userRole]);
 
   const handleSearchSubmit = useCallback(() => {
     setPage(0);
-    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
+    navigate(`/${userRole === 'Admin' ? 'admin/Users' : 'Users'}?pageNumber=1&pageSize=${pageSize}&search=${searchQuery.trim()}`);
     getTeamData(0, pageSize, searchQuery);
   }, [getTeamData, navigate, pageSize, searchQuery, userRole]);
 
@@ -109,7 +109,7 @@ const Users = () => {
   }, []);
 
   const handleViewUser = useCallback((id) => {
-    navigate(`/${userRole === 'Admin' ? 'Users' : 'staff/Users'}/${id}`);
+    navigate(`/${userRole === 'Admin' ? 'admin/Users' : 'Users'}/${id}`);
   }, [navigate, userRole]);
 
   const handleCreateUserChange = useCallback((e) => {

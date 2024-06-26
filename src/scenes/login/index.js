@@ -43,23 +43,27 @@ const Login = () => {
     setLoading(true);
     try {
       const res = await loginApi(email, password);
-      console.log(res); // In phản hồi từ API ra console để kiểm tra
+      console.log(res); // Log response from API
 
       if (res && res.token) {
         localStorage.setItem("token", res.token);
 
-        // Decode token để lấy thông tin role
+        // Decode token to get role
         const decodedToken = JSON.parse(atob(res.token.split('.')[1]));
         const userRole = decodedToken.role;
         localStorage.setItem("userRole", userRole);
 
+        // Debugging logs
+        console.log("Token:", res.token);
+        console.log("Role:", userRole);
+
         toast.success("Login successful!");
 
-        // Điều hướng dựa trên vai trò của người dùng
+        // Navigate based on user role
         if (userRole === 'Admin') {
-          navigate("/");
+          navigate("/admin/Users");
         } else if (userRole === 'Staff') {
-          navigate("/staff");
+          navigate("/Users");
         } else {
           navigate("/login");
           toast.error("Unauthorized role");
@@ -74,7 +78,7 @@ const Login = () => {
         setMessageType("error");
       }
     } catch (error) {
-      console.error("Login error: ", error); // In ra chi tiết lỗi
+      console.error("Login error: ", error); // Log detailed error
       toast.error("Login failed!");
       setMessage("Login failed!");
       setMessageType("error");
