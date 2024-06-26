@@ -290,7 +290,6 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
                     mt: 1,  // Add margin-top to increase vertical spacing
                   }}
                   m="10px"
-                //   onClick={() => onSlotSelect({ day: day.format('YYYY-MM-DD'), price })}
                 >
                   <Typography
                     sx={{

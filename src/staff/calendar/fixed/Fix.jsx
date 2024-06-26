@@ -26,6 +26,40 @@ const theme = createTheme({
   },
 });
 
+const calculateDaysInMonth = (year, month) => {
+  return new Date(year, month, 0).getDate();
+};
+
+const getOccurrencesOfDayInMonth = (year, month, day) => {
+  let count = 0;
+  const totalDays = calculateDaysInMonth(year, month);
+  for (let date = 1; date <= totalDays; date++) {
+    const dayOfWeek = new Date(year, month - 1, date).toLocaleDateString('en-US', { weekday: 'long' });
+    if (dayOfWeek === day) {
+      count++;
+    }
+  }
+  return count;
+};
+
+const getTotalDaysForWeekdays = (daysOfWeek, numberOfMonths, startDate) => {
+  const totalDays = {};
+  const startMonth = startDate.getMonth() + 1;
+  const startYear = startDate.getFullYear();
+
+  daysOfWeek.forEach(day => totalDays[day] = 0);
+
+  for (let i = 0; i < numberOfMonths; i++) {
+    const currentMonth = (startMonth + i - 1) % 12 + 1;
+    const currentYear = startYear + Math.floor((startMonth + i - 1) / 12);
+    daysOfWeek.forEach(day => {
+      totalDays[day] += getOccurrencesOfDayInMonth(currentYear, currentMonth, day);
+    });
+  }
+
+  return totalDays;
+};
+
 const FixedBooking = () => {
   const [numberOfMonths, setNumberOfMonths] = useState('');
   const [daysOfWeek, setDaysOfWeek] = useState([]);
@@ -63,12 +97,19 @@ const FixedBooking = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const formattedStartDate = startDate.toISOString().split('T')[0]; // Convert startDate to ISO string and split to get the date part
+    const formattedStartDate = startDate.toISOString().split('T')[0];
 
     const isWeekday = (day) => {
       const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
       return weekdays.includes(day);
     };
+
+    const totalDays = getTotalDaysForWeekdays(daysOfWeek, numberOfMonths, startDate);
+
+    const totalPrice = daysOfWeek.reduce((total, day) => {
+      const pricePerDay = isWeekday(day) ? weekdayPrice : weekendPrice;
+      return total + (totalDays[day] * pricePerDay);
+    }, 0);
 
     const bookingRequests = daysOfWeek.map(day => ({
       slotDate: formattedStartDate,
@@ -79,7 +120,7 @@ const FixedBooking = () => {
       price: isWeekday(day) ? weekdayPrice : weekendPrice,
     }));
 
-    const totalPrice = bookingRequests.reduce((total, request) => total + request.price, 0);
+    console.log('Total Price:', totalPrice);
 
     navigate("/fixed-payment", {
       state: {
@@ -89,7 +130,7 @@ const FixedBooking = () => {
         userId,
         numberOfMonths,
         daysOfWeek,
-        startDate: formattedStartDate, // Pass the formatted startDate
+        startDate: formattedStartDate,
         slotStartTime,
         slotEndTime,
       },
