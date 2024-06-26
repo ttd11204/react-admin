@@ -99,7 +99,7 @@ const PaymentDetailFixed = () => {
     if (activeStep === 0) {
       setIsLoading(true);
       try {
-        const formattedStartDate = new Date(startDate);
+        const formattedStartDate = formatDate(startDate);
 
         const bookingForm = bookingRequests.map((request) => ({
           courtId: null,
@@ -111,6 +111,8 @@ const PaymentDetailFixed = () => {
           },
         }));
 
+        console.log('Formatted Requests:', bookingForm);
+
         const response = await createFixedBooking(
           numberOfMonths,
           daysOfWeek,
@@ -121,17 +123,24 @@ const PaymentDetailFixed = () => {
           slotEndTime
         );
 
+        // const bookingId = response.bookingId;
+        // const tokenResponse = await generatePaymentToken(bookingId);
+        // const token = tokenResponse.token;
+        // const paymentResponse = await processPayment(token);
+        // const paymentUrl = paymentResponse;
+
         const bookingId = response.bookingId;
-
+        console.log('Booking ID:', bookingId);
         const tokenResponse = await generatePaymentToken(bookingId);
-
+        console.log('Token Response:', tokenResponse);
         const token = tokenResponse.token;
-
+        console.log('Token:', token);
         const paymentResponse = await processPayment(token);
-
+        console.log('Payment Response:', paymentResponse);
         const paymentUrl = paymentResponse;
-
+        console.log('Payment URL:', paymentUrl);
         window.location.href = paymentUrl;
+
       } catch (error) {
         console.error('Error processing payment:', error);
         setErrorMessage('Error processing payment. Please try again.');
