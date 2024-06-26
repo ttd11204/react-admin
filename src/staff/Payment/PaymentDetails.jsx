@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Grid } from '@mui/material';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
 import { fetchUserDetailByEmail, fetchUserDetail } from '../../api/userApi';
 import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
-import { reserveSlots } from '../../api/bookingApi';
+import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
+import { reserveSlots, createBookingFlex, deleteBookingInFlex } from '../../api/bookingApi';
 
 const theme = createTheme({
   components: {
@@ -27,7 +28,8 @@ const steps = ['Payment Details', 'Payment Confirmation'];
 
 const PaymentDetail = () => {
   const location = useLocation();
-  const { branchId, bookingRequests, totalPrice, userChecked, userInfo: locationUserInfo, userId } = location.state || {};
+  const navigate = useNavigate();
+  const { branchId, bookingRequests, totalPrice, userChecked, userInfo: locationUserInfo, type, availableSlot, bookingId, numberOfSlot } = location.state || {};
   const sortedBookingRequests = bookingRequests ? [...bookingRequests].sort((a, b) => {
     const dateA = new Date(`${a.slotDate}T${a.timeSlot.slotStartTime}`);
     const dateB = new Date(`${b.slotDate}T${b.timeSlot.slotStartTime}`);
@@ -91,7 +93,73 @@ const PaymentDetail = () => {
       setErrorMessage('Please enter a valid email and check user existence.');
       return;
     }
+  
+    if (availableSlot !== 0 && bookingId) {
+      const bookingForm = bookingRequests.map((request) => ({
+        courtId: null,
+        branchId: branchId,
+        slotDate: request.slotDate,
+        timeSlot: {
+          slotStartTime: request.timeSlot.slotStartTime,
+          slotEndTime: request.timeSlot.slotEndTime,
+        },
+      }));
+      console.log('userinfo', userInfo);
+      console.log('bookingform', bookingForm);
+      const booking = await addTimeSlotIfExistBooking(bookingForm, bookingId);
+      navigate("/confirm", {
+        state: {
+          bookingId: bookingId,
+          bookingForm: bookingForm,
+          userInfo: userInfo,
+        }
+      });
+      return;
+    }
+  
+    if (type === 'flexible' && availableSlot === 0) {
+      let id = null;
+      try {
+        setIsLoading(true);
+        const bookingForm = bookingRequests.map((request) => ({
+          courtId: null,
+          branchId: branchId,
+          slotDate: request.slotDate,
+          timeSlot: {
+            slotStartTime: request.timeSlot.slotStartTime,
+            slotEndTime: request.timeSlot.slotEndTime,
+          },
+        }));
+  
+        const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
 
+        id = createBookingTypeFlex.bookingId;
+        const booking = await reserveSlots(userInfo.userId, bookingForm);
+        
+        // If reservation is successful, continue to the next step or navigate
+        setActiveStep((prevActiveStep) => prevActiveStep + 1);
+        const tokenResponse = await generatePaymentToken(booking.bookingId);
+      const token = tokenResponse.token;
+      const paymentResponse = await processPayment(token);
+      const paymentUrl = paymentResponse;
+
+      window.location.href = paymentUrl;
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        setErrorMessage('Error processing payment. Please try again.');
+        if (id) {
+          try {
+            await deleteBookingInFlex(id);
+            console.log('Booking rolled back successfully');
+          } catch (deleteError) {
+            console.error('Error rolling back booking:', deleteError);
+          }
+        }
+        setIsLoading(false);
+      }
+      
+    }
+  
     if (activeStep === 0) {
       setIsLoading(true); // Show loading page
       try {
@@ -104,16 +172,16 @@ const PaymentDetail = () => {
             slotEndTime: request.timeSlot.slotEndTime,
           },
         }));
-
+  
         console.log('Formatted Requests:', bookingForm);
-
+  
         const booking = await reserveSlots(userInfo.userId, bookingForm);
         const bookingId = booking.bookingId;
         const tokenResponse = await generatePaymentToken(bookingId);
         const token = tokenResponse.token;
         const paymentResponse = await processPayment(token);
         const paymentUrl = paymentResponse;
-
+  
         window.location.href = paymentUrl;
       } catch (error) {
         console.error('Error processing payment:', error);
@@ -124,6 +192,7 @@ const PaymentDetail = () => {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
     }
   };
+  
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);

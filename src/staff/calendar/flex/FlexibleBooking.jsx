@@ -78,7 +78,7 @@ const FlexibleBooking = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { email, numberOfSlot, branchId, userChecked, userInfo, userId } = location.state;
+  const { email, numberOfSlot, branchId, userChecked, userInfo, userId,availableSlot, bookingId } = location.state;
 
   const [branch, setBranch] = useState(null);
   const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week'));
@@ -86,6 +86,7 @@ const FlexibleBooking = () => {
   const [weekDays, setWeekDays] = useState([]);
   const [morningTimeSlots, setMorningTimeSlots] = useState([]);
   const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
+
   const [showAfternoon, setShowAfternoon] = useState(false);
   const currentDate = dayjs();
 
@@ -129,11 +130,13 @@ const FlexibleBooking = () => {
     const slotId = `${day.format('YYYY-MM-DD')}_${slot}`;
     const slotCount = selectedSlots.filter(selectedSlot => selectedSlot.slotId === slotId).length;
     const totalSelectedSlots = selectedSlots.length;
+    const slotToUse = (availableSlot > 0) ? availableSlot : numberOfSlot;
+    console.log('numberofslot:', numberOfSlot);
 
-    if (slotCount < numberOfSlot && totalSelectedSlots < numberOfSlot) {
+    if (slotCount < slotToUse && totalSelectedSlots < slotToUse) {
       setSelectedSlots([...selectedSlots, { slotId, slot, day }]);
     } else {
-      alert(`You can select up to ${numberOfSlot} slots only`);
+      alert(`You can select up to ${slotToUse} slots only`);
     }
   };
 
@@ -154,6 +157,7 @@ const FlexibleBooking = () => {
   };
 
   const handleContinue = () => {
+    
     const bookingRequests = selectedSlots.map((slot) => {
       const { day, slot: timeSlot } = slot;
       return {
@@ -171,7 +175,11 @@ const FlexibleBooking = () => {
         userInfo,
         branchId,
         bookingRequests,
-        userId
+        userId,
+        availableSlot,
+        bookingId,
+        type: 'flexible',
+        numberOfSlot
       }
     });
   };

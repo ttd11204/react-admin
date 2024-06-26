@@ -40,3 +40,13 @@ export const fetchTimeSlotByBookingId = async (bookingId) => {
     throw error
   }
 };
+
+export const addTimeSlotIfExistBooking = async (slotModel, bookingId) => {
+  try {
+    const response = await axios.post(`${url}/TimeSlots/add_timeslot_if_exist_booking?bookingId=${bookingId}`, slotModel);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding time slot to existing booking:', error);
+    throw error;
+  }
+};

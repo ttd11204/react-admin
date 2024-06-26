@@ -3,6 +3,18 @@ import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
 
+
+export const checkBookingTypeFlex = async (userId, branchId) => {
+  try {
+    const params = { userId, branchId };
+    const response = await axios.get(`${url}/Bookings/checkbookingtypeflex`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error checking booking type flex:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
 // Fetch bookings with pagination and optional search query
 export const fetchBookings = async (pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
@@ -58,8 +70,14 @@ export const fetchBookingById = async (bookingId) => {
 // Create a flexible booking
 export const createBookingFlex = async (userId, numberOfSlot, branchId) => {
   try {
-    const data = { userId, numberOfSlot, branchId };
-    const response = await axios.post(`${url}/Bookings/flex`, data);
+    const response = await axios.post(`${url}/Bookings/flex`, null, {
+      params: {
+        userId,
+        numberOfSlot,
+        branchId
+      }
+    });
+    console.log('Response:', response);
     return response.data;
   } catch (error) {
     console.error('Error creating flexible booking:', error.response ? error.response.data : error.message);
@@ -67,15 +85,6 @@ export const createBookingFlex = async (userId, numberOfSlot, branchId) => {
   }
 };
 
-export const checkavailableSlotByTypeFlex = async (userId, branchId) => {
-  try {
-    const response = await axios.get(`${url}/Bookings/CheckAvailableSlotsFromBookingTypeFlex/`, { params: { userId, branchId } });
-    return response.data;
-  } catch (error) {
-    console.error('Error checking available slot:', error.response ? error.response.data : error.message);
-    throw error;
-  }
-}
 
 const isValidTime = (time) => {
   const timePattern = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
@@ -132,5 +141,15 @@ export const createFixedBooking = async (numberOfMonths, daysOfWeek, formattedSt
       console.error('General Error:', error.message);
     }
     throw new Error('Error creating fixed booking. Please check the logs for more details.');
+  }
+};
+
+export const deleteBookingInFlex = async (id) => {
+  try {
+    const response = await axios.delete(`${url}/Bookings/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting booking:', error.response ? error.response.data : error.message);
+    throw error;
   }
 };

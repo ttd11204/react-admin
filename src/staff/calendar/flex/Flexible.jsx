@@ -4,7 +4,7 @@ import { validateRequired, validateNumber } from "../../../scenes/formValidation
 import { fetchBranches, fetchBranchById } from '../../../api/branchApi';
 import { fetchUserDetailByEmail, fetchUserDetail } from "../../../api/userApi";
 import { useNavigate } from "react-router-dom";
-import {checkavailableSlotByTypeFlex} from "../../../api/bookingApi";
+import { checkBookingTypeFlex } from "../../../api/bookingApi";
 
 const Flexible = () => {
   const [email, setEmail] = useState('');
@@ -14,6 +14,8 @@ const Flexible = () => {
   const [userExists, setUserExists] = useState(false);
   const [userInfo, setUserInfo] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [availableSlot, setAvailableSlot] = useState(null);
+  const[bookingId, setBookingId] = useState(null);
   const [errors, setErrors] = useState({
     email: '',
     numberOfSlot: '',
@@ -50,12 +52,11 @@ const Flexible = () => {
   };
 
   const handleSubmit = async () => {
-    
     const emailValidation = validateRequired(email);
     const numberOfSlotValidation = validateNumber(numberOfSlot);
     const branchIdValidation = validateRequired(selectedBranch);
 
-    if (!emailValidation.isValid || !numberOfSlotValidation.isValid || !branchIdValidation.isValid) {
+    if (!emailValidation.isValid ||   !branchIdValidation.isValid) {
       setErrors({
         email: emailValidation.message,
         numberOfSlot: numberOfSlotValidation.message,
@@ -68,10 +69,7 @@ const Flexible = () => {
       const user = userResponse[0];
       const branchResponse = await fetchBranchById(selectedBranch);
       if (userResponse && branchResponse) {
-        const userId = user.userId; 
-       
-
-
+        const userId = user.userId;
 
         console.log('userId:', userId);
 
@@ -82,7 +80,9 @@ const Flexible = () => {
             email,
             numberOfSlot,
             branchId: selectedBranch,
-            userInfo
+            userInfo,
+            availableSlot,
+            bookingId,
           }
         });
       } else {
@@ -100,21 +100,22 @@ const Flexible = () => {
     }
   };
 
-  const handleEmailCheck = async () => {
+  const handleCheck = async () => {
     if (!email) {
       setErrorMessage('Please enter an email.');
       return;
     }
-
     try {
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
         const detailedUserInfo = await fetchUserDetail(user.id);
- // check booking đi nè
- const availableSlot = await checkavailableSlotByTypeFlex(user.id,  selectedBranch);
- console.log('availableSlot:', availableSlot);
 
+        const availableSlot = await checkBookingTypeFlex(user.id, selectedBranch);
+        console.log('availableSlot:', availableSlot);
+
+        setAvailableSlot(availableSlot.numberOfSlot); // Update the state
+        setBookingId(availableSlot.bookingId);
         if (detailedUserInfo) {
           setUserExists(true);
           setUserInfo({
@@ -199,7 +200,7 @@ const Flexible = () => {
                   value={email}
                   onChange={(e) => handleChange('email', e.target.value)}
                 />
-                <Button variant="contained" color="primary" onClick={handleEmailCheck}>
+                <Button variant="contained" color="primary" onClick={handleCheck}>
                   Check
                 </Button>
               </Box>
@@ -224,30 +225,41 @@ const Flexible = () => {
                   </Typography>
                 </Box>
               )}
+              {availableSlot !== 0 && availableSlot !== null && (
+                <Box sx={{ backgroundColor: "#e0f7fa", padding: '10px', borderRadius: 1, marginTop: '10px' }}>
+                  <Typography variant="h6" color="black">
+                    Currently, the customer's account has <strong>{availableSlot}</strong> remaining booking slots.
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
-            <Typography mb="10px" mt="10px" variant="h5" color="black" fontWeight="bold">
-              Number of Slots
-            </Typography>
-            <TextField
-              placeholder="Enter Number of Slots"
-              fullWidth
-              value={numberOfSlot}
-              onChange={(e) => handleChange('numberOfSlot', e.target.value)}
-              error={Boolean(errors.numberOfSlot)}
-              helperText={errors.numberOfSlot}
-              InputProps={{
-                style: {
-                  color: "#000000",
-                },
-              }}
-              sx={{
-                mb: "20px",
-                backgroundColor: "#ffffff",
-                borderRadius: 1,
-                border: "1px solid #e0e0e0",
-              }}
-            />
+            {availableSlot === 0 && (
+              <>
+                <Typography mb="10px" mt="10px" variant="h5" color="black" fontWeight="bold">
+                  Number of Slots
+                </Typography>
+                <TextField
+                  placeholder="Enter Number of Slots"
+                  fullWidth
+                  value={numberOfSlot}
+                  onChange={(e) => handleChange('numberOfSlot', e.target.value)}
+                  error={Boolean(errors.numberOfSlot)}
+                  helperText={errors.numberOfSlot}
+                  InputProps={{
+                    style: {
+                      color: "#000000",
+                    },
+                  }}
+                  sx={{
+                    mb: "20px",
+                    backgroundColor: "#ffffff",
+                    borderRadius: 1,
+                    border: "1px solid #e0e0e0",
+                  }}
+                />
+              </>
+            )}
 
             <Box display="flex" justifyContent="flex-end" mt="30px">
               <Button
