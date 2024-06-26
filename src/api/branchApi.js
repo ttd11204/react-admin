@@ -5,11 +5,11 @@ const url = 'https://courtcaller.azurewebsites.net/api';
 export const fetchBranches = async (pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
     const params = { pageNumber, pageSize, searchQuery };
-    const response = await axios.get(`${url}/Branches?pageNumber=1&pageSize=20`, { params });
+    const response = await axios.get(`${url}/Branches`, { params });
 
-    if (Array.isArray(response.data)) {
-      const items = response.data;
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
+    if (response.data && Array.isArray(response.data.data)) {
+      const items = response.data.data;
+      const totalCount = response.data.total || 0;
       return { items, totalCount };
     } else {
       throw new Error('Invalid API response structure');
@@ -19,6 +19,7 @@ export const fetchBranches = async (pageNumber = 1, pageSize = 10, searchQuery =
     throw error;
   }
 };
+
 
 export const fetchBranchById = async (branchId) => {
   try {
