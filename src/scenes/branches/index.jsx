@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select,
   MenuItem, IconButton, InputBase, Modal, TextField
@@ -6,14 +6,13 @@ import {
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchBranches, fetchBranchById, createBranch, updateBranch } from '../../api/branchApi';
+import { fetchBranches, createBranch } from '../../api/branchApi';
 import Header from '../../components/Header';
 import SearchIcon from '@mui/icons-material/Search';
 import '../users/style.css';
 import { storageDb } from '../../firebase';
 import { ref, uploadBytesResumable, getDownloadURL, uploadBytes } from "firebase/storage";
 import { v4 } from 'uuid';
-
 import {
   validateFullName,
   validateEmail,
@@ -22,7 +21,7 @@ import {
   validatePhone,
   validateTime,
   validateRequired,
-  validateNumber,
+  validateNumber
 } from '../formValidation';
 
 const useQuery = () => new URLSearchParams(useLocation().search);
@@ -40,7 +39,6 @@ const Branches = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(query.get('searchQuery') || "");
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [openEditModal, setOpenEditModal] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const fileInputRef = useRef(null);
   const [errors, setErrors] = useState({});
@@ -55,20 +53,6 @@ const Branches = () => {
     closeTime: "",
     openDay: { day1: "", day2: "" },
     status: "Active",
-    weekdayPrice: "",
-    weekendPrice: ""
-  });
-  const [currentBranch, setCurrentBranch] = useState({
-    branchId: "",
-    branchAddress: "",
-    branchName: "",
-    branchPhone: "",
-    description: "",
-    branchPicture: "",
-    openTime: "",
-    closeTime: "",
-    openDay: { day1: "", day2: "" },
-    status: "",
     weekdayPrice: "",
     weekendPrice: ""
   });
@@ -114,14 +98,8 @@ const Branches = () => {
     navigate(`/admin/Courts?branchId=${branchId}`);
   };
 
-  const handleEdit = async (branchId) => {
-    try {
-      const branch = await fetchBranchById(branchId);
-      setCurrentBranch(branch);
-      setOpenEditModal(true);
-    } catch (error) {
-      setError('Failed to fetch branch data');
-    }
+  const handleViewDetail = (branchId) => {
+    navigate(`/admin/BranchDetail/${branchId}`);
   };
 
   const handleCreateNew = async () => {
@@ -193,62 +171,6 @@ const Branches = () => {
     }
   };
 
-  const handleUpdateBranch = async () => {
-    const validationErrors = {};
-
-    if (!validateRequired(currentBranch.branchAddress).isValid) {
-      validationErrors.branchAddress = validateRequired(currentBranch.branchAddress).message;
-    }
-    if (!validateRequired(currentBranch.branchName).isValid) {
-      validationErrors.branchName = validateRequired(currentBranch.branchName).message;
-    }
-    if (!validatePhone(currentBranch.branchPhone).isValid) {
-      validationErrors.branchPhone = validatePhone(currentBranch.branchPhone).message;
-    }
-    if (!validateTime(currentBranch.openTime).isValid) {
-      validationErrors.openTime = validateTime(currentBranch.openTime).message;
-    }
-    if (!validateTime(currentBranch.closeTime).isValid) {
-      validationErrors.closeTime = validateTime(currentBranch.closeTime).message;
-    }
-    if (!validateNumber(currentBranch.weekdayPrice).isValid) {
-      validationErrors.weekdayPrice = validateNumber(currentBranch.weekdayPrice).message;
-    }
-    if (!validateNumber(currentBranch.weekendPrice).isValid) {
-      validationErrors.weekendPrice = validateNumber(currentBranch.weekendPrice).message;
-    }
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    try {
-      const uploadimage = newBranch.branchPictures.map(async (image) => {
-        const imageRef = ref(storageDb, `BranchImage/${v4()}`);
-        await uploadBytes(imageRef, image);
-        const url = await getDownloadURL(imageRef);
-        return url;
-      });
-
-      const formData = new FormData();
-      Object.keys(currentBranch).forEach(key => {
-        if (key === 'openDay') {
-          formData.append(key, `${currentBranch.openDay.day1} to ${currentBranch.openDay.day2}`);
-        } else {
-          formData.append(key, currentBranch[key]);
-        }
-      });
-      await updateBranch(currentBranch.branchId, formData);
-      setOpenEditModal(false);
-      const data = await fetchBranches(page + 1, pageSize, searchQuery);
-      setBranchesData(data.items);
-      setRowCount(data.totalCount);
-    } catch (error) {
-      setError('Failed to update branch');
-    }
-  };
-
   const handleInputChange = (event) => {
     const { name, value } = event.target;
     setNewBranch(prevState => {
@@ -257,7 +179,6 @@ const Branches = () => {
         [name]: value
       };
 
-      // Clear errors for the updated field
       if (errors[name]) {
         const updatedErrors = { ...errors };
         delete updatedErrors[name];
@@ -302,7 +223,6 @@ const Branches = () => {
         }
       };
 
-      // Clear errors for the updated field
       if (errors[name]) {
         const updatedErrors = { ...errors };
         delete updatedErrors[name];
@@ -325,61 +245,8 @@ const Branches = () => {
     }
   };
 
-  const handleEditInputChange = (event) => {
-    const { name, value } = event.target;
-    setCurrentBranch(prevState => {
-      const updatedBranch = {
-        ...prevState,
-        [name]: value
-      };
-
-      // Clear errors for the updated field
-      if (errors[name]) {
-        const updatedErrors = { ...errors };
-        delete updatedErrors[name];
-        setErrors(updatedErrors);
-      }
-
-      return updatedBranch;
-    });
-  };
-
-  const handleEditFileChange = (event) => {
-    const file = event.target.files[0];
-    setCurrentBranch(prevState => ({
-      ...prevState,
-      branchPicture: file
-    }));
-  };
-
-  const handleEditSelectChange = (event) => {
-    const { name, value } = event.target;
-    setCurrentBranch(prevState => {
-      const updatedBranch = {
-        ...prevState,
-        openDay: {
-          ...prevState.openDay,
-          [name]: value
-        }
-      };
-
-      // Clear errors for the updated field
-      if (errors[name]) {
-        const updatedErrors = { ...errors };
-        delete updatedErrors[name];
-        setErrors(updatedErrors);
-      }
-
-      return updatedBranch;
-    });
-  };
-
   const handleCreateModalClose = () => {
     setOpenCreateModal(false);
-  };
-
-  const handleEditModalClose = () => {
-    setOpenEditModal(false);
   };
 
   return (
@@ -446,14 +313,14 @@ const Branches = () => {
                             style={{ backgroundColor: colors.greenAccent[500], color: 'black' }}
                             onClick={() => handleView(branch.branchId)}
                           >
-                            View
+                            View Court
                           </Button>
                           <Button
                             variant="contained"
                             style={{ backgroundColor: colors.greenAccent[500], color: 'black', marginLeft: '8px' }}
-                            onClick={() => handleEdit(branch.branchId)}
+                            onClick={() => handleViewDetail(branch.branchId)}
                           >
-                            Edit
+                            View Detail
                           </Button>
                         </Box>
                       </TableCell>
@@ -660,165 +527,12 @@ const Branches = () => {
                   Create
                 </Button>
               </Box>
-            </Box>
-          </Modal>
-
-          <Modal open={openEditModal} onClose={handleEditModalClose}>
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '80%',
-                bgcolor: 'background.paper',
-                border: '2px solid #000',
-                boxShadow: 24,
-                p: 4,
-              }}
-            >
-              <Typography variant="h6" mb="20px">Edit Branch</Typography>
-              <Box display="flex" justifyContent="space-between">
-                <Box width="48%">
-                  <TextField
-                    label="Branch Address"
-                    name="branchAddress"
-                    value={currentBranch.branchAddress}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.branchAddress}
-                    helperText={errors.branchAddress}
-                  />
-                  <TextField
-                    label="Branch Name"
-                    name="branchName"
-                    value={currentBranch.branchName}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.branchName}
-                    helperText={errors.branchName}
-                  />
-                  <TextField
-                    label="Branch Phone"
-                    name="branchPhone"
-                    value={currentBranch.branchPhone}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.branchPhone}
-                    helperText={errors.branchPhone}
-                  />
-                  <TextField
-                    label="Description"
-                    name="description"
-                    value={currentBranch.description}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.description}
-                    helperText={errors.description}
-                  />
-                  <Typography mt={2} mb={2} variant="subtitle1">Branch picture</Typography>
-                  <input type="file" accept='image/' multiple onChange={handleEditFileChange} />
-                </Box>
-                <Box width="48%">
-                  <TextField
-                    label="Open Time"
-                    name="openTime"
-                    value={currentBranch.openTime}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.openTime}
-                    helperText={errors.openTime}
-                  />
-                  <TextField
-                    label="Close Time"
-                    name="closeTime"
-                    value={currentBranch.closeTime}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.closeTime}
-                    helperText={errors.closeTime}
-                  />
-                  <TextField
-                    label="Weekday Price"
-                    name="weekdayPrice"
-                    value={currentBranch.weekdayPrice}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.weekdayPrice}
-                    helperText={errors.weekdayPrice}
-                  />
-                  <TextField
-                    label="Weekend Price"
-                    name="weekendPrice"
-                    value={currentBranch.weekendPrice}
-                    onChange={handleEditInputChange}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.weekendPrice}
-                    helperText={errors.weekendPrice}
-                  />
-                  <Box mt={2} mb={2}>
-                    <Typography variant="subtitle1">Open Day</Typography>
-                    <Box display="flex" justifyContent="space-between" mt={1}>
-                      <Select
-                        label="Day 1"
-                        name="day1"
-                        value={currentBranch.openDay.day1}
-                        onChange={handleEditSelectChange}
-                        fullWidth
-                      >
-                        {daysOfWeek.map(day => (
-                          <MenuItem key={day} value={day}>
-                            {day}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      <Select
-                        label="Day 2"
-                        name="day2"
-                        value={currentBranch.openDay.day2}
-                        onChange={handleEditSelectChange}
-                        fullWidth
-                      >
-                        {daysOfWeek.map(day => (
-                          <MenuItem key={day} value={day}>
-                            {day}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </Box>
-                  </Box>
-                  <Box mt={2} mb={2}>
-                    <Typography variant="subtitle1">Status</Typography>
-                    <Select
-                      label="Status"
-                      name="status"
-                      value={currentBranch.status}
-                      onChange={handleEditInputChange}
-                      fullWidth
-                    >
-                      <MenuItem value="Active">Active</MenuItem>
-                      <MenuItem value="Inactive">Inactive</MenuItem>
-                    </Select>
-                  </Box>
-                </Box>
               </Box>
-              <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Button sx={{ backgroundColor: colors.greenAccent[700], color: 'white' }} onClick={handleUpdateBranch}>Save</Button>
-              </Box>
-            </Box>
-          </Modal>
-        </Box>
-      )}
+      </Modal>
     </Box>
-  );
+  )}
+</Box>
+);
 };
 
 export default Branches;
