@@ -1,3 +1,4 @@
+// bookingApi.js
 import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
@@ -8,9 +9,9 @@ export const fetchBookings = async (pageNumber = 1, pageSize = 10, searchQuery =
     const params = { pageNumber, pageSize, searchQuery };
     const response = await axios.get(`${url}/Bookings`, { params });
 
-    if (Array.isArray(response.data)) {
-      const items = response.data;
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
+    if (response.data && Array.isArray(response.data.data)) {
+      const items = response.data.data;
+      const totalCount = response.data.total || 0;
       return { items, totalCount };
     } else {
       throw new Error('Invalid API response structure');

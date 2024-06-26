@@ -3,7 +3,7 @@ import { Box, Button, InputBase, IconButton, Typography, useTheme, Table, TableB
 import ReactPaginate from "react-paginate";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { fetchReviews, fetchUsers, fetchBranches, updateReview, deleteReview, searchReviewsByRating, createReview } from "../../api/reviewApi";
+import { fetchReviews, updateReview, deleteReview, searchReviewsByRating, createReview } from "../../api/reviewApi";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 
@@ -11,8 +11,6 @@ const Reviews = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [reviewsData, setReviewsData] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [error, setError] = useState(null);
   const [searchRating, setSearchRating] = useState("");
   const [openCreateModal, setOpenCreateModal] = useState(false);
@@ -24,25 +22,22 @@ const Reviews = () => {
 
   const page = parseInt(searchParams.get("pageNumber")) || 1;
   const pageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const searchQuery = searchParams.get("searchQuery") || "";
 
   const [rowCount, setRowCount] = useState(0);
 
   useEffect(() => {
     const getData = async () => {
       try {
-        const reviewsData = await fetchReviews(page, pageSize);
-        const usersData = await fetchUsers();
-        const branchesData = await fetchBranches();
+        const reviewsData = await fetchReviews(page, pageSize, searchQuery);
         setReviewsData(reviewsData.items);
-        setUsers(usersData);
-        setBranches(branchesData);
         setRowCount(reviewsData.totalCount);
       } catch (err) {
         setError(`Failed to fetch data: ${err.message}`);
       }
     };
     getData();
-  }, [page, pageSize]);
+  }, [page, pageSize, searchQuery]);
 
   const handleEditToggle = (review) => {
     setCurrentReview({
@@ -73,7 +68,7 @@ const Reviews = () => {
 
       await updateReview(currentReview.reviewId, payload);
       setOpenEditModal(false);
-      const reviewsData = await fetchReviews(page, pageSize);
+      const reviewsData = await fetchReviews(page, pageSize, searchQuery);
       setReviewsData(reviewsData.items);
       setRowCount(reviewsData.totalCount);
     } catch (err) {
@@ -85,31 +80,23 @@ const Reviews = () => {
     try {
       await deleteReview(id);
       setReviewsData((prev) => prev.filter((item) => item.reviewId !== id));
+      const reviewsData = await fetchReviews(page, pageSize, searchQuery);
+      setReviewsData(reviewsData.items);
+      setRowCount(reviewsData.totalCount);
     } catch (err) {
       setError(`Failed to delete review: ${err.message}`);
     }
   };
 
   const handleSearch = async () => {
-    try {
-      if (searchRating) {
-        const data = await searchReviewsByRating(searchRating);
-        setReviewsData(data);
-      } else {
-        const reviewsData = await fetchReviews(page, pageSize);
-        setReviewsData(reviewsData.items);
-        setRowCount(reviewsData.totalCount);
-      }
-    } catch (err) {
-      setError(`Failed to search reviews: ${err.message}`);
-    }
+    setSearchParams({ pageNumber: 1, pageSize, searchQuery: searchRating });
   };
 
   const handleCreateNew = async () => {
     try {
       await createReview(newReview);
       setOpenCreateModal(false);
-      const reviewsData = await fetchReviews(page, pageSize);
+      const reviewsData = await fetchReviews(page, pageSize, searchQuery);
       setReviewsData(reviewsData.items);
       setRowCount(reviewsData.totalCount);
       setNewReview({ reviewText: "", rating: 5, userId: "", branchId: "" });
@@ -120,12 +107,12 @@ const Reviews = () => {
 
   const handlePageClick = (event) => {
     const newPage = event.selected + 1;
-    setSearchParams({ pageNumber: newPage, pageSize });
+    setSearchParams({ pageNumber: newPage, pageSize, searchQuery });
   };
 
   const handlePageSizeChange = (event) => {
     const newSize = parseInt(event.target.value, 10);
-    setSearchParams({ pageNumber: 1, pageSize: newSize });
+    setSearchParams({ pageNumber: 1, pageSize: newSize, searchQuery });
   };
 
   return (
@@ -153,12 +140,12 @@ const Reviews = () => {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
-                  <TableCell>ID</TableCell>
+                  <TableCell>Review ID</TableCell>
                   <TableCell>Review Text</TableCell>
                   <TableCell>Review Date</TableCell>
                   <TableCell>Rating</TableCell>
-                  <TableCell>Branch Name</TableCell>
-                  <TableCell>User Email</TableCell>
+                  <TableCell>Branch ID</TableCell>
+                  <TableCell>User ID</TableCell>
                   <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
@@ -170,8 +157,8 @@ const Reviews = () => {
                       <TableCell>{row.reviewText}</TableCell>
                       <TableCell>{new Date(row.reviewDate).toLocaleDateString()}</TableCell>
                       <TableCell>{row.rating}</TableCell>
-                      <TableCell>{row.branchName}</TableCell>
-                      <TableCell>{row.email}</TableCell>
+                      <TableCell>{row.branchId}</TableCell>
+                      <TableCell>{row.id}</TableCell>
                       <TableCell align="center">
                         <Button variant="contained" size="small" onClick={() => handleEditToggle(row)} style={{ marginRight: 8 }}>
                           Edit
@@ -223,24 +210,8 @@ const Reviews = () => {
           </Typography>
           <TextField fullWidth variant="outlined" label="Review Text" value={newReview.reviewText} onChange={(e) => setNewReview({ ...newReview, reviewText: e.target.value })} margin="normal" />
           <TextField fullWidth variant="outlined" label="Rating" type="number" value={newReview.rating} onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })} margin="normal" />
-          <FormControl fullWidth variant="outlined" margin="normal">
-            <Select value={newReview.branchId} onChange={(e) => setNewReview({ ...newReview, branchId: e.target.value })}>
-              {branches.map((branch) => (
-                <MenuItem key={branch.branchId} value={branch.branchId}>
-                  {branch.branchName}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth variant="outlined" margin="normal">
-            <Select value={newReview.userId} onChange={(e) => setNewReview({ ...newReview, userId: e.target.value })}>
-              {users.map((user) => (
-                <MenuItem key={user.id} value={user.id}>
-                  {user.email}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <TextField fullWidth variant="outlined" label="Branch ID" value={newReview.branchId} onChange={(e) => setNewReview({ ...newReview, branchId: e.target.value })} margin="normal" />
+          <TextField fullWidth variant="outlined" label="User ID" value={newReview.userId} onChange={(e) => setNewReview({ ...newReview, userId: e.target.value })} margin="normal" />
           <Box display="flex" justifyContent="space-between" mt={2}>
             <Button variant="contained" color="primary" onClick={handleCreateNew}>
               Save
@@ -269,25 +240,8 @@ const Reviews = () => {
           </Typography>
           <TextField fullWidth variant="outlined" label="Review Text" value={currentReview.reviewText} onChange={(e) => handleFieldChange("reviewText", e.target.value)} margin="normal" />
           <TextField fullWidth variant="outlined" label="Rating" type="number" value={currentReview.rating} onChange={(e) => handleFieldChange("rating", parseInt(e.target.value))} margin="normal" />
-          
-          <FormControl fullWidth variant="outlined" margin="normal">
-            <Select value={currentReview.branchId} onChange={(e) => handleFieldChange("branchId", e.target.value)}>
-              {branches.map((branch) => (
-                <MenuItem key={branch.branchId} value={branch.branchId}>
-                  {branch.branchName}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth variant="outlined" margin="normal">
-            <Select value={currentReview.userId} onChange={(e) => handleFieldChange("userId", e.target.value)}>
-              {users.map((user) => (
-                <MenuItem key={user.id} value={user.id}>
-                  {user.email}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <TextField fullWidth variant="outlined" label="Branch ID" value={currentReview.branchId} onChange={(e) => handleFieldChange("branchId", e.target.value )} margin="normal" />
+          <TextField fullWidth variant="outlined" label="User ID" value={currentReview.userId} onChange={(e) => handleFieldChange("userId", e.target.value )} margin="normal" />
           <Box display="flex" justifyContent="space-between" mt={2}>
             <Button variant="contained" color="primary" onClick={handleSave}>
               Save

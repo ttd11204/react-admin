@@ -1,3 +1,4 @@
+// Bookings.js
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select,
@@ -6,7 +7,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
-import { fetchBookings, fetchBookingById, deleteBooking } from "../../api/bookingApi";
+import { fetchBookings, deleteBooking } from "../../api/bookingApi";
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -25,7 +26,6 @@ const Bookings = () => {
   const [pageSize, setPageSize] = useState(parseInt(query.get('pageSize')) || 10);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(query.get('searchQuery') || "");
-  const [searchResult, setSearchResult] = useState(null);
 
   useEffect(() => {
     const getBookingsData = async () => {
@@ -128,29 +128,7 @@ const Bookings = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {searchResult ? (
-                  <TableRow key={searchResult.bookingId}>
-                    <TableCell>{searchResult.bookingId}</TableCell>
-                    <TableCell>{searchResult.id}</TableCell>
-                    <TableCell>{new Date(searchResult.bookingDate).toLocaleString()}</TableCell>
-                    <TableCell>{searchResult.bookingType}</TableCell>
-                    <TableCell>{searchResult.numberOfSlot}</TableCell>
-                    <TableCell>{searchResult.totalPrice}</TableCell>
-                    <TableCell style={{ color: getStatusColor(searchResult.status) }}>{searchResult.status}</TableCell>
-                    <TableCell align="center">
-                      <Box display="flex" justifyContent="center" alignItems="center">
-                        <Button
-                          onClick={() => handleDelete(searchResult.bookingId)}
-                          variant="contained"
-                          size="small"
-                          style={{ backgroundColor: colors.redAccent[400], color: colors.primary[900] }}
-                        >
-                          Delete
-                        </Button>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : bookingsData.length > 0 ? (
+                {bookingsData.length > 0 ? (
                   bookingsData.map((row) => (
                     <TableRow key={row.bookingId}>
                       <TableCell>{row.bookingId}</TableCell>
@@ -189,7 +167,7 @@ const Bookings = () => {
               value={pageSize}
               onChange={handlePageSizeChange}
             >
-              {[10, 15, 20, 25, 50].map(size => (
+              {[10, 15, 20].map(size => (
                 <MenuItem key={size} value={size}>
                   {size}
                 </MenuItem>

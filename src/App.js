@@ -16,7 +16,6 @@ import Branches from "./scenes/branches";
 import TimeSlots from "./scenes/timeSlots";
 import Bookings from "./scenes/bookings";
 import Users from "./scenes/users";
-import ReviewForm from "./scenes/form/ReviewForm";
 import UserDetails from "./scenes/users/UserDetails";
 import Login from "./scenes/login";
 import Layout from "./scenes/Layout";
@@ -65,7 +64,6 @@ function App() {
             <Route path="Branches" element={<Branches />} />
             <Route path="TimeSlots" element={<TimeSlots />} />
             <Route path="Bookings" element={<Bookings />} />
-            <Route path="ReviewForm" element={<ReviewForm />} />
             <Route path="faq" element={<FAQ />} />
             <Route path="bar" element={<Bar />} />
             <Route path="pie" element={<Pie />} />
@@ -86,7 +84,6 @@ function App() {
             <Route path="fixed" element={<FixedBooking />} />
             <Route path="fixed-payment" element={<PaymentDetailFixed />} />
             <Route path="PaymentDetail" element={<PaymentDetail />} />
-            <Route path="ReviewForm" element={<ReviewForm />} />
             <Route path="confirm" element={<PaymentConfirmed />} />
             <Route path="reject" element={<PaymentRejected />} />
             <Route path="checkin" element={<Checkin />} />
