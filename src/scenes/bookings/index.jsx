@@ -43,14 +43,14 @@ const Bookings = () => {
   const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
-    navigate(`/${userRole === 'Admin' ? 'admin/Bookings' : 'staff/Bookings'}?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
+    navigate(`/${userRole === 'Admin' ? 'admin/Bookings' : 'Bookings'}?pageNumber=${newPage + 1}&pageSize=${pageSize}&searchQuery=${searchQuery}`);
   }, [navigate, pageSize, searchQuery, userRole]);
 
   const handlePageSizeChange = useCallback((event) => {
     const newSize = parseInt(event.target.value, 10);
     setPageSize(newSize);
     setPage(0);
-    navigate(`/${userRole === 'Admin' ? 'admin/Bookings' : 'staff/Bookings'}?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
+    navigate(`/${userRole === 'Admin' ? 'admin/Bookings' : 'Bookings'}?pageNumber=1&pageSize=${newSize}&searchQuery=${searchQuery}`);
   }, [navigate, searchQuery, userRole]);
 
   const handleSearchChange = useCallback((event) => {
@@ -59,7 +59,7 @@ const Bookings = () => {
 
   const handleSearchSubmit = useCallback(() => {
     setPage(0);
-    navigate(`/${userRole === 'Admin' ? 'admin/Bookings' : 'staff/Bookings'}?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
+    navigate(`/${userRole === 'Admin' ? 'admin/Bookings' : 'Bookings'}?pageNumber=1&pageSize=${pageSize}&searchQuery=${searchQuery.trim()}`);
   }, [navigate, pageSize, searchQuery, userRole]);
 
   const handleDelete = async (id) => {

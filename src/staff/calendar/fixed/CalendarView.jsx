@@ -1,4 +1,3 @@
-// src/components/CalendarView.js
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Select, MenuItem, FormControl, IconButton, Grid, Button } from "@mui/material";
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -6,7 +5,7 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { fetchBranches, fetchBranchById } from '../../../api/branchApi';
-import { fetchPrice } from '../../../api/priceApi';
+import { fetchPriceByBranchIDType } from '../../../api/priceApi'; // Updated import
 
 dayjs.extend(isSameOrBefore);
 
@@ -85,9 +84,7 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
   const [morningTimeSlots, setMorningTimeSlots] = useState([]);
   const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
   const [showAfternoon, setShowAfternoon] = useState(false);
-  const [weekdayPrice, setWeekdayPrice] = useState(0);
-  const [weekendPrice, setWeekendPrice] = useState(0);
-  const currentDate = dayjs();
+  const [price, setPrice] = useState(0); // Combined price state
 
   useEffect(() => {
     const fetchBranchesData = async () => {
@@ -150,9 +147,8 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
       if (!selectedBranch) return;
 
       try {
-        const prices = await fetchPrice(selectedBranch);
-        setWeekdayPrice(prices.weekdayPrice);
-        setWeekendPrice(prices.weekendPrice);
+        const response = await fetchPriceByBranchIDType(selectedBranch, 'Fix', null); // Update to use fetchPriceByBranchIDType
+        setPrice(response); // Assuming response is a single price value
       } catch (error) {
         console.error('Error fetching prices', error);
       }
@@ -269,47 +265,44 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
             </Box>
           </Grid>
 
-          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
-            const price = day.day() >= 1 && day.day() <= 5 ? weekdayPrice : weekendPrice;
-            return (
-              <Grid item xs key={slotIndex}>
-                <Button
+          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => (
+            <Grid item xs key={slotIndex}>
+              <Button
+                sx={{
+                  backgroundColor: "#D9E9FF",
+                  color: "#0D1B34",
+                  p: 2,
+                  borderRadius: 2,
+                  width: "100%",
+                  textTransform: "none",
+                  border: '1px solid #90CAF9',
+                  textAlign: 'center',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  mt: 1,  // Add margin-top to increase vertical spacing
+                }}
+                m="10px"
+              >
+                <Typography
                   sx={{
-                    backgroundColor: "#D9E9FF",
-                    color: "#0D1B34",
-                    p: 2,
-                    borderRadius: 2,
-                    width: "100%",
-                    textTransform: "none",
-                    border: '1px solid #90CAF9',
-                    textAlign: 'center',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    mt: 1,  // Add margin-top to increase vertical spacing
+                    fontWeight: 'bold',
+                    color: "#0D1B34"
                   }}
-                  m="10px"
                 >
-                  <Typography
-                    sx={{
-                      fontWeight: 'bold',
-                      color: "#0D1B34"
-                    }}
-                  >
-                    {slot}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: "#0D1B34"
-                    }}
-                  >
-                    {price}k
-                  </Typography>
-                </Button>
-              </Grid>
-            );
-          })}
+                  {slot}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "#0D1B34"
+                  }}
+                >
+                  {price}k
+                </Typography>
+              </Button>
+            </Grid>
+          ))}
         </Grid>
       ))}
     </Box>
