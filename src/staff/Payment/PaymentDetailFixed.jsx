@@ -3,7 +3,6 @@ import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Butto
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
-import { fetchUserDetailByEmail, fetchUserDetail } from '../../api/userApi';
 import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import { createFixedBooking } from '../../api/bookingApi';
 import LoadingPage from './LoadingPage';
@@ -39,79 +38,14 @@ const PaymentDetailFixed = () => {
   const { branchId, bookingRequests, totalPrice, userId, numberOfMonths, daysOfWeek, startDate, slotStartTime, slotEndTime } = location.state || {};
 
   const [activeStep, setActiveStep] = useState(0);
-  const [email, setEmail] = useState('');
-  const [userExists, setUserExists] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (userExists && userInfo) {
-      setUserExists(true);
-    }
-  }, [userExists, userInfo]);
-
-  const handleEmailCheck = async () => {
-    if (!email) {
-      setErrorMessage('Please enter an email.');
-      return;
-    }
-
-    try {
-      const userData = await fetchUserDetailByEmail(email);
-      if (userData && userData.length > 0) {
-        const user = userData[0];
-        const detailedUserInfo = await fetchUserDetail(user.id);
-        if (detailedUserInfo) {
-          setUserExists(true);
-          setUserInfo({
-            userId: user.id,
-            userName: user.userName,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            fullName: detailedUserInfo.fullName,
-            balance: detailedUserInfo.balance,
-            address: detailedUserInfo.address,
-          });
-          setErrorMessage('');
-        } else {
-          setUserExists(false);
-          setUserInfo(null);
-          setErrorMessage('User details not found.');
-        }
-      } else {
-        setUserExists(false);
-        setUserInfo(null);
-        setErrorMessage('User does not exist. Please register.');
-      }
-    } catch (error) {
-      console.error('Error checking user existence:', error);
-      setErrorMessage('Error checking user existence. Please try again.');
-    }
-  };
-
   const handleNext = async () => {
-    if (activeStep === 0 && !userExists) {
-      setErrorMessage('Please enter a valid email and check user existence.');
-      return;
-    }
-
     if (activeStep === 0) {
       setIsLoading(true);
       try {
         const formattedStartDate = formatDate(startDate);
-
-        const bookingForm = bookingRequests.map((request) => ({
-          courtId: null,
-          branchId: branchId,
-          slotDate: request.slotDate,
-          timeSlot: {
-            slotStartTime: request.timeSlot.slotStartTime,
-            slotEndTime: request.timeSlot.slotEndTime,
-          },
-        }));
-
-        console.log('Formatted Requests:', bookingForm);
 
         const response = await createFixedBooking(
           numberOfMonths,
@@ -122,12 +56,6 @@ const PaymentDetailFixed = () => {
           slotStartTime,
           slotEndTime
         );
-
-        // const bookingId = response.bookingId;
-        // const tokenResponse = await generatePaymentToken(bookingId);
-        // const token = tokenResponse.token;
-        // const paymentResponse = await processPayment(token);
-        // const paymentUrl = paymentResponse;
 
         const bookingId = response.bookingId;
         console.log('Booking ID:', bookingId);
@@ -164,39 +92,10 @@ const PaymentDetailFixed = () => {
               <Typography variant="h5" gutterBottom color="black">
                 User Information
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TextField
-                  label="Email"
-                  variant="outlined"
-                  fullWidth
-                  sx={{ marginBottom: '10px', marginRight: '10px' }}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <Button variant="contained" color="primary" onClick={handleEmailCheck}>
-                  Check
-                </Button>
-              </Box>
               {errorMessage && (
                 <Typography variant="body2" color="error">
                   {errorMessage}
                 </Typography>
-              )}
-              {userExists && userInfo && (
-                <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2, marginTop: '20px' }}>
-                  <Typography variant="h6" color="black">
-                    <strong>User Name:</strong> {userInfo.userName ? userInfo.userName : 'N/A'}
-                  </Typography>
-                  <Typography variant="h6" color="black">
-                    <strong>Full Name:</strong> {userInfo.fullName ? userInfo.fullName : 'N/A'}
-                  </Typography>
-                  <Typography variant="h6" color="black">
-                    <strong>Phone Number:</strong> {userInfo.phoneNumber ? userInfo.phoneNumber : 'N/A'}
-                  </Typography>
-                  <Typography variant="h6" color="black">
-                    <strong>Balance:</strong> {userInfo.balance ? userInfo.balance : 'N/A'}
-                  </Typography>
-                </Box>
               )}
             </Box>
 
