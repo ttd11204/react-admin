@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { fetchPrice } from '../../../api/priceApi';
 import { fetchBranchById } from '../../../api/branchApi';
+import {fetchUnavailableSlots} from '../../../api/timeSlotApi'
 import ArrowBackIos from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIos from '@mui/icons-material/ArrowForwardIos';
 import Delete from '@mui/icons-material/Delete';
@@ -100,7 +101,7 @@ const ReserveSlot = () => {
   const navigate = useNavigate();
   const currentDate = dayjs();
 
- 
+
 
   const handleSlotClick = (slot, day, price) => {
     const slotId = `${day.format('YYYY-MM-DD')}_${slot}_${price}`;
@@ -130,15 +131,44 @@ const ReserveSlot = () => {
     setShowAfternoon(true);
   };
 
+  // chỉnh lại hàm handlepreviousweek
   const handlePreviousWeek = () => {
     const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
-    if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
+    const oneWeekBeforeStartOfWeek = dayjs(startOfWeek).subtract(1, 'week');
+
+
+    if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week') && oneWeekBeforeStartOfWeek.isAfter(oneWeekBeforeCurrentWeek)) {
+      setStartOfWeek(oneWeekBeforeStartOfWeek);
+    } else if (dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
       setStartOfWeek(oneWeekBeforeCurrentWeek);
     }
-  };
 
+    //từ đây là hàm lấy ngày đầu tuần để đưa vào get ra unavailable slot
+    const dateObj = weekDays[0];
+    const newDateObj = new Date(dateObj);
+    newDateObj.setDate(newDateObj.getDate() - 7); 
+    const year = newDateObj.getFullYear();
+    const month = (newDateObj.getMonth() + 1).toString().padStart(2, '0');
+    const day = newDateObj.getDate().toString().padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
+    const hehe = fetchUnavailableSlots(formattedDate , selectedBranch)
+    console.log('hehe là ' , hehe)
+  };
   const handleNextWeek = () => {
     setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
+
+    //từ đây là hàm lấy ngày đầu tuần để đưa vào get ra unavailable slot
+    const dateObj = weekDays[0];
+    const newDateObj = new Date(dateObj);
+    newDateObj.setDate(newDateObj.getDate() + 7); 
+    const year = newDateObj.getFullYear();
+    const month = (newDateObj.getMonth() + 1).toString().padStart(2, '0');
+    const day = newDateObj.getDate().toString().padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
+    const hehe = fetchUnavailableSlots(formattedDate , selectedBranch)
+    console.log('hehe là ' , hehe)
   };
 
   const handleContinue = async () => {
@@ -173,38 +203,38 @@ const ReserveSlot = () => {
   //phần để kết nối với signalR
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
-        .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
-        .withAutomaticReconnect()
-        .build();
+      .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
+      .withAutomaticReconnect()
+      .build();
 
     setConnection(newConnection);
-}, []);
+  }, []);
 
- //phần để kết nối với signalR
-useEffect(() => {
-  if (connection) {
+  //phần để kết nối với signalR
+  useEffect(() => {
+    if (connection) {
       connection.start()
-          .then(result => {
-              console.log("Connected!");
-              setIsConnected(true);
-          })
-          .catch(e => {
-              console.log("Connection failed: ", e);
-              setIsConnected(false);
-          });
+        .then(result => {
+          console.log("Connected!");
+          setIsConnected(true);
+        })
+        .catch(e => {
+          console.log("Connection failed: ", e);
+          setIsConnected(false);
+        });
 
       connection.on("SlotBooked", (isBooked) => {
-          setMessage(isBooked ? "Slot booked successfully!" : "No available slots!");
-          if (isBooked) {
-              setIsSlotBooked(true);
-          }
+        setMessage(isBooked ? "Slot booked successfully!" : "No available slots!");
+        if (isBooked) {
+          setIsSlotBooked(true);
+        }
       });
 
       connection.on("UpdateSlotStatus", (status) => {
-          setIsSlotBooked(!status);
+        setIsSlotBooked(!status);
       });
-  }
-}, [connection]);
+    }
+  }, [connection]);
 
 
   useEffect(() => {
@@ -414,7 +444,7 @@ useEffect(() => {
                     position: 'relative'
                   }}
                   m="10px"
-                  disabled={day.isBefore(currentDate, 'day')  || (day.isSame(currentDate, 'day') &&
+                  disabled={day.isBefore(currentDate, 'day') || (day.isSame(currentDate, 'day') &&
                     timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25)}
                 >
                   <Box>
