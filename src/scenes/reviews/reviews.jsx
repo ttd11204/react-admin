@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Box, Button, InputBase, IconButton, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Select, MenuItem, FormControl, Modal } from "@mui/material";
+import { 
+  Box, Button, InputBase, IconButton, Typography, useTheme, 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
+  Paper, TextField, Select, MenuItem, Modal 
+} from "@mui/material";
 import ReactPaginate from "react-paginate";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { fetchReviews, updateReview, deleteReview, searchReviewsByRating, createReview } from "../../api/reviewApi";
+import { fetchReviews, updateReview, deleteReview, createReview } from "../../api/reviewApi";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 
@@ -12,7 +16,7 @@ const Reviews = () => {
   const colors = tokens(theme.palette.mode);
   const [reviewsData, setReviewsData] = useState([]);
   const [error, setError] = useState(null);
-  const [searchRating, setSearchRating] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [currentReview, setCurrentReview] = useState({ reviewId: "", reviewText: "", rating: 5, userId: "", branchId: "" });
@@ -22,7 +26,6 @@ const Reviews = () => {
 
   const page = parseInt(searchParams.get("pageNumber")) || 1;
   const pageSize = parseInt(searchParams.get("pageSize")) || 10;
-  const searchQuery = searchParams.get("searchQuery") || "";
 
   const [rowCount, setRowCount] = useState(0);
 
@@ -89,7 +92,7 @@ const Reviews = () => {
   };
 
   const handleSearch = async () => {
-    setSearchParams({ pageNumber: 1, pageSize, searchQuery: searchRating });
+    setSearchParams({ pageNumber: 1, pageSize, searchQuery });
   };
 
   const handleCreateNew = async () => {
@@ -126,12 +129,22 @@ const Reviews = () => {
         <Box m="40px 0 0 0" height="75vh">
           <Box display="flex" justifyContent="flex-end" mb={2}>
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
-              <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search by Rating" value={searchRating} onChange={(e) => setSearchRating(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }} />
+              <InputBase 
+                sx={{ ml: 2, flex: 1 }} 
+                placeholder="Search" 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }} 
+              />
               <IconButton type="button" sx={{ p: 1 }} onClick={handleSearch}>
                 <SearchIcon />
               </IconButton>
             </Box>
-            <Button variant="contained" style={{ marginLeft: 8, backgroundColor: colors.greenAccent[400], color: colors.primary[900] }} onClick={() => setOpenCreateModal(true)}>
+            <Button 
+              variant="contained" 
+              style={{ marginLeft: 8, backgroundColor: colors.greenAccent[400], color: colors.primary[900] }} 
+              onClick={() => setOpenCreateModal(true)}
+            >
               Create New
             </Button>
           </Box>
@@ -160,10 +173,20 @@ const Reviews = () => {
                       <TableCell>{row.branchId}</TableCell>
                       <TableCell>{row.id}</TableCell>
                       <TableCell align="center">
-                        <Button variant="contained" size="small" onClick={() => handleEditToggle(row)} style={{ marginRight: 8 }}>
+                        <Button 
+                          variant="contained" 
+                          size="small" 
+                          onClick={() => handleEditToggle(row)} 
+                          style={{ marginRight: 8 }}
+                        >
                           Edit
                         </Button>
-                        <Button variant="contained" size="small" color="error" onClick={() => handleDelete(row.reviewId)}>
+                        <Button 
+                          variant="contained" 
+                          size="small" 
+                          color="error" 
+                          onClick={() => handleDelete(row.reviewId)}
+                        >
                           Delete
                         </Button>
                       </TableCell>
@@ -188,7 +211,17 @@ const Reviews = () => {
                   </MenuItem>
                 ))}
               </Select>
-              <ReactPaginate breakLabel="..." nextLabel="next >" onPageChange={handlePageClick} pageRangeDisplayed={5} pageCount={Math.ceil(rowCount / pageSize)} previousLabel="< previous" renderOnZeroPageCount={null} containerClassName={"pagination"} activeClassName={"active"} />
+              <ReactPaginate 
+                breakLabel="..." 
+                nextLabel="next >" 
+                onPageChange={handlePageClick} 
+                pageRangeDisplayed={5} 
+                pageCount={Math.ceil(rowCount / pageSize)} 
+                previousLabel="< previous" 
+                renderOnZeroPageCount={null} 
+                containerClassName={"pagination"} 
+                activeClassName={"active"} 
+              />
             </Box>
           )}
         </Box>
@@ -208,16 +241,45 @@ const Reviews = () => {
           <Typography variant="h6" mb={2}>
             Create New Review
           </Typography>
-          <TextField fullWidth variant="outlined" label="Review Text" value={newReview.reviewText} onChange={(e) => setNewReview({ ...newReview, reviewText: e.target.value })} margin="normal" />
-          <TextField fullWidth variant="outlined" label="Rating" type="number" value={newReview.rating} onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })} margin="normal" />
-          <TextField fullWidth variant="outlined" label="Branch ID" value={newReview.branchId} onChange={(e) => setNewReview({ ...newReview, branchId: e.target.value })} margin="normal" />
-          <TextField fullWidth variant="outlined" label="User ID" value={newReview.userId} onChange={(e) => setNewReview({ ...newReview, userId: e.target.value })} margin="normal" />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="Review Text" 
+            value={newReview.reviewText} 
+            onChange={(e) => setNewReview({ ...newReview, reviewText: e.target.value })} 
+            margin="normal" 
+          />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="Rating" 
+            type="number" 
+            value={newReview.rating} 
+            onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })} 
+            margin="normal" 
+          />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="Branch ID" 
+            value={newReview.branchId} 
+            onChange={(e) => setNewReview({ ...newReview, branchId: e.target.value })} 
+            margin="normal" 
+          />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="User ID" 
+            value={newReview.userId} 
+            onChange={(e) => setNewReview({ ...newReview, userId: e.target.value })} 
+            margin="normal" 
+          />
           <Box display="flex" justifyContent="space-between" mt={2}>
-            <Button variant="contained" color="primary" onClick={handleCreateNew}>
-              Save
-            </Button>
             <Button variant="contained" color="secondary" onClick={() => setOpenCreateModal(false)}>
               Cancel
+            </Button>
+            <Button variant="contained" color="primary" onClick={handleCreateNew}>
+              Save
             </Button>
           </Box>
         </Box>
@@ -238,16 +300,45 @@ const Reviews = () => {
           <Typography variant="h6" mb={2}>
             Edit Review
           </Typography>
-          <TextField fullWidth variant="outlined" label="Review Text" value={currentReview.reviewText} onChange={(e) => handleFieldChange("reviewText", e.target.value)} margin="normal" />
-          <TextField fullWidth variant="outlined" label="Rating" type="number" value={currentReview.rating} onChange={(e) => handleFieldChange("rating", parseInt(e.target.value))} margin="normal" />
-          <TextField fullWidth variant="outlined" label="Branch ID" value={currentReview.branchId} onChange={(e) => handleFieldChange("branchId", e.target.value )} margin="normal" />
-          <TextField fullWidth variant="outlined" label="User ID" value={currentReview.userId} onChange={(e) => handleFieldChange("userId", e.target.value )} margin="normal" />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="Review Text" 
+            value={currentReview.reviewText} 
+            onChange={(e) => handleFieldChange("reviewText", e.target.value)} 
+            margin="normal" 
+          />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="Rating" 
+            type="number" 
+            value={currentReview.rating} 
+            onChange={(e) => handleFieldChange("rating", parseInt(e.target.value))} 
+            margin="normal" 
+          />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="Branch ID" 
+            value={currentReview.branchId} 
+            onChange={(e) => handleFieldChange("branchId", e.target.value )} 
+            margin="normal" 
+          />
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            label="User ID" 
+            value={currentReview.userId} 
+            onChange={(e) => handleFieldChange("userId", e.target.value )} 
+            margin="normal" 
+          />
           <Box display="flex" justifyContent="space-between" mt={2}>
-            <Button variant="contained" color="primary" onClick={handleSave}>
-              Save
-            </Button>
             <Button variant="contained" color="secondary" onClick={() => setOpenEditModal(false)}>
               Cancel
+            </Button>
+            <Button variant="contained" color="primary" onClick={handleSave}>
+              Save
             </Button>
           </Box>
         </Box>
