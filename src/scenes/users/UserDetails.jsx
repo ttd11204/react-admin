@@ -116,6 +116,8 @@ const UserDetails = () => {
     return <Typography>Loading...</Typography>;
   }
 
+  console.log('User:', previewImage || user.profilePicture);
+
   return (
     <Box m="20px">
       <Header title="USER DETAILS" subtitle={`Details for User ID: ${id}`} />
