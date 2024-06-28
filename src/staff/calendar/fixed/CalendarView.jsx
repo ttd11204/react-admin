@@ -160,7 +160,7 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
   const handlePreviousWeek = () => {
     const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
     if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
-      setStartOfWeek(oneWeekBeforeCurrentWeek);
+      setStartOfWeek(prevStartOfWeek => dayjs(prevStartOfWeek).subtract(1, 'week'));
     }
   };
 
@@ -265,44 +265,51 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
             </Box>
           </Grid>
 
-          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => (
-            <Grid item xs key={slotIndex}>
-              <Button
-                sx={{
-                  backgroundColor: "#D9E9FF",
-                  color: "#0D1B34",
-                  p: 2,
-                  borderRadius: 2,
-                  width: "100%",
-                  textTransform: "none",
-                  border: '1px solid #90CAF9',
-                  textAlign: 'center',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  mt: 1,  // Add margin-top to increase vertical spacing
-                }}
-                m="10px"
-              >
-                <Typography
+          {(showAfternoon ? afternoonTimeSlots : morningTimeSlots).map((slot, slotIndex) => {
+            const [start, end] = slot.split(' - ');
+            const slotStartTime = dayjs(`${day.format('YYYY-MM-DD')}T${start}`);
+            const isPast = dayjs().isAfter(slotStartTime);
+
+            return (
+              <Grid item xs key={slotIndex}>
+                <Button
                   sx={{
-                    fontWeight: 'bold',
-                    color: "#0D1B34"
+                    backgroundColor: isPast ? "#E0E0E0" : "#D9E9FF",
+                    color: isPast ? "#FFFFFF" : "#0D1B34",
+                    p: 2,
+                    borderRadius: 2,
+                    width: "100%",
+                    textTransform: "none",
+                    border: '1px solid #90CAF9',
+                    textAlign: 'center',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    mt: 1,  // Add margin-top to increase vertical spacing
                   }}
+                  disabled={isPast}
+                  m="10px"
                 >
-                  {slot}
-                </Typography>
-                <Typography
-                  sx={{
-                    color: "#0D1B34"
-                  }}
-                >
-                  {price}k
-                </Typography>
-              </Button>
-            </Grid>
-          ))}
+                  <Typography
+                    sx={{
+                      fontWeight: 'bold',
+                      color: "#0D1B34"
+                    }}
+                  >
+                    {slot}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color:"#0D1B34" 
+                    }}
+                  >
+                    {price}k
+                  </Typography>
+                </Button>
+              </Grid>
+            );
+          })}
         </Grid>
       ))}
     </Box>
