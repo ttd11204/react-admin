@@ -4,7 +4,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Checkbox, Grid, Paper, ThemeProvider, createTheme } from "@mui/material";
 import CalendarView from './CalendarView';
-import { fetchPrice } from '../../../api/priceApi';
+import { fetchPriceByBranchIDType } from '../../../api/priceApi';
 import { fetchUserDetailByEmail, fetchUserDetail } from "../../../api/userApi"; // Import thêm các hàm API để kiểm tra email
 
 const theme = createTheme({
@@ -69,8 +69,7 @@ const FixedBooking = () => {
   const [branchId, setBranchId] = useState('');
   const [slotStartTime, setSlotStartTime] = useState('');
   const [slotEndTime, setSlotEndTime] = useState('');
-  const [weekdayPrice, setWeekdayPrice] = useState(0);
-  const [weekendPrice, setWeekendPrice] = useState(0);
+  const [fixedPrice, setFixedPrice] = useState(0);
   const [email, setEmail] = useState('');
   const [userExists, setUserExists] = useState(false);
   const [userInfo, setUserInfo] = useState('');
@@ -81,9 +80,8 @@ const FixedBooking = () => {
     const fetchBranchPrices = async () => {
       if (branchId) {
         try {
-          const prices = await fetchPrice(branchId);
-          setWeekdayPrice(prices.weekdayPrice);
-          setWeekendPrice(prices.weekendPrice);
+          const price = await fetchPriceByBranchIDType(branchId, 'Fix', null);
+          setFixedPrice(price);
         } catch (error) {
           console.error('Error fetching prices:', error);
         }
@@ -101,70 +99,63 @@ const FixedBooking = () => {
   };
 
   const handleCheck = async () => {
-  if (!email) {
-    setErrorMessage('Vui lòng nhập email.');
-    return;
-  }
-  try {
-    const userData = await fetchUserDetailByEmail(email);
-    if (userData && userData.length > 0) {
-      const user = userData[0];
-      const detailedUserInfo = await fetchUserDetail(user.id);
-      if (detailedUserInfo) {
-        setUserExists(true);
-        setUserId(user.id); // Cập nhật userId
-        setUserInfo({
-          userId: user.id,
-          userName: user.userName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          fullName: detailedUserInfo.fullName,
-          balance: detailedUserInfo.balance,
-          address: detailedUserInfo.address,
-        });
-        setErrorMessage('');
+    if (!email) {
+      setErrorMessage('Vui lòng nhập email.');
+      return;
+    }
+    try {
+      const userData = await fetchUserDetailByEmail(email);
+      if (userData && userData.length > 0) {
+        const user = userData[0];
+        const detailedUserInfo = await fetchUserDetail(user.id);
+        if (detailedUserInfo) {
+          setUserExists(true);
+          setUserId(user.id); // Cập nhật userId
+          setUserInfo({
+            userId: user.id,
+            userName: user.userName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            fullName: detailedUserInfo.fullName,
+            balance: detailedUserInfo.balance,
+            address: detailedUserInfo.address,
+          });
+          setErrorMessage('');
+        } else {
+          setUserExists(false);
+          setUserInfo(null);
+          setErrorMessage('Không tìm thấy chi tiết người dùng.');
+        }
       } else {
         setUserExists(false);
         setUserInfo(null);
-        setErrorMessage('Không tìm thấy chi tiết người dùng.');
+        setErrorMessage('Người dùng không tồn tại. Vui lòng đăng ký.');
       }
-    } else {
-      setUserExists(false);
-      setUserInfo(null);
-      setErrorMessage('Người dùng không tồn tại. Vui lòng đăng ký.');
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra tồn tại của người dùng:', error);
+      setErrorMessage('Lỗi khi kiểm tra tồn tại của người dùng. Vui lòng thử lại.');
     }
-  } catch (error) {
-    console.error('Lỗi khi kiểm tra tồn tại của người dùng:', error);
-    setErrorMessage('Lỗi khi kiểm tra tồn tại của người dùng. Vui lòng thử lại.');
-  }
-};
-
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
     const formattedStartDate = startDate.toISOString().split('T')[0];
-  
-    const isWeekday = (day) => {
-      const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-      return weekdays.includes(day);
-    };
-  
+
     const totalDays = getTotalDaysForWeekdays(daysOfWeek, numberOfMonths, startDate);
-  
+
     const totalPrice = daysOfWeek.reduce((total, day) => {
-      const pricePerDay = isWeekday(day) ? weekdayPrice : weekendPrice;
-      return total + (totalDays[day] * pricePerDay);
+      return total + (totalDays[day] * fixedPrice);
     }, 0);
-  
+
     const bookingRequests = daysOfWeek.map(day => ({
       slotDate: formattedStartDate,
       timeSlot: {
         slotStartTime,
         slotEndTime,
       },
-      price: isWeekday(day) ? weekdayPrice : weekendPrice,
+      price: fixedPrice,
     }));
-  
+
     const state = {
       branchId,
       bookingRequests,
@@ -178,16 +169,13 @@ const FixedBooking = () => {
       slotStartTime,
       slotEndTime,
     };
-  
+
     console.log('state:', state);
 
     navigate("/fixed-payment", {
       state
     });
   };
-
-  
-  
 
   return (
     <ThemeProvider theme={theme}>
@@ -328,6 +316,6 @@ const FixedBooking = () => {
       </Box>
     </ThemeProvider>
   );
-};  
+};
 
 export default FixedBooking;
