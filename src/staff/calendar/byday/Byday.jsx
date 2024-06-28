@@ -158,6 +158,7 @@ const ReserveSlot = () => {
       setUnavailableSlot(slots);
       setUnavailableSlotsCache(prevCache => ({ ...prevCache, [newWeekStart]: slots }));
     }
+ 
     setLoading(false);
   };
   const handleNextWeek = async () => {
@@ -272,22 +273,45 @@ const ReserveSlot = () => {
           setIsConnected(true);
         })
         .catch(e => {
-          console.log("Connection failed: ", e);
+          console.log("Initial connection failed: ", e);
           setIsConnected(false);
         });
-
+  
       connection.on("SlotBooked", (isBooked) => {
         setMessage(isBooked ? "Slot booked successfully!" : "No available slots!");
         if (isBooked) {
           setIsSlotBooked(true);
         }
       });
-
+  
       connection.on("UpdateSlotStatus", (status) => {
         setIsSlotBooked(!status);
       });
+  
+      connection.onreconnecting((error) => {
+        console.log(`Connection lost due to error "${error}". Reconnecting.`);
+        setIsConnected(false);
+      });
+  
+      connection.onreconnected((connectionId) => {
+        console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
+        setIsConnected(true);
+      });
+  
+      connection.onclose(async (error) => {
+        console.log(`Connection closed due to error "${error}". Reconnecting.`);
+        setIsConnected(false);
+        try {
+          await connection.start();
+          setIsConnected(true);
+          console.log("Reconnected!");
+        } catch (err) {
+          console.log("Reconnection failed: ", err);
+        }
+      });
     }
   }, [connection]);
+  
 
 
   useEffect(() => {
@@ -373,7 +397,7 @@ const ReserveSlot = () => {
     const isPastSlot = day.isBefore(currentDate, 'day') || (day.isSame(currentDate, 'day') &&
       timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25) || isSlotUnavailable(day, slot);
 
-      console.log('isPastSlot:', day , 'slot là ',slot);
+    
     if (isSelected) return "#1976d2";
     if (isPastSlot) return "#E0E0E0";
     return "#D9E9FF";
