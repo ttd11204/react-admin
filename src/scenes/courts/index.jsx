@@ -25,7 +25,6 @@ import {
   fetchCourts,
   createCourt,
   updateCourtById,
-  fetchCourtById,
   deleteCourtById,
 } from "../../api/courtApi";
 import Header from "../../components/Header";
@@ -49,20 +48,14 @@ const Courts = () => {
   const [rowCount, setRowCount] = useState(0);
   const [error, setError] = useState(null);
   const [searchId, setSearchId] = useState("");
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [newCourtData, setNewCourtData] = useState({
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentCourtId, setCurrentCourtId] = useState(null);
+  const [courtData, setCourtData] = useState({
     branchId: branchIdQuery,
     courtName: "",
     courtPicture: "",
     status: "Active",
-  });
-  const [editCourtData, setEditCourtData] = useState({
-    courtId: "",
-    branchId: branchIdQuery,
-    courtName: "",
-    courtPicture: "",
-    status: "",
   });
 
   useEffect(() => {
@@ -73,7 +66,7 @@ const Courts = () => {
 
     const getCourtsData = async () => {
       try {
-        const data = await fetchCourts(page + 1, pageSize);
+        const data = await fetchCourts(page + 1, pageSize, searchId);
         const filteredData = data.items.filter(
           (court) => court.branchId === branchIdQuery
         );
@@ -88,7 +81,7 @@ const Courts = () => {
       }
     };
     getCourtsData();
-  }, [page, pageSize, branchIdQuery]);
+  }, [page, pageSize, branchIdQuery, searchId]);
 
   const handlePageClick = (event) => {
     const newPage = event.selected;
@@ -113,20 +106,17 @@ const Courts = () => {
     navigate(`/admin/TimeSlots?courtId=${courtId}`);
   };
 
-  const handleEdit = async (courtId) => {
-    try {
-      const court = await fetchCourtById(courtId);
-      setEditCourtData(court);
-      setEditModalOpen(true);
-    } catch (err) {
-      setError(`Failed to fetch court data for editing: ${err.message}`);
-    }
+  const handleEdit = (court) => {
+    setCourtData(court);
+    setCurrentCourtId(court.courtId);
+    setIsEditing(true);
+    setModalOpen(true);
   };
 
   const handleDelete = async (courtId) => {
     try {
       await deleteCourtById(courtId);
-      const data = await fetchCourts(page + 1, pageSize);
+      const data = await fetchCourts(page + 1, pageSize, searchId);
       const filteredData = data.items.filter(
         (court) => court.branchId === branchIdQuery
       );
@@ -143,27 +133,16 @@ const Courts = () => {
 
   const handleSearch = async () => {
     try {
-      if (searchId.trim() === "") {
-        const data = await fetchCourts(page + 1, pageSize);
-        const filteredData = data.items.filter(
-          (court) => court.branchId === branchIdQuery
-        );
-        const numberedData = filteredData.map((item, index) => ({
-          ...item,
-          rowNumber: index + 1 + page * pageSize,
-        }));
-        setCourtsData(numberedData);
-        setRowCount(filteredData.length);
-      } else {
-        const court = await fetchCourtById(searchId);
-        if (court.branchId === branchIdQuery) {
-          setCourtsData([court]);
-          setRowCount(1);
-        } else {
-          setCourtsData([]);
-          setRowCount(0);
-        }
-      }
+      const data = await fetchCourts(page + 1, pageSize, searchId);
+      const filteredData = data.items.filter(
+        (court) => court.branchId === branchIdQuery
+      );
+      const numberedData = filteredData.map((item, index) => ({
+        ...item,
+        rowNumber: index + 1 + page * pageSize,
+      }));
+      setCourtsData(numberedData);
+      setRowCount(filteredData.length);
     } catch (err) {
       setError(`Failed to fetch court data: ${err.message}`);
     }
@@ -175,16 +154,20 @@ const Courts = () => {
     }
   };
 
-  const handleCreateChange = (e) => {
+  const handleModalChange = (e) => {
     const { name, value } = e.target;
-    setNewCourtData({ ...newCourtData, [name]: value });
+    setCourtData({ ...courtData, [name]: value });
   };
 
-  const handleCreateSave = async () => {
+  const handleModalSave = async () => {
     try {
-      await createCourt(newCourtData);
-      setCreateModalOpen(false);
-      const data = await fetchCourts(page + 1, pageSize);
+      if (isEditing) {
+        await updateCourtById(currentCourtId, courtData);
+      } else {
+        await createCourt(courtData);
+      }
+      setModalOpen(false);
+      const data = await fetchCourts(page + 1, pageSize, searchId);
       const filteredData = data.items.filter(
         (court) => court.branchId === branchIdQuery
       );
@@ -194,32 +177,16 @@ const Courts = () => {
       }));
       setCourtsData(numberedData);
       setRowCount(filteredData.length);
+      setCourtData({
+        branchId: branchIdQuery,
+        courtName: "",
+        courtPicture: "",
+        status: "Active",
+      });
+      setIsEditing(false);
+      setCurrentCourtId(null);
     } catch (err) {
-      setError(`Failed to create court: ${err.message}`);
-    }
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditCourtData({ ...editCourtData, [name]: value });
-  };
-
-  const handleEditSave = async () => {
-    try {
-      await updateCourtById(editCourtData.courtId, editCourtData);
-      setEditModalOpen(false);
-      const data = await fetchCourts(page + 1, pageSize);
-      const filteredData = data.items.filter(
-        (court) => court.branchId === branchIdQuery
-      );
-      const numberedData = filteredData.map((item, index) => ({
-        ...item,
-        rowNumber: index + 1 + page * pageSize,
-      }));
-      setCourtsData(numberedData);
-      setRowCount(filteredData.length);
-    } catch (err) {
-      setError(`Failed to update court: ${err.message}`);
+      setError(`Failed to save court: ${err.message}`);
     }
   };
 
@@ -259,7 +226,16 @@ const Courts = () => {
                 color: colors.primary[900],
                 marginLeft: 8,
               }}
-              onClick={() => setCreateModalOpen(true)}
+              onClick={() => {
+                setIsEditing(false);
+                setCourtData({
+                  branchId: branchIdQuery,
+                  courtName: "",
+                  courtPicture: "",
+                  status: "Active",
+                });
+                setModalOpen(true);
+              }}
             >
               Create New
             </Button>
@@ -304,7 +280,7 @@ const Courts = () => {
                             View
                           </Button>
                           <Button
-                            onClick={() => handleEdit(row.courtId)}
+                            onClick={() => handleEdit(row)}
                             variant="contained"
                             size="small"
                             style={{
@@ -324,7 +300,7 @@ const Courts = () => {
                               color: colors.primary[900],
                             }}
                           >
-                            Delete
+                            Inactive
                           </Button>
                         </Box>
                       </TableCell>
@@ -368,8 +344,8 @@ const Courts = () => {
         </Box>
       )}
       <Modal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
       >
         <Box
           sx={{
@@ -385,31 +361,31 @@ const Courts = () => {
           }}
         >
           <Typography variant="h6" component="h2">
-            Create New Court
+            {isEditing ? "Edit Court" : "Create New Court"}
           </Typography>
           <TextField
             fullWidth
             margin="normal"
             label="Court Name"
             name="courtName"
-            value={newCourtData.courtName}
-            onChange={handleCreateChange}
+            value={courtData.courtName}
+            onChange={handleModalChange}
           />
           <TextField
             fullWidth
             margin="normal"
             label="Court Picture"
             name="courtPicture"
-            value={newCourtData.courtPicture}
-            onChange={handleCreateChange}
+            value={courtData.courtPicture}
+            onChange={handleModalChange}
           />
           <TextField
             fullWidth
             margin="normal"
             label="Status"
             name="status"
-            value={newCourtData.status}
-            onChange={handleCreateChange}
+            value={courtData.status}
+            onChange={handleModalChange}
           />
           <Button
             variant="contained"
@@ -418,66 +394,7 @@ const Courts = () => {
               color: colors.primary[900],
               marginTop: 16,
             }}
-            onClick={handleCreateSave}
-          >
-            Save
-          </Button>
-        </Box>
-      </Modal>
-      <Modal
-        open={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        aria-labelledby="edit-court-modal-title"
-        aria-describedby="edit-court-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 400,
-            bgcolor: "background.paper",
-            border: "2px solid #000",
-            boxShadow: 24,
-            p: 4,
-          }}
-        >
-          <Typography id="edit-court-modal-title" variant="h6" component="h2">
-            Edit Court
-          </Typography>
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Court Name"
-            name="courtName"
-            value={editCourtData.courtName}
-            onChange={handleEditChange}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Court Picture"
-            name="courtPicture"
-            value={editCourtData.courtPicture}
-            onChange={handleEditChange}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Status"
-            name="status"
-            value={editCourtData.status}
-            onChange={handleEditChange}
-          />
-          <Button
-            variant="contained"
-            style={{
-              backgroundColor: colors.greenAccent[400],
-              color: colors.primary[900],
-              marginTop: 16,
-            }}
-            onClick={handleEditSave}
+            onClick={handleModalSave}
           >
             Save
           </Button>

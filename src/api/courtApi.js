@@ -2,12 +2,13 @@ import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
 
-export const fetchCourts = async (pageNumber = 1, pageSize = 10) => {
+export const fetchCourts = async (pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
     const response = await axios.get(`${url}/Courts`, {
       params: {
         pageNumber,
-        pageSize
+        pageSize,
+        searchQuery
       }
     });
 
@@ -24,16 +25,6 @@ export const fetchCourts = async (pageNumber = 1, pageSize = 10) => {
     }
   } catch (error) {
     console.error('Error fetching courts data:', error.response ? error.response.data : error.message);
-    throw error;
-  }
-};
-
-export const fetchCourtById = async (id) => {
-  try {
-    const response = await axios.get(`${url}/Courts/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching court by ID:', error.response ? error.response.data : error.message);
     throw error;
   }
 };
