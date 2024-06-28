@@ -20,7 +20,8 @@ export const validateEmail = async (email) => {
       }
 
       const users = await response.json();
-      const registeredEmails = users.map(user => user.email.toLowerCase());
+      console.log(users)
+      const registeredEmails = users.data.map(user => user.email.toLowerCase());
 
       if (registeredEmails.includes(email.toLowerCase())) {
           return { isValid: false, message: 'Email is already existed' };
