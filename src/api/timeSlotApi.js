@@ -51,7 +51,7 @@ export const addTimeSlotIfExistBooking = async (slotModel, bookingId) => {
   }
 };
 
-export const fetchUnavailableSlots = async (date, branchId) => {
+export  const fetchUnavailableSlots = async (date, branchId) => {
   try {
     const response = await axios.get(`${url}/TimeSlots/unavailable_slot`, {
       params: {

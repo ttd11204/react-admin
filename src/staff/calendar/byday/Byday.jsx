@@ -98,6 +98,11 @@ const ReserveSlot = () => {
   const [message, setMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [isSlotBooked, setIsSlotBooked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  //thêm unavailable slot
+  const [unavailableSlots, setUnavailableSlot] = useState([]);
+  const [unavailableSlotsCache, setUnavailableSlotsCache] = useState({});
+
   const navigate = useNavigate();
   const currentDate = dayjs();
 
@@ -132,43 +137,55 @@ const ReserveSlot = () => {
   };
 
   // chỉnh lại hàm handlepreviousweek
-  const handlePreviousWeek = () => {
+  const handlePreviousWeek = async () => {
+    setLoading(true);
     const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
     const oneWeekBeforeStartOfWeek = dayjs(startOfWeek).subtract(1, 'week');
-
-
+  
     if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week') && oneWeekBeforeStartOfWeek.isAfter(oneWeekBeforeCurrentWeek)) {
       setStartOfWeek(oneWeekBeforeStartOfWeek);
     } else if (dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
       setStartOfWeek(oneWeekBeforeCurrentWeek);
     }
-
-    //từ đây là hàm lấy ngày đầu tuần để đưa vào get ra unavailable slot
-    const dateObj = weekDays[0];
-    const newDateObj = new Date(dateObj);
-    newDateObj.setDate(newDateObj.getDate() - 7); 
-    const year = newDateObj.getFullYear();
-    const month = (newDateObj.getMonth() + 1).toString().padStart(2, '0');
-    const day = newDateObj.getDate().toString().padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-
-    const hehe = fetchUnavailableSlots(formattedDate , selectedBranch)
-    console.log('hehe là ' , hehe)
+  
+    const newWeekStart = oneWeekBeforeStartOfWeek.format('YYYY-MM-DD');
+  
+    if (unavailableSlotsCache[newWeekStart]) {
+      setUnavailableSlot(unavailableSlotsCache[newWeekStart]);
+    } else {
+      const unavailableSlot = await fetchUnavailableSlots(newWeekStart, selectedBranch);
+      const slots = Array.isArray(unavailableSlot) ? unavailableSlot : [];
+      setUnavailableSlot(slots);
+      setUnavailableSlotsCache(prevCache => ({ ...prevCache, [newWeekStart]: slots }));
+    }
+    setLoading(false);
   };
-  const handleNextWeek = () => {
+  const handleNextWeek = async () => {
+    setLoading(true);
+    const newWeekStart = dayjs(startOfWeek).add(1, 'week').format('YYYY-MM-DD');
     setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
-
-    //từ đây là hàm lấy ngày đầu tuần để đưa vào get ra unavailable slot
-    const dateObj = weekDays[0];
-    const newDateObj = new Date(dateObj);
-    newDateObj.setDate(newDateObj.getDate() + 7); 
-    const year = newDateObj.getFullYear();
-    const month = (newDateObj.getMonth() + 1).toString().padStart(2, '0');
-    const day = newDateObj.getDate().toString().padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-
-    const hehe = fetchUnavailableSlots(formattedDate , selectedBranch)
-    console.log('hehe là ' , hehe)
+  
+    if (unavailableSlotsCache[newWeekStart]) {
+      setUnavailableSlot(unavailableSlotsCache[newWeekStart]);
+    } else {
+      const unavailableSlot = await fetchUnavailableSlots(newWeekStart, selectedBranch);
+      const slots = Array.isArray(unavailableSlot) ? unavailableSlot : [];
+      setUnavailableSlot(slots);
+      setUnavailableSlotsCache(prevCache => ({ ...prevCache, [newWeekStart]: slots }));
+    }
+    setLoading(false);
+  };
+  //kiểm tra nó có phải là unableslot không
+  const isSlotUnavailable = (day, slot) => {
+    //đổi format cho giống cái slot trả ra lúc generate các slot
+    const formattedDay = day.format('YYYY-MM-DD'); 
+    const slotStartTime = slot.split(' - ')[0]; 
+    return unavailableSlots.some(unavailableSlot => {
+      return (
+         unavailableSlot.slotDate === formattedDay &&
+            unavailableSlot.slotStartTime === `${slotStartTime}:00`
+      );
+    });
   };
 
   const handleContinue = async () => {
@@ -200,12 +217,48 @@ const ReserveSlot = () => {
     });
   };
 
+  useEffect(() => {
+    const fetchInitialUnavailableSlots = async () => {
+      setLoading(true);
+      const currentWeekStart = dayjs(startOfWeek).format('YYYY-MM-DD');
+  
+      if (unavailableSlotsCache[currentWeekStart]) {
+        setUnavailableSlot(unavailableSlotsCache[currentWeekStart]);
+      } else {
+        const unavailableSlot = await fetchUnavailableSlots(currentWeekStart, selectedBranch);
+        const slots = Array.isArray(unavailableSlot) ? unavailableSlot : [];
+        setUnavailableSlot(slots);
+        setUnavailableSlotsCache(prevCache => ({ ...prevCache, [currentWeekStart]: slots }));
+      }
+      setLoading(false);
+    };
+  
+    if (selectedBranch) {
+      fetchInitialUnavailableSlots();
+    }
+  }, [selectedBranch, startOfWeek]);
+
   //phần để kết nối với signalR
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
       .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
       .withAutomaticReconnect()
       .build();
+
+    newConnection.onreconnecting((error) => {
+      console.log(`Connection lost due to error "${error}". Reconnecting.`);
+      setIsConnected(false);
+    });
+
+    newConnection.onreconnected((connectionId) => {
+      console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
+      setIsConnected(true);
+    });
+
+    newConnection.onclose((error) => {
+      console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
+      setIsConnected(false);
+    });
 
     setConnection(newConnection);
   }, []);
@@ -318,8 +371,9 @@ const ReserveSlot = () => {
 
   const getSlotColor = (day, slot, isSelected) => {
     const isPastSlot = day.isBefore(currentDate, 'day') || (day.isSame(currentDate, 'day') &&
-      timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25);
+      timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25) || isSlotUnavailable(day, slot);
 
+      console.log('isPastSlot:', day , 'slot là ',slot);
     if (isSelected) return "#1976d2";
     if (isPastSlot) return "#E0E0E0";
     return "#D9E9FF";
@@ -392,6 +446,7 @@ const ReserveSlot = () => {
         )}
       </Box>
 
+        
       {weekDays.map((day, dayIndex) => (
         <Grid container spacing={2} key={dayIndex} alignItems="center">
           <Grid item xs={1} padding="8px">
@@ -445,7 +500,7 @@ const ReserveSlot = () => {
                   }}
                   m="10px"
                   disabled={day.isBefore(currentDate, 'day') || (day.isSame(currentDate, 'day') &&
-                    timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25)}
+                    timeStringToDecimal(currentDate.format('HH:mm:ss')) > timeStringToDecimal(slot.split(' - ')[0]) + 0.25) || isSlotUnavailable(day, slot)}
                 >
                   <Box>
                     <Typography
