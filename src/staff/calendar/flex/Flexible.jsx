@@ -193,13 +193,28 @@ const Flexible = () => {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <TextField
+                
                   label="Email"
+              
                   variant="outlined"
                   fullWidth
                   sx={{ marginBottom: '10px', marginRight: '10px' }}
                   value={email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                />
+                  InputProps={{
+                    sx: {
+                      '& .MuiInputBase-input': {
+                        color: 'black',
+                      },
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      color: 'black',
+                    },
+                  }}
+                  
+               />
                 <Button variant="contained" color="primary" onClick={handleCheck}>
                   Check
                 </Button>

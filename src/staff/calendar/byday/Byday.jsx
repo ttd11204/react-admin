@@ -189,6 +189,11 @@ const ReserveSlot = () => {
     });
   };
 
+
+// useEffect để loại bỏ các slot không khả dụng khỏi danh sách đã chọn( chưa làm
+
+
+
   const handleContinue = async () => {
     if (!selectedBranch) {
       alert("Please select a branch first");
