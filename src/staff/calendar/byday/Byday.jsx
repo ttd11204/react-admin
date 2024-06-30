@@ -139,9 +139,14 @@ const ReserveSlot = () => {
   // chỉnh lại hàm handlepreviousweek
   const handlePreviousWeek = async () => {
     setLoading(true);
+    const currentWeekStart = dayjs().startOf('week');
     const oneWeekBeforeCurrentWeek = dayjs().startOf('week').subtract(1, 'week');
     const oneWeekBeforeStartOfWeek = dayjs(startOfWeek).subtract(1, 'week');
-  
+    // Không cho phép quay về tuần trước tuần hiện tại
+    if (oneWeekBeforeStartOfWeek.isBefore(currentWeekStart, 'week')) {
+      setLoading(false);
+      return; 
+  }
     if (!dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week') && oneWeekBeforeStartOfWeek.isAfter(oneWeekBeforeCurrentWeek)) {
       setStartOfWeek(oneWeekBeforeStartOfWeek);
     } else if (dayjs(startOfWeek).isSame(oneWeekBeforeCurrentWeek, 'week')) {
@@ -149,7 +154,8 @@ const ReserveSlot = () => {
     }
   
     const newWeekStart = oneWeekBeforeStartOfWeek.format('YYYY-MM-DD');
-  
+    
+    
     if (unavailableSlotsCache[newWeekStart]) {
       setUnavailableSlot(unavailableSlotsCache[newWeekStart]);
     } else {
@@ -165,7 +171,7 @@ const ReserveSlot = () => {
     setLoading(true);
     const newWeekStart = dayjs(startOfWeek).add(1, 'week').format('YYYY-MM-DD');
     setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
-  
+   
     if (unavailableSlotsCache[newWeekStart]) {
       setUnavailableSlot(unavailableSlotsCache[newWeekStart]);
     } else {
@@ -223,6 +229,23 @@ const ReserveSlot = () => {
     });
   };
 
+  // useEffect để loại bỏ các slot không khả dụng khỏi danh sách đã chọn
+useEffect(() => {
+  const filteredSlots = selectedSlots.filter(slot => {
+    const formattedDay = slot.day.format('YYYY-MM-DD');
+    const slotStartTime = slot.slot.split(' - ')[0];
+    return !unavailableSlots.some(unavailableSlot => {
+      return (
+        unavailableSlot.slotDate === formattedDay &&
+        unavailableSlot.slotStartTime === `${slotStartTime}:00`
+      );
+    });
+  });
+
+  setSelectedSlots(filteredSlots);
+}, [unavailableSlots]);
+
+
   useEffect(() => {
     const fetchInitialUnavailableSlots = async () => {
       setLoading(true);
@@ -250,22 +273,28 @@ const ReserveSlot = () => {
       .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
       .withAutomaticReconnect()
       .build();
-
+  
     newConnection.onreconnecting((error) => {
       console.log(`Connection lost due to error "${error}". Reconnecting.`);
       setIsConnected(false);
     });
-
+  
     newConnection.onreconnected((connectionId) => {
       console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
       setIsConnected(true);
     });
-
+  
     newConnection.onclose((error) => {
       console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
       setIsConnected(false);
     });
-
+  
+    //nhận thông báo từ server
+    newConnection.on("DisableSlot", (slotCheckModel) => {
+      console.log('Received DisableSlot:', slotCheckModel);
+      setUnavailableSlot((prev) => [...prev, slotCheckModel]);
+    });
+  
     setConnection(newConnection);
   }, []);
 
@@ -281,39 +310,6 @@ const ReserveSlot = () => {
           console.log("Initial connection failed: ", e);
           setIsConnected(false);
         });
-  
-      connection.on("SlotBooked", (isBooked) => {
-        setMessage(isBooked ? "Slot booked successfully!" : "No available slots!");
-        if (isBooked) {
-          setIsSlotBooked(true);
-        }
-      });
-  
-      connection.on("UpdateSlotStatus", (status) => {
-        setIsSlotBooked(!status);
-      });
-  
-      connection.onreconnecting((error) => {
-        console.log(`Connection lost due to error "${error}". Reconnecting.`);
-        setIsConnected(false);
-      });
-  
-      connection.onreconnected((connectionId) => {
-        console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
-        setIsConnected(true);
-      });
-  
-      connection.onclose(async (error) => {
-        console.log(`Connection closed due to error "${error}". Reconnecting.`);
-        setIsConnected(false);
-        try {
-          await connection.start();
-          setIsConnected(true);
-          console.log("Reconnected!");
-        } catch (err) {
-          console.log("Reconnection failed: ", err);
-        }
-      });
     }
   }, [connection]);
   

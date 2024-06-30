@@ -8,6 +8,7 @@ import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
 import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
 import { reserveSlots, createBookingFlex, deleteBookingInFlex } from '../../api/bookingApi';
+import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
 const theme = createTheme({
   components: {
@@ -42,6 +43,74 @@ const PaymentDetail = () => {
   const [userInfo, setUserInfo] = useState(locationUserInfo || null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [connection, setConnection] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  //đấm nhau với signalR
+  useEffect(() => {
+    const newConnection = new HubConnectionBuilder()
+        .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
+        .withAutomaticReconnect()
+        .configureLogging(LogLevel.Information)
+        .build();
+
+    newConnection.onreconnecting((error) => {
+        console.log(`Connection lost due to error "${error}". Reconnecting.`);
+        setIsConnected(false);
+    });
+
+    newConnection.onreconnected((connectionId) => {
+        console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
+        setIsConnected(true);
+    });
+
+    newConnection.onclose((error) => {
+        console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
+        setIsConnected(false);
+    });
+
+    console.log('Initializing connection...');
+    setConnection(newConnection);
+}, []);
+
+useEffect(() => {
+    if (connection) {
+        console.log('Starting connection...');
+        connection.start()
+            .then(result => {
+                console.log('Connected!');
+                setIsConnected(true);
+            })
+            .catch(e => {
+                console.log('Connection failed: ', e);
+                setIsConnected(false);
+            });
+    }
+}, [connection]);
+
+// gửi slot để backend signalr nó check
+const sendUnavailableSlotCheck = async () => {
+  if (connection ) {
+    const lastRequest = bookingRequests[bookingRequests.length - 1];
+    const slotCheckModel = {
+        branchId: branchId,
+        slotDate: lastRequest.slotDate,
+        timeSlot: {
+            slotDate: lastRequest.slotDate,
+            slotStartTime: lastRequest.timeSlot.slotStartTime,
+            slotEndTime: lastRequest.timeSlot.slotEndTime,
+        }
+    };
+    console.log('SlotCheckModel:', slotCheckModel);
+      try {
+          await connection.send('DisableSlot', slotCheckModel);
+      } catch (e) {
+          console.log(e);
+      }
+  } else {
+      alert('No connection to server yet.');
+  }
+};
 
   useEffect(() => {
     if (userChecked && locationUserInfo) {
@@ -93,6 +162,11 @@ const PaymentDetail = () => {
       setErrorMessage('Please enter a valid email and check user existence.');
       return;
     }
+    try {
+      
+        await sendUnavailableSlotCheck();
+      
+   
   
     if (availableSlot !== 0 && bookingId) {
       const bookingForm = bookingRequests.map((request) => ({
@@ -130,12 +204,15 @@ const PaymentDetail = () => {
             slotEndTime: request.timeSlot.slotEndTime,
           },
         }));
-  
+        console.log('Booking Form:', bookingForm);
+        console.log('numberOfSlot:', numberOfSlot);
         const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
 
         id = createBookingTypeFlex.bookingId;
         const booking = await reserveSlots(userInfo.userId, bookingForm);
         
+        console.log('Booking:', booking);
+        alert('Booking successful');
         // If reservation is successful, continue to the next step or navigate
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
         const tokenResponse = await generatePaymentToken(booking.bookingId);
@@ -144,6 +221,7 @@ const PaymentDetail = () => {
       const paymentUrl = paymentResponse;
 
       window.location.href = paymentUrl;
+      return;
       } catch (error) {
         console.error('Error processing payment:', error);
         setErrorMessage('Error processing payment. Please try again.');
@@ -190,7 +268,10 @@ const PaymentDetail = () => {
       }
     } else {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    }
+    } } catch (error) {
+      console.error('Error sending time slot to server:', error);
+      setErrorMessage('Error sending time slot to server. Please try again.');
+  }
   };
   
 
