@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Card, CardContent, CardMedia, Grid, TextField } from '@mui/material';
+import { Box, Button, Typography, useTheme, Card, CardContent, CardMedia, Grid, Modal, IconButton, TextField } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
 import { fetchBranchById, updateBranch } from '../../api/branchApi';
@@ -7,6 +7,8 @@ import Header from '../../components/Header';
 import { storageDb } from '../../firebase';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 } from 'uuid';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 const BranchDetail = () => {
   const theme = useTheme();
@@ -19,11 +21,16 @@ const BranchDetail = () => {
   const [image, setImage] = useState(null);
   const [imageRef, setImageRef] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const getBranchData = async () => {
       try {
         const data = await fetchBranchById(branchId);
+        if (data.branchPicture) {
+          data.branchPicture = JSON.parse(data.branchPicture); // Parse branchPicture to an array
+        }
         setBranch(data);
       } catch (err) {
         setError('Failed to fetch branch data');
@@ -42,7 +49,7 @@ const BranchDetail = () => {
   const handleProfilePictureChange = (event) => {
     const file = event.target.files[0];
     if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-      if (file.size > 5 * 1024 * 1024) { // Limit 5MB
+      if (file.size > 5 * 1024 * 1024) { // Giới hạn 5MB
         console.error('File size exceeds 5MB');
         return;
       }
@@ -58,21 +65,22 @@ const BranchDetail = () => {
 
   const handleSave = async () => {
     try {
-      let imageUrl = branch.branchPicture;
+      let imageUrl = branch.branchPicture || [];
 
       if (image && imageRef) {
         if (branch.branchPicture) {
-          const oldPath = branch.branchPicture.split('court-callers.appspot.com/o/')[1].split('?')[0];
+          const oldPath = branch.branchPicture[currentImageIndex].split('court-callers.appspot.com/o/')[1].split('?')[0];
           const imagebefore = ref(storageDb, decodeURIComponent(oldPath));
           await deleteObject(imagebefore);
         }
         const snapshot = await uploadBytes(imageRef, image);
         console.log('Uploaded a file!', snapshot);
 
-        imageUrl = await getDownloadURL(imageRef);
+        const newUrl = await getDownloadURL(imageRef);
+        imageUrl[currentImageIndex] = newUrl;
       }
 
-      await updateBranch(branchId, { ...branch, branchPicture: imageUrl });
+      await updateBranch(branchId, { ...branch, branchPicture: JSON.stringify(imageUrl) });
       setBranch((prevBranch) => ({
         ...prevBranch,
         branchPicture: imageUrl,
@@ -93,6 +101,23 @@ const BranchDetail = () => {
     navigate(-1); // Navigate back to the previous page
   };
 
+  const handleOpenModal = (index) => {
+    setCurrentImageIndex(index);
+    setOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpen(false);
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? branch.branchPicture.length - 1 : prevIndex - 1));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex === branch.branchPicture.length - 1 ? 0 : prevIndex + 1));
+  };
+
   if (error) {
     return (
       <Box m="20px">
@@ -111,24 +136,51 @@ const BranchDetail = () => {
     );
   }
 
-  const imageUrl = previewImage || branch.branchPicture;
-  console.log('Image URL:', imageUrl);
+  const currentImageUrl = previewImage || (branch.branchPicture ? branch.branchPicture[currentImageIndex] : '');
 
   return (
     <Box m="20px">
       <Header title="Branch Detail" subtitle="Details of the branch" />
       <Card sx={{ maxWidth: 1000, margin: '0 auto', mt: 4, backgroundColor: colors.primary[700], borderRadius: 2 }}>
         <Grid container>
-          <Grid item xs={12} sm={5}>
-            <CardMedia
-              component="img"
-              alt="Branch"
-              height="100%"
-              image={imageUrl}
-              title="Branch"
-              sx={{ borderRadius: '8px 0 0 8px', height: '100%', objectFit: 'cover' }}
-            />
-          </Grid>
+        <Grid item xs={12} sm={5} position="relative">
+  <IconButton
+    onClick={handlePrevImage}
+    sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 1 }}
+  >
+    <ArrowBackIosIcon />
+  </IconButton>
+  <CardMedia
+    component="img"
+    alt="Branch"
+    height="100%"
+    image={currentImageUrl} // Ensure the image URL is correctly formatted
+    title="Branch"
+    sx={{ borderRadius: '8px 0 0 8px', height: '100%', objectFit: 'cover' }}
+    onClick={() => handleOpenModal(currentImageIndex)}
+  />
+  <IconButton
+    onClick={handleNextImage}
+    sx={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)', zIndex: 1 }}
+  >
+    <ArrowForwardIosIcon />
+  </IconButton>
+  {branch.branchPicture && (
+    <Box display="flex" justifyContent="center" mt={2}>
+      {branch.branchPicture.map((url, index) => (
+        <img
+          key={index}
+          src={url}
+          alt={`Thumbnail ${index}`}
+          width="50"
+          height="50"
+          style={{ cursor: 'pointer', margin: '0 5px', border: currentImageIndex === index ? '2px solid red' : 'none' }}
+          onClick={() => handleOpenModal(index)}
+        />
+      ))}
+    </Box>
+  )}
+</Grid>
           <Grid item xs={12} sm={7}>
             <CardContent sx={{ p: 4 }}>
               <Typography gutterBottom variant="h4" component="div" color={colors.primary[100]} sx={{ mb: 2 }}>
@@ -278,6 +330,28 @@ const BranchDetail = () => {
           )}
         </Box>
       </Card>
+
+      <Modal
+        open={open}
+        onClose={handleCloseModal}
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Box position="relative" bgcolor="background.paper" p={4}>
+          <IconButton
+            onClick={handlePrevImage}
+            sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)' }}
+          >
+            <ArrowBackIosIcon />
+          </IconButton>
+          <img src={currentImageUrl} alt="Branch" style={{ maxHeight: '80vh', maxWidth: '80vw' }} />
+          <IconButton
+            onClick={handleNextImage}
+            sx={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)' }}
+          >
+            <ArrowForwardIosIcon />
+          </IconButton>
+        </Box>
+      </Modal>
     </Box>
   );
 };
