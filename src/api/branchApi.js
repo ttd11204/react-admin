@@ -20,7 +20,6 @@ export const fetchBranches = async (pageNumber = 1, pageSize = 10, searchQuery =
   }
 };
 
-
 export const fetchBranchById = async (branchId) => {
   try {
     const response = await axios.get(`${url}/Branches/${branchId}`);
@@ -47,6 +46,26 @@ export const updateBranch = async (branchId, branchData) => {
     return response.data;
   } catch (error) {
     console.error('Error updating branch:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const postPrice = async (priceData) => {
+  try {
+    const response = await axios.post(`${url}/Prices/PostPrice`, priceData);
+    return response.data;
+  } catch (error) {
+    console.error('Error posting price:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+export const fetchPricesByBranchId = async (branchId) => {
+  try {
+    const response = await axios.get(`${url}/Prices/branchId/${branchId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching prices by branchId:', error.response ? error.response.data : error.message);
     throw error;
   }
 };

@@ -6,7 +6,7 @@ import {
 import ReactPaginate from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchBranches, createBranch } from '../../api/branchApi';
+import { fetchBranches, createBranch, postPrice } from '../../api/branchApi';
 import Header from '../../components/Header';
 import SearchIcon from '@mui/icons-material/Search';
 import '../users/style.css';
@@ -54,7 +54,9 @@ const Branches = () => {
     openDay: { day1: "", day2: "" },
     status: "Open",
     weekdayPrice: "",
-    weekendPrice: ""
+    weekendPrice: "",
+    fixPrice: "",
+    flexPrice: ""
   });
 
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -126,6 +128,12 @@ const Branches = () => {
     if (!validateNumber(newBranch.weekendPrice).isValid) {
       validationErrors.weekendPrice = validateNumber(newBranch.weekendPrice).message;
     }
+    if (!validateNumber(newBranch.fixPrice).isValid) {
+      validationErrors.fixPrice = validateNumber(newBranch.fixPrice).message;
+    }
+    if (!validateNumber(newBranch.flexPrice).isValid) {
+      validationErrors.flexPrice = validateNumber(newBranch.flexPrice).message;
+    }
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -160,7 +168,39 @@ const Branches = () => {
         }
       });
 
-      await createBranch(formData);
+      const createdBranch = await createBranch(formData);
+
+      const priceData = [
+        {
+          branchId: createdBranch.branchId,
+          type: 'Fix',
+          isWeekend: null,
+          slotPrice: newBranch.fixPrice
+        },
+        {
+          branchId: createdBranch.branchId,
+          type: 'Flex',
+          isWeekend: null,
+          slotPrice: newBranch.flexPrice
+        },
+        {
+          branchId: createdBranch.branchId,
+          type: 'By day',
+          isWeekend: true,
+          slotPrice: newBranch.weekendPrice
+        },
+        {
+          branchId: createdBranch.branchId,
+          type: 'By day',
+          isWeekend: false,
+          slotPrice: newBranch.weekdayPrice
+        }
+      ];
+
+      for (const price of priceData) {
+        await postPrice(price);
+      }
+
       setOpenCreateModal(false);
 
       const data = await fetchBranches(page + 1, pageSize, searchQuery);
@@ -484,6 +524,26 @@ const Branches = () => {
                     margin="normal"
                     error={!!errors.weekendPrice}
                     helperText={errors.weekendPrice}
+                  />
+                  <TextField
+                    label="Fix Price"
+                    name="fixPrice"
+                    value={newBranch.fixPrice}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.fixPrice}
+                    helperText={errors.fixPrice}
+                  />
+                  <TextField
+                    label="Flex Price"
+                    name="flexPrice"
+                    value={newBranch.flexPrice}
+                    onChange={handleInputChange}
+                    fullWidth
+                    margin="normal"
+                    error={!!errors.flexPrice}
+                    helperText={errors.flexPrice}
                   />
                   <Box mt={2} mb={2}>
                     <Typography variant="subtitle1">Open Day</Typography>

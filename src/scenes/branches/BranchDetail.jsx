@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Card, CardContent, CardMedia, Grid, Modal, IconButton, TextField } from '@mui/material';
+import { Box, Button, Typography, useTheme, Card, CardContent, CardMedia, Grid, Modal, IconButton, TextField, Divider } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tokens } from '../../theme';
-import { fetchBranchById, updateBranch } from '../../api/branchApi';
+import { fetchBranchById, updateBranch, fetchPricesByBranchId } from '../../api/branchApi';
 import Header from '../../components/Header';
 import { storageDb } from '../../firebase';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
@@ -16,6 +16,7 @@ const BranchDetail = () => {
   const { branchId } = useParams();
   const navigate = useNavigate();
   const [branch, setBranch] = useState(null);
+  const [prices, setPrices] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState(null);
   const [image, setImage] = useState(null);
@@ -27,11 +28,14 @@ const BranchDetail = () => {
   useEffect(() => {
     const getBranchData = async () => {
       try {
-        const data = await fetchBranchById(branchId);
-        if (data.branchPicture) {
-          data.branchPicture = JSON.parse(data.branchPicture); // Parse branchPicture to an array
+        const branchData = await fetchBranchById(branchId);
+        if (branchData.branchPicture) {
+          branchData.branchPicture = JSON.parse(branchData.branchPicture); // Parse branchPicture to an array
         }
-        setBranch(data);
+        setBranch(branchData);
+
+        const pricesData = await fetchPricesByBranchId(branchId);
+        setPrices(pricesData);
       } catch (err) {
         setError('Failed to fetch branch data');
       }
@@ -138,49 +142,65 @@ const BranchDetail = () => {
 
   const currentImageUrl = previewImage || (branch.branchPicture ? branch.branchPicture[currentImageIndex] : '');
 
+  const groupedPrices = prices.reduce((acc, price) => {
+    if (price.type === 'By day') {
+      if (price.isWeekend) {
+        acc['By day'] = acc['By day'] || {};
+        acc['By day'].weekend = price.slotPrice;
+      } else {
+        acc['By day'] = acc['By day'] || {};
+        acc['By day'].weekday = price.slotPrice;
+      }
+    } else {
+      acc[price.type] = price.slotPrice;
+    }
+    return acc;
+  }, {});
+
   return (
     <Box m="20px">
       <Header title="Branch Detail" subtitle="Details of the branch" />
       <Card sx={{ maxWidth: 1000, margin: '0 auto', mt: 4, backgroundColor: colors.primary[700], borderRadius: 2 }}>
         <Grid container>
-        <Grid item xs={12} sm={5} position="relative">
-  <IconButton
-    onClick={handlePrevImage}
-    sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 1 }}
-  >
-    <ArrowBackIosIcon />
-  </IconButton>
-  <CardMedia
-    component="img"
-    alt="Branch"
-    height="100%"
-    image={currentImageUrl} // Ensure the image URL is correctly formatted
-    title="Branch"
-    sx={{ borderRadius: '8px 0 0 8px', height: '100%', objectFit: 'cover' }}
-    onClick={() => handleOpenModal(currentImageIndex)}
-  />
-  <IconButton
-    onClick={handleNextImage}
-    sx={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)', zIndex: 1 }}
-  >
-    <ArrowForwardIosIcon />
-  </IconButton>
-  {branch.branchPicture && (
-    <Box display="flex" justifyContent="center" mt={2}>
-      {branch.branchPicture.map((url, index) => (
-        <img
-          key={index}
-          src={url}
-          alt={`Thumbnail ${index}`}
-          width="50"
-          height="50"
-          style={{ cursor: 'pointer', margin: '0 5px', border: currentImageIndex === index ? '2px solid red' : 'none' }}
-          onClick={() => handleOpenModal(index)}
-        />
-      ))}
-    </Box>
-  )}
-</Grid>
+          <Grid item xs={12} sm={5} position="relative">
+            <IconButton
+              onClick={handlePrevImage}
+              sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 1 }}
+            >
+              <ArrowBackIosIcon />
+            </IconButton>
+            <CardMedia
+              component="img"
+              alt="Branch"
+              height="100%"
+              
+              image={currentImageUrl} // Ensure the image URL is correctly formatted
+              title="Branch"
+              sx={{ borderRadius: '8px 0 0 8px', height: '100%', objectFit: 'cover' }}
+              onClick={() => handleOpenModal(currentImageIndex)}
+            />
+            <IconButton
+              onClick={handleNextImage}
+              sx={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)', zIndex: 1 }}
+            >
+              <ArrowForwardIosIcon />
+            </IconButton>
+            {branch.branchPicture && (
+              <Box display="flex" justifyContent="center" mt={2}>
+                {branch.branchPicture.map((url, index) => (
+                  <img
+                    key={index}
+                    src={url}
+                    alt={`Thumbnail ${index}`}
+                    width="50"
+                    height="50"
+                    style={{ cursor: 'pointer', margin: '0 5px', border: currentImageIndex === index ? '2px solid red' : 'none' }}
+                    onClick={() => handleOpenModal(index)}
+                  />
+                ))}
+              </Box>
+            )}
+          </Grid>
           <Grid item xs={12} sm={7}>
             <CardContent sx={{ p: 4 }}>
               <Typography gutterBottom variant="h4" component="div" color={colors.primary[100]} sx={{ mb: 2 }}>
@@ -289,6 +309,42 @@ const BranchDetail = () => {
                     <strong>Status:</strong> {branch.status}
                   </Typography>
                 </>
+              )}
+
+              <Typography variant="h6" color={colors.primary[100]} sx={{ mt: 4, mb: 2 }}>
+                Prices:
+              </Typography>
+              {groupedPrices['By day'] && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                    <strong>By day:</strong>
+                  </Typography>
+                  <Box sx={{ pl: 2 }}>
+                    <Typography variant="body2" color={colors.primary[200]} gutterBottom>
+                      <strong>Weekend:</strong> {groupedPrices['By day'].weekend}
+                    </Typography>
+                    <Typography variant="body2" color={colors.primary[200]} gutterBottom>
+                      <strong>Weekday:</strong> {groupedPrices['By day'].weekday}
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ my: 2 }} />
+                </Box>
+              )}
+              {groupedPrices['Flex'] && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                    <strong>Flex:</strong> {groupedPrices['Flex']}
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                </Box>
+              )}
+              {groupedPrices['Fix'] && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                    <strong>Fix:</strong> {groupedPrices['Fix']}
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                </Box>
               )}
             </CardContent>
           </Grid>
