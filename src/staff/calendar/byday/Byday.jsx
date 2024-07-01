@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect , useRef} from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Grid, Typography, Select, MenuItem, FormControl, IconButton } from "@mui/material";
 import { fetchBranches } from '../../../api/branchApi';
@@ -14,8 +14,9 @@ import ArrowForwardIos from '@mui/icons-material/ArrowForwardIos';
 import Delete from '@mui/icons-material/Delete';
 import * as signalR from '@microsoft/signalr';
 import { HubConnectionBuilder, HttpTransportType, LogLevel } from '@microsoft/signalr';
+import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isSameOrBefore);
-
+dayjs.extend(isBetween);
 const dayToNumber = {
   "Monday": 1,
   "Tuesday": 2,
@@ -84,6 +85,10 @@ const timeStringToDecimal = (timeString) => {
 const ReserveSlot = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState('');
+  const selectBranchRef = useRef(selectedBranch);
+  useEffect(() => {
+    selectBranchRef.current = selectedBranch;
+  }, [selectedBranch]);
   const [showAfternoon, setShowAfternoon] = useState(false);
   const [startOfWeek, setStartOfWeek] = useState(dayjs().startOf('week'));
   const [weekdayPrice, setWeekdayPrice] = useState(0);
@@ -96,11 +101,16 @@ const ReserveSlot = () => {
   const [morningTimeSlots, setMorningTimeSlots] = useState([]);
   const [afternoonTimeSlots, setAfternoonTimeSlots] = useState([]);
   const [connection, setConnection] = useState(null);
-  const [message, setMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
-  const [isSlotBooked, setIsSlotBooked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [unavailableSlots, setUnavailableSlot] = useState([]);
+  //dùng cái này để thay thế startOfWeek vì startOfWeek chỉ set về ngày hiện tại 
+  const [newWeekStart, setNewWeekStart] =  useState(dayjs().startOf('week'));
+  //useRef để lưu giá trị mới (last value) của newWeekStart khi newWeekStart thay đổi
+  const newWeekStartRef = useRef(newWeekStart);
+  useEffect(() => {
+    newWeekStartRef.current = newWeekStart;
+  }, [newWeekStart]);
 
   const navigate = useNavigate();
   const currentDate = dayjs();
@@ -150,6 +160,7 @@ const ReserveSlot = () => {
     }
 
     const newWeekStart = oneWeekBeforeStartOfWeek.format('YYYY-MM-DD');
+    setNewWeekStart(newWeekStart);
     const unavailableSlot = await fetchUnavailableSlots(newWeekStart, selectedBranch);
     const slots = Array.isArray(unavailableSlot) ? unavailableSlot : [];
     setUnavailableSlot(slots);
@@ -160,7 +171,9 @@ const ReserveSlot = () => {
   const handleNextWeek = async () => {
     setLoading(true);
     const newWeekStart = dayjs(startOfWeek).add(1, 'week').format('YYYY-MM-DD');
+    setNewWeekStart(newWeekStart);
     setStartOfWeek(dayjs(startOfWeek).add(1, 'week'));
+    console.log('startOfWeek là dcm:', startOfWeek.format('YYYY-MM-DD'));
     const unavailableSlot = await fetchUnavailableSlots(newWeekStart, selectedBranch);
     const slots = Array.isArray(unavailableSlot) ? unavailableSlot : [];
     setUnavailableSlot(slots);
@@ -180,19 +193,24 @@ const ReserveSlot = () => {
   };
 
   useEffect(() => {
-    const filteredSlots = selectedSlots.filter(slot => {
-      const formattedDay = slot.day.format('YYYY-MM-DD');
-      const slotStartTime = slot.slot.split(' - ')[0];
-      return !unavailableSlots.some(unavailableSlot => {
-        return (
-          unavailableSlot.slotDate === formattedDay &&
-          unavailableSlot.slotStartTime === `${slotStartTime}:00`
-        );
+    const updateSelectedSlots = () => {
+      const filteredSlots = selectedSlots.filter(slot => {
+        const formattedDay = slot.day.format('YYYY-MM-DD');
+        const slotStartTime = slot.slot.split(' - ')[0];
+        return !unavailableSlots.some(unavailableSlot => {
+          return (
+            unavailableSlot.slotDate === formattedDay &&
+            unavailableSlot.slotStartTime === `${slotStartTime}:00`
+          );
+        });
       });
-    });
-
-    setSelectedSlots(filteredSlots);
-  }, [unavailableSlots]);
+  
+      setSelectedSlots(filteredSlots);
+    };
+  
+    updateSelectedSlots();
+  }, [unavailableSlots, selectedSlots]);
+  
 
   useEffect(() => {
     const fetchInitialUnavailableSlots = async () => {
@@ -234,11 +252,37 @@ useEffect(() => {
 
   newConnection.on("DisableSlot", (slotCheckModel) => {
       console.log('Received DisableSlot:', slotCheckModel);
-      setUnavailableSlot((prev) => [...prev, slotCheckModel]);
+
+      //check nếu mà slot trả về có branch và date trùng với branch và date mà mình đang chọn thì set lại unavailable slot
+      const startOfWeekDayjs = dayjs(newWeekStartRef.current); //lấy ra đúng cái ngày đầu tiên của tuần user chọn
+      console.log('startOfWeekDayjs:', startOfWeekDayjs.format('YYYY-MM-DD'));
+      
+      const fromDate = startOfWeekDayjs.add(1, 'day').startOf('day');
+      const toDate = startOfWeekDayjs.add(7, 'day').endOf('day');
+      const slotDate = dayjs(slotCheckModel.slotDate, 'YYYY-MM-DD');
+      
+      console.log('fromDate :', fromDate.format('YYYY-MM-DD'), 'toDate ', toDate.format('YYYY-MM-DD'), 'slotDate:', slotDate.format('YYYY-MM-DD'));
+      
+      //check lẻ dkien 
+      const isBranchMatch = slotCheckModel.branchId === selectBranchRef.current;
+      console.log('branch của signalR:', slotCheckModel.branchId, 'branch mình chọn:', selectBranchRef.current, 'check thử cái này ', selectBranchRef)
+      const isDateMatch = slotDate.isBetween(fromDate, toDate, 'day', '[]');
+      console.log('isBranchMatch:', isBranchMatch, 'isDateMatch:', isDateMatch);
+      if(isBranchMatch && isDateMatch) {
+        console.log('điều kiện là true' );
+        const { slotDate, timeSlot: { slotStartTime, slotEndTime } } = slotCheckModel;
+      const newSlot = { slotDate, slotStartTime, slotEndTime };
+
+      setUnavailableSlot((prev) => [...prev, newSlot]);
+     }
   });
 
   setConnection(newConnection);
 }, []);
+//check unavailable slot
+useEffect(() => {
+  console.log('UnavailableSlot:', unavailableSlots);
+}, [unavailableSlots]);
 
 useEffect(() => {
   if (connection) {

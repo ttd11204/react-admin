@@ -57,26 +57,26 @@ const PaymentDetail = () => {
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
-  
+
     newConnection.onreconnecting((error) => {
       console.log(`Connection lost due to error "${error}". Reconnecting.`);
       setIsConnected(false);
     });
-  
+
     newConnection.onreconnected((connectionId) => {
       console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
       setIsConnected(true);
     });
-  
+
     newConnection.onclose((error) => {
       console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
       setIsConnected(false);
     });
-  
+
     console.log('Initializing connection...');
     setConnection(newConnection);
   }, []);
-  
+
   useEffect(() => {
     if (connection) {
       const startConnection = async () => {
@@ -93,32 +93,32 @@ const PaymentDetail = () => {
       startConnection();
     }
   }, [connection]);
-  
 
-// gửi slot để backend signalr nó check
-const sendUnavailableSlotCheck = async () => {
-  if (connection) {
-    const lastRequest = bookingRequests[bookingRequests.length - 1];
-    const slotCheckModel = {
-      branchId: branchId,
-      slotDate: lastRequest.slotDate,
-      timeSlot: {
+
+  // gửi slot để backend signalr nó check
+  const sendUnavailableSlotCheck = async () => {
+    if (connection) {
+      const lastRequest = bookingRequests[bookingRequests.length - 1];
+      const slotCheckModel = {
+        branchId: branchId,
         slotDate: lastRequest.slotDate,
-        slotStartTime: lastRequest.timeSlot.slotStartTime,
-        slotEndTime: lastRequest.timeSlot.slotEndTime,
+        timeSlot: {
+          slotDate: lastRequest.slotDate,
+          slotStartTime: lastRequest.timeSlot.slotStartTime,
+          slotEndTime: lastRequest.timeSlot.slotEndTime,
+        }
+      };
+      console.log('SlotCheckModel:', slotCheckModel);
+      try {
+        await connection.send('DisableSlot', slotCheckModel);
+        console.log('Data sent to server:', slotCheckModel);
+      } catch (e) {
+        console.log('Error sending data to server:', e);
       }
-    };
-    console.log('SlotCheckModel:', slotCheckModel);
-    try {
-      await connection.send('DisableSlot', slotCheckModel);
-      console.log('Data sent to server:', slotCheckModel);
-    } catch (e) {
-      console.log('Error sending data to server:', e);
+    } else {
+      alert('No connection to server yet.');
     }
-  } else {
-    alert('No connection to server yet.');
-  }
-};
+  };
 
 
   useEffect(() => {
@@ -172,116 +172,116 @@ const sendUnavailableSlotCheck = async () => {
       return;
     }
     try {
-      
-        await sendUnavailableSlotCheck();
-        setTimeout(async () => {
-    if (availableSlot !== 0 && bookingId) {
-      const bookingForm = bookingRequests.map((request) => ({
-        courtId: null,
-        branchId: branchId,
-        slotDate: request.slotDate,
-        timeSlot: {
-          slotStartTime: request.timeSlot.slotStartTime,
-          slotEndTime: request.timeSlot.slotEndTime,
-        },
-      }));
-      
-      const booking = await addTimeSlotIfExistBooking(bookingForm, bookingId);
-      navigate("/confirm", {
-        state: {
-          bookingId: bookingId,
-          bookingForm: bookingForm,
-          userInfo: userInfo,
+
+      await sendUnavailableSlotCheck();
+     
+        if (availableSlot !== 0 && bookingId) {
+          const bookingForm = bookingRequests.map((request) => ({
+            courtId: null,
+            branchId: branchId,
+            slotDate: request.slotDate,
+            timeSlot: {
+              slotStartTime: request.timeSlot.slotStartTime,
+              slotEndTime: request.timeSlot.slotEndTime,
+            },
+          }));
+
+          const booking = await addTimeSlotIfExistBooking(bookingForm, bookingId);
+          navigate("/confirm", {
+            state: {
+              bookingId: bookingId,
+              bookingForm: bookingForm,
+              userInfo: userInfo,
+            }
+          });
+          return;
         }
-      });
-      return;
-    }
-  
-    if (type === 'flexible' && availableSlot === 0) {
-      let id = null;
-      try {
-        setIsLoading(true);
-        const bookingForm = bookingRequests.map((request) => ({
-          courtId: null,
-          branchId: branchId,
-          slotDate: request.slotDate,
-          timeSlot: {
-            slotStartTime: request.timeSlot.slotStartTime,
-            slotEndTime: request.timeSlot.slotEndTime,
-          },
-        }));
-        console.log('Booking Form:', bookingForm);
-        console.log('numberOfSlot:', numberOfSlot);
-        const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
 
-        id = createBookingTypeFlex.bookingId;
-        const booking = await reserveSlots(userInfo.userId, bookingForm);
-        
-        console.log('Booking:', booking);
-      
-        // If reservation is successful, continue to the next step or navigate
-        setActiveStep((prevActiveStep) => prevActiveStep + 1);
-        const tokenResponse = await generatePaymentToken(booking.bookingId);
-      const token = tokenResponse.token;
-      const paymentResponse = await processPayment(token);
-      const paymentUrl = paymentResponse;
-
-      window.location.href = paymentUrl;
-      return;
-      } catch (error) {
-        console.error('Error processing payment:', error);
-        setErrorMessage('Error processing payment. Please try again.');
-        if (id) {
+        if (type === 'flexible' && availableSlot === 0) {
+          let id = null;
           try {
-            await deleteBookingInFlex(id);
-            console.log('Booking rolled back successfully');
-          } catch (deleteError) {
-            console.error('Error rolling back booking:', deleteError);
+            setIsLoading(true);
+            const bookingForm = bookingRequests.map((request) => ({
+              courtId: null,
+              branchId: branchId,
+              slotDate: request.slotDate,
+              timeSlot: {
+                slotStartTime: request.timeSlot.slotStartTime,
+                slotEndTime: request.timeSlot.slotEndTime,
+              },
+            }));
+            console.log('Booking Form:', bookingForm);
+            console.log('numberOfSlot:', numberOfSlot);
+            const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
+
+            id = createBookingTypeFlex.bookingId;
+            const booking = await reserveSlots(userInfo.userId, bookingForm);
+
+            console.log('Booking:', booking);
+
+            // If reservation is successful, continue to the next step or navigate
+            setActiveStep((prevActiveStep) => prevActiveStep + 1);
+            const tokenResponse = await generatePaymentToken(booking.bookingId);
+            const token = tokenResponse.token;
+            const paymentResponse = await processPayment(token);
+            const paymentUrl = paymentResponse;
+
+            window.location.href = paymentUrl;
+            return;
+          } catch (error) {
+            console.error('Error processing payment:', error);
+            setErrorMessage('Error processing payment. Please try again.');
+            if (id) {
+              try {
+                await deleteBookingInFlex(id);
+                console.log('Booking rolled back successfully');
+              } catch (deleteError) {
+                console.error('Error rolling back booking:', deleteError);
+              }
+            }
+            setIsLoading(false);
           }
+
         }
-        setIsLoading(false);
-      }
+
+        if (activeStep === 0) {
+          setIsLoading(true); // Show loading page
+          try {
+            const bookingForm = bookingRequests.map((request) => ({
+              courtId: null,
+              branchId: branchId,
+              slotDate: request.slotDate,
+              timeSlot: {
+                slotStartTime: request.timeSlot.slotStartTime,
+                slotEndTime: request.timeSlot.slotEndTime,
+              },
+            }));
+
+            console.log('Formatted Requests:', bookingForm);
+
+            const booking = await reserveSlots(userInfo.userId, bookingForm);
+            const bookingId = booking.bookingId;
+            const tokenResponse = await generatePaymentToken(bookingId);
+            const token = tokenResponse.token;
+            const paymentResponse = await processPayment(token);
+            const paymentUrl = paymentResponse;
+
+            window.location.href = paymentUrl;
+          } catch (error) {
+            console.error('Error processing payment:', error);
+            setErrorMessage('Error processing payment. Please try again.');
+            setIsLoading(false); // Hide loading page if there's an error
+          }
+        } else {
+          setActiveStep((prevActiveStep) => prevActiveStep + 1);
+        }
       
-    }
-  
-    if (activeStep === 0) {
-      setIsLoading(true); // Show loading page
-      try {
-        const bookingForm = bookingRequests.map((request) => ({
-          courtId: null,
-          branchId: branchId,
-          slotDate: request.slotDate,
-          timeSlot: {
-            slotStartTime: request.timeSlot.slotStartTime,
-            slotEndTime: request.timeSlot.slotEndTime,
-          },
-        }));
-  
-        console.log('Formatted Requests:', bookingForm);
-  
-        const booking = await reserveSlots(userInfo.userId, bookingForm);
-        const bookingId = booking.bookingId;
-        const tokenResponse = await generatePaymentToken(bookingId);
-        const token = tokenResponse.token;
-        const paymentResponse = await processPayment(token);
-        const paymentUrl = paymentResponse;
-    
-        window.location.href = paymentUrl;
-      } catch (error) {
-        console.error('Error processing payment:', error);
-        setErrorMessage('Error processing payment. Please try again.');
-        setIsLoading(false); // Hide loading page if there's an error
-      }
-    } else {
-      setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    }
-  }, 5000); 
-  } catch (error) {
+    } catch (error) {
       console.error('Error sending time slot to server:', error);
       setErrorMessage('Error sending time slot to server. Please try again.');
-  }
+    }
   };
-  
+
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
