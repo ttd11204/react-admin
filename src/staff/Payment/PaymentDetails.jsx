@@ -9,6 +9,7 @@ import LoadingPage from './LoadingPage';
 import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
 import { reserveSlots, createBookingFlex, deleteBookingInFlex } from '../../api/bookingApi';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import * as signalR from '@microsoft/signalr';
 
 const theme = createTheme({
   components: {
@@ -49,68 +50,76 @@ const PaymentDetail = () => {
   //đấm nhau với signalR
   useEffect(() => {
     const newConnection = new HubConnectionBuilder()
-        .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
-        .withAutomaticReconnect()
-        .configureLogging(LogLevel.Information)
-        .build();
-
+      .withUrl("https://courtcaller.azurewebsites.net/timeslothub", {
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets
+      })
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Information)
+      .build();
+  
     newConnection.onreconnecting((error) => {
-        console.log(`Connection lost due to error "${error}". Reconnecting.`);
-        setIsConnected(false);
+      console.log(`Connection lost due to error "${error}". Reconnecting.`);
+      setIsConnected(false);
     });
-
+  
     newConnection.onreconnected((connectionId) => {
-        console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
-        setIsConnected(true);
+      console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
+      setIsConnected(true);
     });
-
+  
     newConnection.onclose((error) => {
-        console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
-        setIsConnected(false);
+      console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
+      setIsConnected(false);
     });
-
+  
     console.log('Initializing connection...');
     setConnection(newConnection);
-}, []);
-
-useEffect(() => {
+  }, []);
+  
+  useEffect(() => {
     if (connection) {
-        console.log('Starting connection...');
-        connection.start()
-            .then(result => {
-                console.log('Connected!');
-                setIsConnected(true);
-            })
-            .catch(e => {
-                console.log('Connection failed: ', e);
-                setIsConnected(false);
-            });
+      const startConnection = async () => {
+        try {
+          await connection.start();
+          console.log('SignalR Connected.');
+          setIsConnected(true);
+        } catch (error) {
+          console.log('Error starting connection:', error);
+          setIsConnected(false);
+          setTimeout(startConnection, 5000);
+        }
+      };
+      startConnection();
     }
-}, [connection]);
+  }, [connection]);
+  
 
 // gửi slot để backend signalr nó check
 const sendUnavailableSlotCheck = async () => {
-  if (connection ) {
+  if (connection) {
     const lastRequest = bookingRequests[bookingRequests.length - 1];
     const slotCheckModel = {
-        branchId: branchId,
+      branchId: branchId,
+      slotDate: lastRequest.slotDate,
+      timeSlot: {
         slotDate: lastRequest.slotDate,
-        timeSlot: {
-            slotDate: lastRequest.slotDate,
-            slotStartTime: lastRequest.timeSlot.slotStartTime,
-            slotEndTime: lastRequest.timeSlot.slotEndTime,
-        }
+        slotStartTime: lastRequest.timeSlot.slotStartTime,
+        slotEndTime: lastRequest.timeSlot.slotEndTime,
+      }
     };
     console.log('SlotCheckModel:', slotCheckModel);
-      try {
-          await connection.send('DisableSlot', slotCheckModel);
-      } catch (e) {
-          console.log(e);
-      }
+    try {
+      await connection.send('DisableSlot', slotCheckModel);
+      console.log('Data sent to server:', slotCheckModel);
+    } catch (e) {
+      console.log('Error sending data to server:', e);
+    }
   } else {
-      alert('No connection to server yet.');
+    alert('No connection to server yet.');
   }
 };
+
 
   useEffect(() => {
     if (userChecked && locationUserInfo) {
@@ -165,9 +174,7 @@ const sendUnavailableSlotCheck = async () => {
     try {
       
         await sendUnavailableSlotCheck();
-      
-   
-  
+        setTimeout(async () => {
     if (availableSlot !== 0 && bookingId) {
       const bookingForm = bookingRequests.map((request) => ({
         courtId: null,
@@ -178,8 +185,7 @@ const sendUnavailableSlotCheck = async () => {
           slotEndTime: request.timeSlot.slotEndTime,
         },
       }));
-      console.log('userinfo', userInfo);
-      console.log('bookingform', bookingForm);
+      
       const booking = await addTimeSlotIfExistBooking(bookingForm, bookingId);
       navigate("/confirm", {
         state: {
@@ -212,7 +218,7 @@ const sendUnavailableSlotCheck = async () => {
         const booking = await reserveSlots(userInfo.userId, bookingForm);
         
         console.log('Booking:', booking);
-        alert('Booking successful');
+      
         // If reservation is successful, continue to the next step or navigate
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
         const tokenResponse = await generatePaymentToken(booking.bookingId);
@@ -259,7 +265,7 @@ const sendUnavailableSlotCheck = async () => {
         const token = tokenResponse.token;
         const paymentResponse = await processPayment(token);
         const paymentUrl = paymentResponse;
-  
+    
         window.location.href = paymentUrl;
       } catch (error) {
         console.error('Error processing payment:', error);
@@ -268,7 +274,9 @@ const sendUnavailableSlotCheck = async () => {
       }
     } else {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    } } catch (error) {
+    }
+  }, 5000); 
+  } catch (error) {
       console.error('Error sending time slot to server:', error);
       setErrorMessage('Error sending time slot to server. Please try again.');
   }
