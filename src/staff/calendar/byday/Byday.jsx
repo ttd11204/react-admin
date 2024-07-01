@@ -212,12 +212,9 @@ const ReserveSlot = () => {
   
 useEffect(() => {
   const newConnection = new HubConnectionBuilder()
-      .withUrl("https://courtcaller.azurewebsites.net/timeslothub", {
-          skipNegotiation: true,
-          transport: signalR.HttpTransportType.WebSockets
-      })
+      .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
       .withAutomaticReconnect()
-      .configureLogging(LogLevel.Information) // Logging chi tiết
+      .configureLogging(signalR.LogLevel.Information) 
       .build();
 
   newConnection.onreconnecting((error) => {
@@ -235,7 +232,7 @@ useEffect(() => {
       setIsConnected(false);
   });
 
-  newConnection.on("SenDisableSlot", (slotCheckModel) => {
+  newConnection.on("DisableSlot", (slotCheckModel) => {
       console.log('Received DisableSlot:', slotCheckModel);
       setUnavailableSlot((prev) => [...prev, slotCheckModel]);
   });
