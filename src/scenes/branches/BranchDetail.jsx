@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Card, CardContent, CardMedia, Grid, Modal, IconButton, TextField, Divider } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Select, MenuItem, Divider } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
 import { fetchBranchById, updateBranch, fetchPricesByBranchId } from '../../api/branchApi';
 import Header from '../../components/Header';
@@ -53,7 +54,7 @@ const BranchDetail = () => {
   const handleProfilePictureChange = (event) => {
     const file = event.target.files[0];
     if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-      if (file.size > 5 * 1024 * 1024) { // Giới hạn 5MB
+      if (file.size > 5 * 1024 * 1024) { // Limit 5MB
         console.error('File size exceeds 5MB');
         return;
       }
@@ -61,7 +62,6 @@ const BranchDetail = () => {
       setImageRef(ref(storageDb, `BranchImage/${v4()}`));
       const previewImage1 = URL.createObjectURL(file);
       setPreviewImage(previewImage1);
-      console.log(previewImage1);
     } else {
       console.error('File is not a PNG, JPEG, or JPG image');
     }
@@ -69,26 +69,44 @@ const BranchDetail = () => {
 
   const handleSave = async () => {
     try {
-      let imageUrl = branch.branchPicture || [];
-
+      let updatedImageUrls = branch.branchPicture ? JSON.parse(branch.branchPicture) : [];
+  
       if (image && imageRef) {
-        if (branch.branchPicture) {
-          const oldPath = branch.branchPicture[currentImageIndex].split('court-callers.appspot.com/o/')[1].split('?')[0];
-          const imagebefore = ref(storageDb, decodeURIComponent(oldPath));
-          await deleteObject(imagebefore);
+        if (branch.branchPicture && branch.branchPicture[currentImageIndex]) {
+          const oldImagePath = branch.branchPicture[currentImageIndex].split('court-callers.appspot.com/o/')[1].split('?')[0];
+          const oldImageRef = ref(storageDb, decodeURIComponent(oldImagePath));
+  
+          try {
+            await deleteObject(oldImageRef);
+          } catch (err) {
+            console.error('Error deleting old image or image not found:', err.message);
+          }
         }
+  
         const snapshot = await uploadBytes(imageRef, image);
-        console.log('Uploaded a file!', snapshot);
-
         const newUrl = await getDownloadURL(imageRef);
-        imageUrl[currentImageIndex] = newUrl;
+        updatedImageUrls[currentImageIndex] = newUrl;
       }
-
-      await updateBranch(branchId, { ...branch, branchPicture: JSON.stringify(imageUrl) });
-      setBranch((prevBranch) => ({
-        ...prevBranch,
-        branchPicture: imageUrl,
-      }));
+  
+      // Ensure BranchPictures is an array of URLs
+      const updatedBranchPictures = updatedImageUrls.map(url => url.toString());
+  
+      const updatedBranch = {
+        branchId: branch.branchId,
+        branchAddress: branch.branchAddress || '',
+        branchName: branch.branchName || '',
+        branchPhone: branch.branchPhone || '',
+        description: branch.description || '',
+        branchPicture: JSON.stringify(updatedImageUrls),
+        openTime: branch.openTime || '',
+        closeTime: branch.closeTime || '',
+        openDay: branch.openDay || '',
+        status: branch.status || 'Open',
+        BranchPictures: updatedBranchPictures
+      };
+  
+      await updateBranch(branchId, updatedBranch);
+      setBranch(updatedBranch);
       URL.revokeObjectURL(previewImage);
       setPreviewImage(null);
       setEditMode(false);
@@ -96,6 +114,9 @@ const BranchDetail = () => {
       setError(`Failed to update branch details: ${err.message}`);
     }
   };
+  
+  
+  
 
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
@@ -173,8 +194,7 @@ const BranchDetail = () => {
               component="img"
               alt="Branch"
               height="100%"
-              
-              image={currentImageUrl} // Ensure the image URL is correctly formatted
+              image={currentImageUrl}
               title="Branch"
               sx={{ borderRadius: '8px 0 0 8px', height: '100%', objectFit: 'cover' }}
               onClick={() => handleOpenModal(currentImageIndex)}
