@@ -69,25 +69,56 @@ const BranchDetail = () => {
 
   const handleSave = async () => {
     try {
-      let imageUrl = branch.branchPicture || [];
+     
+      const branchPictures = image ? [image] : [];
+      let imageUrls = [];
+  
 
-      if (image && imageRef) {
-        if (branch.branchPicture) {
-          const oldPath = branch.branchPicture[currentImageIndex].split('court-callers.appspot.com/o/')[1].split('?')[0];
-          const imagebefore = ref(storageDb, decodeURIComponent(oldPath));
-          await deleteObject(imagebefore);
-        }
-        const snapshot = await uploadBytes(imageRef, image);
-        console.log('Uploaded a file!', snapshot);
-
-        const newUrl = await getDownloadURL(imageRef);
-        imageUrl[currentImageIndex] = newUrl;
+      if (branchPictures.length > 0) {
+        const uploadImageTasks = branchPictures.map(async (image) => {
+          const imageRef = ref(storageDb, `BranchImage/${v4()}`);
+          await uploadBytes(imageRef, image);
+          const url = await getDownloadURL(imageRef);
+          return url;
+        });
+  
+        const newImageUrls = await Promise.all(uploadImageTasks);
+        const existingImageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
+        imageUrls = [...existingImageUrls, ...newImageUrls];
+      } else {
+        imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
       }
-
-      await updateBranch(branchId, { ...branch, branchPicture: JSON.stringify(imageUrl) });
+  
+      const branchData = {
+        ...branch,
+        branchPicture: JSON.stringify(imageUrls),
+      };
+  
+      const formData = new FormData();
+      Object.keys(branchData).forEach(key => {
+        if (key === 'openDay') {
+          formData.append(key, branchData[key]);
+        } else if (key !== 'branchPictures') {
+          formData.append(key, branchData[key]);
+        }
+      });
+  
+     
+      if (branchPictures.length > 0) {
+        branchPictures.forEach(file => {
+          formData.append('BranchPictures', file, file.name);
+        });
+      } else {
+     //nếu mà người dùng không chọn ảnh thì tạo đại 1 file rỗng
+        formData.append('BranchPictures', new Blob(), 'placeholder.txt');
+      }
+  
+      
+      await updateBranch(branchId, formData);
+  
       setBranch((prevBranch) => ({
         ...prevBranch,
-        branchPicture: imageUrl,
+        branchPicture: imageUrls,
       }));
       URL.revokeObjectURL(previewImage);
       setPreviewImage(null);
@@ -96,6 +127,12 @@ const BranchDetail = () => {
       setError(`Failed to update branch details: ${err.message}`);
     }
   };
+  
+  
+  
+  
+  
+  
 
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
