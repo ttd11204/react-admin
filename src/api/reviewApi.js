@@ -51,3 +51,13 @@ export const deleteReview = async (id) => {
     handleError(error, 'deleting review');
   }
 };
+
+// New function to fetch user email by ID
+export const fetchUserEmailById = async (userId) => {
+  try {
+    const response = await axios.get(`${url}/Users/${userId}`);
+    return response.data.email;
+  } catch (error) {
+    handleError(error, 'fetching user email');
+  }
+};

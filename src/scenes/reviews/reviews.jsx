@@ -7,7 +7,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { fetchReviews, updateReview, deleteReview, createReview } from "../../api/reviewApi";
+import { fetchReviews, updateReview, deleteReview, createReview, fetchUserEmailById } from "../../api/reviewApi";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 
@@ -15,12 +15,13 @@ const Reviews = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [reviewsData, setReviewsData] = useState([]);
+  const [userEmails, setUserEmails] = useState({});
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [currentReview, setCurrentReview] = useState({ reviewId: "", reviewText: "", rating: 5, userId: "", branchId: "" });
-  const [newReview, setNewReview] = useState({ reviewText: "", rating: 5, userId: "", branchId: "" });
+  const [currentReview, setCurrentReview] = useState({ reviewId: "", reviewText: "", rating: 5, id: "", branchId: "" });
+  const [newReview, setNewReview] = useState({ reviewText: "", rating: 5, id: "", branchId: "" });
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -35,6 +36,21 @@ const Reviews = () => {
         const reviewsData = await fetchReviews(page, pageSize, searchQuery);
         setReviewsData(reviewsData.items);
         setRowCount(reviewsData.totalCount);
+
+        const emailPromises = reviewsData.items.map(async (review) => {
+          if (review.id) {
+            const email = await fetchUserEmailById(review.id);
+            return { id: review.id, email };
+          }
+          return { id: review.id, email: 'N/A' };
+        });
+
+        const emails = await Promise.all(emailPromises);
+        const emailMap = emails.reduce((acc, { id, email }) => {
+          acc[id] = email;
+          return acc;
+        }, {});
+        setUserEmails(emailMap);
       } catch (err) {
         setError(`Failed to fetch data: ${err.message}`);
       }
@@ -47,7 +63,7 @@ const Reviews = () => {
       reviewId: review.reviewId,
       reviewText: review.reviewText,
       rating: review.rating,
-      userId: review.id,
+      id: review.id,
       branchId: review.branchId
     });
     setOpenEditModal(true);
@@ -65,7 +81,7 @@ const Reviews = () => {
       const payload = {
         reviewText: currentReview.reviewText,
         rating: currentReview.rating,
-        userId: currentReview.userId,
+        id: currentReview.id,
         branchId: currentReview.branchId,
       };
 
@@ -102,7 +118,7 @@ const Reviews = () => {
       const reviewsData = await fetchReviews(page, pageSize, searchQuery);
       setReviewsData(reviewsData.items);
       setRowCount(reviewsData.totalCount);
-      setNewReview({ reviewText: "", rating: 5, userId: "", branchId: "" });
+      setNewReview({ reviewText: "", rating: 5, id: "", branchId: "" });
     } catch (err) {
       setError(`Failed to create new review: ${err.message}`);
     }
@@ -158,7 +174,7 @@ const Reviews = () => {
                   <TableCell>Review Date</TableCell>
                   <TableCell>Rating</TableCell>
                   <TableCell>Branch ID</TableCell>
-                  <TableCell>User ID</TableCell>
+                  <TableCell>User Email</TableCell>
                   <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
@@ -171,7 +187,7 @@ const Reviews = () => {
                       <TableCell>{new Date(row.reviewDate).toLocaleDateString()}</TableCell>
                       <TableCell>{row.rating}</TableCell>
                       <TableCell>{row.branchId}</TableCell>
-                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{userEmails[row.id]}</TableCell>
                       <TableCell align="center">
                         <Button 
                           variant="contained" 
@@ -270,8 +286,8 @@ const Reviews = () => {
             fullWidth 
             variant="outlined" 
             label="User ID" 
-            value={newReview.userId} 
-            onChange={(e) => setNewReview({ ...newReview, userId: e.target.value })} 
+            value={newReview.id} 
+            onChange={(e) => setNewReview({ ...newReview, id: e.target.value })} 
             margin="normal" 
           />
           <Box display="flex" justifyContent="space-between" mt={2}>
@@ -329,8 +345,8 @@ const Reviews = () => {
             fullWidth 
             variant="outlined" 
             label="User ID" 
-            value={currentReview.userId} 
-            onChange={(e) => handleFieldChange("userId", e.target.value )} 
+            value={currentReview.id} 
+            onChange={(e) => handleFieldChange("id", e.target.value )} 
             margin="normal" 
           />
           <Box display="flex" justifyContent="space-between" mt={2}>

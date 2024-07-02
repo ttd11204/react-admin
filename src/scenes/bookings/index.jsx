@@ -1,4 +1,3 @@
-// Bookings.js
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select,
@@ -7,7 +6,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
-import { fetchBookings, deleteBooking } from "../../api/bookingApi";
+import { fetchBookings, deleteBooking, fetchUserEmailById } from "../../api/bookingApi"; // Thêm fetchUserEmailById
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -31,7 +30,14 @@ const Bookings = () => {
     const getBookingsData = async () => {
       try {
         const data = await fetchBookings(page + 1, pageSize, searchQuery);
-        setBookingsData(data.items);
+
+        // Lấy email cho mỗi booking
+        const bookingsWithEmail = await Promise.all(data.items.map(async (booking) => {
+          const email = await fetchUserEmailById(booking.id);
+          return { ...booking, email };
+        }));
+
+        setBookingsData(bookingsWithEmail);
         setRowCount(data.totalCount);
       } catch (err) {
         setError('Failed to fetch bookings data');
@@ -69,7 +75,11 @@ const Bookings = () => {
         prevData.filter((booking) => booking.bookingId !== id)
       );
       const data = await fetchBookings(page + 1, pageSize, searchQuery);
-      setBookingsData(data.items);
+      const bookingsWithEmail = await Promise.all(data.items.map(async (booking) => {
+        const email = await fetchUserEmailById(booking.id);
+        return { ...booking, email };
+      }));
+      setBookingsData(bookingsWithEmail);
       setRowCount(data.totalCount);
     } catch (error) {
       console.error(`Failed to delete booking with id ${id}:`, error);
@@ -118,7 +128,7 @@ const Bookings = () => {
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
                   <TableCell>Booking ID</TableCell>
-                  <TableCell>User ID</TableCell>
+                  <TableCell>User Email</TableCell> {/* Đổi tên cột thành User Email */}
                   <TableCell>Booking Date</TableCell>
                   <TableCell>Booking Type</TableCell>
                   <TableCell>Number of Slots</TableCell>
@@ -132,7 +142,7 @@ const Bookings = () => {
                   bookingsData.map((row) => (
                     <TableRow key={row.bookingId}>
                       <TableCell>{row.bookingId}</TableCell>
-                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{row.email}</TableCell> {/* Hiển thị email thay vì user ID */}
                       <TableCell>{new Date(row.bookingDate).toLocaleString()}</TableCell>
                       <TableCell>{row.bookingType}</TableCell>
                       <TableCell>{row.numberOfSlot}</TableCell>

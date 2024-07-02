@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, useTheme, Card, CardContent, CardMedia, Grid, Modal, IconButton, TextField, Divider } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Select, MenuItem, Divider } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
 import { fetchBranchById, updateBranch, fetchPricesByBranchId } from '../../api/branchApi';
 import Header from '../../components/Header';
@@ -53,7 +54,7 @@ const BranchDetail = () => {
   const handleProfilePictureChange = (event) => {
     const file = event.target.files[0];
     if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-      if (file.size > 5 * 1024 * 1024) { // Giới hạn 5MB
+      if (file.size > 5 * 1024 * 1024) { // Limit 5MB
         console.error('File size exceeds 5MB');
         return;
       }
@@ -61,7 +62,6 @@ const BranchDetail = () => {
       setImageRef(ref(storageDb, `BranchImage/${v4()}`));
       const previewImage1 = URL.createObjectURL(file);
       setPreviewImage(previewImage1);
-      console.log(previewImage1);
     } else {
       console.error('File is not a PNG, JPEG, or JPG image');
     }
@@ -69,56 +69,25 @@ const BranchDetail = () => {
 
   const handleSave = async () => {
     try {
-     
-      const branchPictures = image ? [image] : [];
-      let imageUrls = [];
-  
+      let imageUrl = branch.branchPicture || [];
 
-      if (branchPictures.length > 0) {
-        const uploadImageTasks = branchPictures.map(async (image) => {
-          const imageRef = ref(storageDb, `BranchImage/${v4()}`);
-          await uploadBytes(imageRef, image);
-          const url = await getDownloadURL(imageRef);
-          return url;
-        });
-  
-        const newImageUrls = await Promise.all(uploadImageTasks);
-        const existingImageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
-        imageUrls = [...existingImageUrls, ...newImageUrls];
-      } else {
-        imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
-      }
-  
-      const branchData = {
-        ...branch,
-        branchPicture: JSON.stringify(imageUrls),
-      };
-  
-      const formData = new FormData();
-      Object.keys(branchData).forEach(key => {
-        if (key === 'openDay') {
-          formData.append(key, branchData[key]);
-        } else if (key !== 'branchPictures') {
-          formData.append(key, branchData[key]);
+      if (image && imageRef) {
+        if (branch.branchPicture) {
+          const oldPath = branch.branchPicture[currentImageIndex].split('court-callers.appspot.com/o/')[1].split('?')[0];
+          const imagebefore = ref(storageDb, decodeURIComponent(oldPath));
+          await deleteObject(imagebefore);
         }
-      });
-  
-     
-      if (branchPictures.length > 0) {
-        branchPictures.forEach(file => {
-          formData.append('BranchPictures', file, file.name);
-        });
-      } else {
-     //nếu mà người dùng không chọn ảnh thì tạo đại 1 file rỗng
-        formData.append('BranchPictures', new Blob(), 'placeholder.txt');
+        const snapshot = await uploadBytes(imageRef, image);
+        console.log('Uploaded a file!', snapshot);
+
+        const newUrl = await getDownloadURL(imageRef);
+        imageUrl[currentImageIndex] = newUrl;
       }
-  
-      
-      await updateBranch(branchId, formData);
-  
+
+      await updateBranch(branchId, { ...branch, branchPicture: JSON.stringify(imageUrl) });
       setBranch((prevBranch) => ({
         ...prevBranch,
-        branchPicture: imageUrls,
+        branchPicture: imageUrl,
       }));
       URL.revokeObjectURL(previewImage);
       setPreviewImage(null);
@@ -127,12 +96,6 @@ const BranchDetail = () => {
       setError(`Failed to update branch details: ${err.message}`);
     }
   };
-  
-  
-  
-  
-  
-  
 
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
@@ -210,8 +173,7 @@ const BranchDetail = () => {
               component="img"
               alt="Branch"
               height="100%"
-              
-              image={currentImageUrl} // Ensure the image URL is correctly formatted
+              image={currentImageUrl}
               title="Branch"
               sx={{ borderRadius: '8px 0 0 8px', height: '100%', objectFit: 'cover' }}
               onClick={() => handleOpenModal(currentImageIndex)}
