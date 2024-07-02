@@ -101,3 +101,15 @@ export const updateUserRole = async (userId, role) => {
   } catch (error) {
     throw new Error(`Failed to update user roles: ${error.message}`);
   }};
+
+
+// Hàm lấy thông tin người dùng bằng user ID
+export const fetchUserEmailById = async (userId) => {
+  try {
+    const response = await axios.get(`${url}/Users/${userId}`);
+    return response.data.email;
+  } catch (error) {
+    console.error('Error fetching user email:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};

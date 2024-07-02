@@ -151,9 +151,7 @@ const Payments = () => {
                   <TableCell>Payment Amount</TableCell>
                   <TableCell>Payment Date</TableCell>
                   <TableCell>Payment Message</TableCell>
-                  <TableCell>Payment Status</TableCell>
                   <TableCell>Payment Signature</TableCell>
-                  <TableCell>Booking</TableCell>
                   <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
@@ -165,9 +163,7 @@ const Payments = () => {
                     <TableCell>{searchResult.paymentAmount}</TableCell>
                     <TableCell>{new Date(searchResult.paymentDate).toLocaleDateString()}</TableCell>
                     <TableCell>{searchResult.paymentMessage}</TableCell>
-                    <TableCell>{searchResult.paymentStatus}</TableCell>
                     <TableCell>{searchResult.paymentSignature}</TableCell>
-                    <TableCell>{searchResult.booking}</TableCell>
                     <TableCell>
                       <Box display="flex" justifyContent="center" alignItems="center">
                         <IconButton
@@ -193,9 +189,7 @@ const Payments = () => {
                       <TableCell>{row.paymentAmount}</TableCell>
                       <TableCell>{new Date(row.paymentDate).toLocaleDateString()}</TableCell>
                       <TableCell>{row.paymentMessage}</TableCell>
-                      <TableCell>{row.paymentStatus}</TableCell>
                       <TableCell>{row.paymentSignature}</TableCell>
-                      <TableCell>{row.booking}</TableCell>
                       <TableCell>
                         <Box display="flex" justifyContent="center" alignItems="center">
                           <IconButton
@@ -216,7 +210,7 @@ const Payments = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">
+                    <TableCell colSpan={7} align="center">
                       No data available
                     </TableCell>
                   </TableRow>
