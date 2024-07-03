@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Select, MenuItem, Divider } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
 import { fetchBranchById, updateBranch, fetchPricesByBranchId } from '../../api/branchApi';
 import Header from '../../components/Header';
 import { storageDb } from '../../firebase';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 } from 'uuid';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -20,8 +20,9 @@ const BranchDetail = () => {
   const [prices, setPrices] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState(null);
-  const [images, setImages] = useState([]);
-  const [previewImages, setPreviewImages] = useState([]);
+  const [image, setImage] = useState(null);
+  const [imageRef, setImageRef] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [open, setOpen] = useState(false);
 
@@ -33,7 +34,6 @@ const BranchDetail = () => {
           branchData.branchPicture = JSON.parse(branchData.branchPicture); // Parse branchPicture to an array
         }
         setBranch(branchData);
-        setPreviewImages(branchData.branchPicture || []);
 
         const pricesData = await fetchPricesByBranchId(branchId);
         setPrices(pricesData);
@@ -52,43 +52,47 @@ const BranchDetail = () => {
   };
 
   const handleProfilePictureChange = (event) => {
-    const files = Array.from(event.target.files);
-    const validFiles = files.filter(file => 
-      (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg') && file.size <= 5 * 1024 * 1024
-    );
-
-    if (validFiles.length !== files.length) {
-      console.error('Some files were not valid');
+    const file = event.target.files[0];
+    if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
+      if (file.size > 5 * 1024 * 1024) { // Limit 5MB
+        console.error('File size exceeds 5MB');
+        return;
+      }
+      setImage(file);
+      setImageRef(ref(storageDb, `BranchImage/${v4()}`));
+      const previewImage1 = URL.createObjectURL(file);
+      setPreviewImage(previewImage1);
+    } else {
+      console.error('File is not a PNG, JPEG, or JPG image');
     }
-
-    setImages(prevImages => [...prevImages, ...validFiles]);
-    setPreviewImages(prevPreviewImages => [...prevPreviewImages, ...validFiles.map(file => URL.createObjectURL(file))]);
   };
 
   const handleSave = async () => {
     try {
-      let imageUrls = [];
 
-      if (images.length > 0) {
-        const uploadImageTasks = images.map(async (image) => {
+      const branchPictures = image ? [image] : [];
+      let imageUrls = [];
+  
+      if (branchPictures.length > 0) {
+        const uploadImageTasks = branchPictures.map(async (image) => {
           const imageRef = ref(storageDb, `BranchImage/${v4()}`);
           await uploadBytes(imageRef, image);
           const url = await getDownloadURL(imageRef);
           return url;
         });
-
+  
         const newImageUrls = await Promise.all(uploadImageTasks);
         const existingImageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
         imageUrls = [...existingImageUrls, ...newImageUrls];
       } else {
         imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
       }
-
+  
       const branchData = {
         ...branch,
         branchPicture: JSON.stringify(imageUrls),
       };
-
+  
       const formData = new FormData();
       Object.keys(branchData).forEach(key => {
         if (key === 'openDay') {
@@ -97,27 +101,30 @@ const BranchDetail = () => {
           formData.append(key, branchData[key]);
         }
       });
-
-      if (images.length > 0) {
-        images.forEach(file => {
+  
+      if (branchPictures.length > 0) {
+        branchPictures.forEach(file => {
           formData.append('BranchPictures', file, file.name);
         });
+      } else {
+      // nếu người dùng không chọn ảnh mới thì append 1 file rỗng để không bị lỗi
+        formData.append('BranchPictures', new Blob(), 'placeholder.txt');
       }
-
+  
       await updateBranch(branchId, formData);
-
+  
       setBranch((prevBranch) => ({
         ...prevBranch,
         branchPicture: imageUrls,
       }));
-      setImages([]);
-      setPreviewImages(imageUrls);
+      URL.revokeObjectURL(previewImage);
+      setPreviewImage(null);
       setEditMode(false);
     } catch (err) {
       setError(`Failed to update branch details: ${err.message}`);
     }
   };
-
+  
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
   };
@@ -136,11 +143,11 @@ const BranchDetail = () => {
   };
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? previewImages.length - 1 : prevIndex - 1));
+    setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? branch.branchPicture.length - 1 : prevIndex - 1));
   };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex === previewImages.length - 1 ? 0 : prevIndex + 1));
+    setCurrentImageIndex((prevIndex) => (prevIndex === branch.branchPicture.length - 1 ? 0 : prevIndex + 1));
   };
 
   if (error) {
@@ -161,7 +168,7 @@ const BranchDetail = () => {
     );
   }
 
-  const currentImageUrl = previewImages[currentImageIndex] || '';
+  const currentImageUrl = previewImage || (branch.branchPicture ? branch.branchPicture[currentImageIndex] : '');
 
   const groupedPrices = prices.reduce((acc, price) => {
     if (price.type === 'By day') {
@@ -205,9 +212,9 @@ const BranchDetail = () => {
             >
               <ArrowForwardIosIcon />
             </IconButton>
-            {previewImages.length > 0 && (
+            {branch.branchPicture && (
               <Box display="flex" justifyContent="center" mt={2}>
-                {previewImages.map((url, index) => (
+                {branch.branchPicture.map((url, index) => (
                   <img
                     key={index}
                     src={url}
@@ -299,7 +306,6 @@ const BranchDetail = () => {
                       type="file"
                       accept="image/*"
                       onChange={handleProfilePictureChange}
-                      multiple
                     />
                   </Box>
                 </>
