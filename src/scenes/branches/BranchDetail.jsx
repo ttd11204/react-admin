@@ -72,6 +72,9 @@ const BranchDetail = () => {
         const branchPictures = image ? [image] : [];
         let imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
 
+        // Log để kiểm tra các URL ảnh hiện tại trước khi upload
+        console.log("Current image URLs before upload:", imageUrls);
+
         if (branchPictures.length > 0) {
             const uploadImageTasks = branchPictures.map(async (image) => {
                 const imageRef = ref(storageDb, `BranchImage/${v4()}`);
@@ -82,6 +85,10 @@ const BranchDetail = () => {
 
             const newImageUrls = await Promise.all(uploadImageTasks);
             imageUrls = [...imageUrls, ...newImageUrls];
+
+            // Log để kiểm tra các URL ảnh mới sau khi upload
+            console.log("New image URLs after upload:", newImageUrls);
+            console.log("All image URLs after upload:", imageUrls);
         }
 
         const branchData = {
@@ -125,6 +132,7 @@ const BranchDetail = () => {
         setError(`Failed to update branch details: ${err.message}`);
     }
 };
+
 
 
   const handleEditToggle = () => {
