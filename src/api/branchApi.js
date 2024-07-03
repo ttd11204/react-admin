@@ -42,7 +42,10 @@ export const createBranch = async (branchData) => {
 
 export const updateBranch = async (branchId, branchData) => {
   try {
-    const response = await axios.put(`${url}/Branches/${branchId}`, branchData);
+    const response = await axios.put(`${url}/Branches/${branchId}`, branchData,
+
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
     return response.data;
   } catch (error) {
     console.error('Error updating branch:', error.response ? error.response.data : error.message);

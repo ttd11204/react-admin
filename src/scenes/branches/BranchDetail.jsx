@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Select, MenuItem, Divider } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
@@ -10,6 +10,7 @@ import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage
 import { v4 } from 'uuid';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const BranchDetail = () => {
   const theme = useTheme();
@@ -20,9 +21,9 @@ const BranchDetail = () => {
   const [prices, setPrices] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState(null);
-  const [image, setImage] = useState(null);
-  const [imageRef, setImageRef] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [image, setImage] = useState([]);
+  const [imageRef, setImageRef] = useState([]);
+  const [previewImage, setPreviewImage] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [open, setOpen] = useState(false);
 
@@ -31,7 +32,7 @@ const BranchDetail = () => {
       try {
         const branchData = await fetchBranchById(branchId);
         if (branchData.branchPicture) {
-          branchData.branchPicture = JSON.parse(branchData.branchPicture); // Parse branchPicture to an array
+          branchData.branchPicture = JSON.parse(branchData.branchPicture);
         }
         setBranch(branchData);
 
@@ -51,29 +52,29 @@ const BranchDetail = () => {
     }));
   };
 
-  const handleProfilePictureChange = (event) => {
-    const file = event.target.files[0];
-    if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-      if (file.size > 5 * 1024 * 1024) { // Limit 5MB
-        console.error('File size exceeds 5MB');
-        return;
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+
+    const validPictureTypes = files.filter((file) => {
+      const isValidType = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg';
+      const isValidSize = file.size <= 5 * 1024 * 1024;
+
+      if (!isValidSize || !isValidType) {
+        console.error('File is not a correct type of image or exceeds the size limit');
       }
-      setImage(file);
-      setImageRef(ref(storageDb, `BranchImage/${v4()}`));
-      const previewImage1 = URL.createObjectURL(file);
-      setPreviewImage(previewImage1);
-    } else {
-      console.error('File is not a PNG, JPEG, or JPG image');
-    }
+      return isValidType && isValidSize;
+    });
+
+    const newPreviews = validPictureTypes.map(file => URL.createObjectURL(file));
+    setImage(prevImages => [...prevImages, ...validPictureTypes]);
+    setImageRef(prevImageRefs => [...prevImageRefs, ...validPictureTypes.map(() => ref(storageDb, `BranchImage/${v4()}`))]);
+    setPreviewImage(prevPreviews => [...prevPreviews, ...newPreviews]);
   };
 
   const handleSave = async () => {
     try {
-        const branchPictures = image ? [image] : [];
+        const branchPictures = image || [];
         let imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
-
-        // Log để kiểm tra các URL ảnh hiện tại trước khi upload
-        console.log("Current image URLs before upload:", imageUrls);
 
         if (branchPictures.length > 0) {
             const uploadImageTasks = branchPictures.map(async (image) => {
@@ -85,10 +86,6 @@ const BranchDetail = () => {
 
             const newImageUrls = await Promise.all(uploadImageTasks);
             imageUrls = [...imageUrls, ...newImageUrls];
-
-            // Log để kiểm tra các URL ảnh mới sau khi upload
-            console.log("New image URLs after upload:", newImageUrls);
-            console.log("All image URLs after upload:", imageUrls);
         }
 
         const branchData = {
@@ -98,25 +95,18 @@ const BranchDetail = () => {
 
         const formData = new FormData();
         Object.keys(branchData).forEach(key => {
-            if (key === 'branchPicture') {
-                formData.append(key, branchData[key]);
-            } else if (key !== 'branchPictures') {
-                formData.append(key, branchData[key]);
-            }
+            formData.append(key, branchData[key]);
         });
 
-        // Append existing image URLs as a single field
         imageUrls.forEach((url, index) => {
             formData.append(`ExistingImages[${index}]`, url);
         });
 
-        // Append new image files
+        // Chỉ thêm branchPictures vào formData nếu branchPictures không rỗng
         if (branchPictures.length > 0) {
             branchPictures.forEach(file => {
                 formData.append('BranchPictures', file, file.name);
             });
-        } else {
-            formData.append('BranchPictures', new Blob(), 'placeholder.txt');
         }
 
         await updateBranch(branchId, formData);
@@ -125,22 +115,20 @@ const BranchDetail = () => {
             ...prevBranch,
             branchPicture: imageUrls,
         }));
-        URL.revokeObjectURL(previewImage);
-        setPreviewImage(null);
+        previewImage.forEach(url => URL.revokeObjectURL(url));
+        setPreviewImage([]);
         setEditMode(false);
     } catch (err) {
         setError(`Failed to update branch details: ${err.message}`);
     }
 };
 
-
-
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
   };
 
   const handleBack = () => {
-    navigate(-1); // Navigate back to the previous page
+    navigate(-1);
   };
 
   const handleOpenModal = (index) => {
@@ -158,6 +146,51 @@ const BranchDetail = () => {
 
   const handleNextImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex === branch.branchPicture.length - 1 ? 0 : prevIndex + 1));
+  };
+
+  const handleDeleteImage = async (index) => {
+    try {
+      const existPicture = branch.branchPicture;
+      console.log(`Existing images: ${existPicture.join(', ')}`);
+  
+      const imageToDelete = branch.branchPicture[index];
+      console.log(`Deleting image URL: ${imageToDelete}`);
+  
+      const imageRefToDelete = ref(storageDb, imageToDelete);
+      console.log(`Deleting image ref: ${imageRefToDelete}`);
+  
+      await deleteObject(imageRefToDelete);
+  
+      const updatedImages = branch.branchPicture.filter((_, i) => i !== index);
+      const updatedBranch = { ...branch, branchPicture: JSON.stringify(updatedImages) };
+  
+      console.log(`Updated images: ${updatedImages.join(', ')}`);
+  
+      const formData = new FormData();
+      formData.append('branchId', branch.branchId);
+      formData.append('branchAddress', branch.branchAddress);
+      formData.append('branchName', branch.branchName);
+      formData.append('branchPhone', branch.branchPhone);
+      formData.append('description', branch.description);
+      formData.append('branchPicture', JSON.stringify(updatedImages));
+      formData.append('openTime', branch.openTime);
+      formData.append('closeTime', branch.closeTime);
+      formData.append('openDay', branch.openDay);
+      formData.append('status', branch.status);
+  
+      // Add remaining existing images to form data
+      updatedImages.forEach((url, index) => {
+        formData.append(`ExistingImages`, url);
+      });
+  
+      await updateBranch(branchId, formData);
+  
+      setBranch(updatedBranch);
+      setCurrentImageIndex(0);
+      setOpen(false);
+    } catch (err) {
+      setError(`Failed to delete image: ${err.message}`);
+    }
   };
 
   if (error) {
@@ -178,7 +211,7 @@ const BranchDetail = () => {
     );
   }
 
-  const currentImageUrl = previewImage || (branch.branchPicture ? branch.branchPicture[currentImageIndex] : '');
+  const currentImageUrl = previewImage.length > 0 ? previewImage[currentImageIndex] : (Array.isArray(branch.branchPicture) ? branch.branchPicture[currentImageIndex] : '');
 
   const groupedPrices = prices.reduce((acc, price) => {
     if (price.type === 'By day') {
@@ -222,18 +255,28 @@ const BranchDetail = () => {
             >
               <ArrowForwardIosIcon />
             </IconButton>
-            {branch.branchPicture && (
-              <Box display="flex" justifyContent="center" mt={2}>
+            {Array.isArray(branch.branchPicture) && (
+              <Box display="flex" justifyContent="center" mt={2} flexWrap="wrap">
                 {branch.branchPicture.map((url, index) => (
-                  <img
-                    key={index}
-                    src={url}
-                    alt={`Thumbnail ${index}`}
-                    width="50"
-                    height="50"
-                    style={{ cursor: 'pointer', margin: '0 5px', border: currentImageIndex === index ? '2px solid red' : 'none' }}
-                    onClick={() => handleOpenModal(index)}
-                  />
+                  <Box key={index} position="relative" sx={{ margin: '0 5px' }}>
+                    <img
+                      src={url}
+                      alt={`Thumbnail ${index}`}
+                      width="50"
+                      height="50"
+                      style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
+                      onClick={() => handleOpenModal(index)}
+                    />
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent modal from opening
+                        handleDeleteImage(index);
+                      }}
+                      sx={{ position: 'absolute', top: 0, right: 0, padding: '5px' }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 ))}
               </Box>
             )}
@@ -312,10 +355,34 @@ const BranchDetail = () => {
                   />
                   <Box mb={2}>
                     <Typography variant="h6">Branch Picture</Typography>
+                    <Box display="flex" flexWrap="wrap">
+                      {Array.isArray(branch.branchPicture) && branch.branchPicture.map((url, index) => (
+                        <Box key={index} position="relative" sx={{ margin: '0 5px' }}>
+                          <img
+                            src={url}
+                            alt={`Thumbnail ${index}`}
+                            width="50"
+                            height="50"
+                            style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
+                            onClick={() => handleOpenModal(index)}
+                          />
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent modal from opening
+                              handleDeleteImage(index);
+                            }}
+                            sx={{ position: 'absolute', top: 0, right: 0, padding: '5px' }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Box>
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleProfilePictureChange}
+                      multiple
+                      onChange={handleFileChange}
                     />
                   </Box>
                 </>
