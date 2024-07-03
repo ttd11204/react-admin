@@ -69,62 +69,64 @@ const BranchDetail = () => {
 
   const handleSave = async () => {
     try {
+        const branchPictures = image ? [image] : [];
+        let imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
 
-      const branchPictures = image ? [image] : [];
-      let imageUrls = [];
-  
-      if (branchPictures.length > 0) {
-        const uploadImageTasks = branchPictures.map(async (image) => {
-          const imageRef = ref(storageDb, `BranchImage/${v4()}`);
-          await uploadBytes(imageRef, image);
-          const url = await getDownloadURL(imageRef);
-          return url;
-        });
-  
-        const newImageUrls = await Promise.all(uploadImageTasks);
-        const existingImageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
-        imageUrls = [...existingImageUrls, ...newImageUrls];
-      } else {
-        imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
-      }
-  
-      const branchData = {
-        ...branch,
-        branchPicture: JSON.stringify(imageUrls),
-      };
-  
-      const formData = new FormData();
-      Object.keys(branchData).forEach(key => {
-        if (key === 'openDay') {
-          formData.append(key, branchData[key]);
-        } else if (key !== 'branchPictures') {
-          formData.append(key, branchData[key]);
+        if (branchPictures.length > 0) {
+            const uploadImageTasks = branchPictures.map(async (image) => {
+                const imageRef = ref(storageDb, `BranchImage/${v4()}`);
+                await uploadBytes(imageRef, image);
+                const url = await getDownloadURL(imageRef);
+                return url;
+            });
+
+            const newImageUrls = await Promise.all(uploadImageTasks);
+            imageUrls = [...imageUrls, ...newImageUrls];
         }
-      });
-  
-      if (branchPictures.length > 0) {
-        branchPictures.forEach(file => {
-          formData.append('BranchPictures', file, file.name);
+
+        const branchData = {
+            ...branch,
+            branchPicture: JSON.stringify(imageUrls),
+        };
+
+        const formData = new FormData();
+        Object.keys(branchData).forEach(key => {
+            if (key === 'branchPicture') {
+                formData.append(key, branchData[key]);
+            } else if (key !== 'branchPictures') {
+                formData.append(key, branchData[key]);
+            }
         });
-      } else {
-      // nếu người dùng không chọn ảnh mới thì append 1 file rỗng để không bị lỗi
-        formData.append('BranchPictures', new Blob(), 'placeholder.txt');
-      }
-  
-      await updateBranch(branchId, formData);
-  
-      setBranch((prevBranch) => ({
-        ...prevBranch,
-        branchPicture: imageUrls,
-      }));
-      URL.revokeObjectURL(previewImage);
-      setPreviewImage(null);
-      setEditMode(false);
+
+        // Append existing image URLs as a single field
+        imageUrls.forEach((url, index) => {
+            formData.append(`ExistingImages[${index}]`, url);
+        });
+
+        // Append new image files
+        if (branchPictures.length > 0) {
+            branchPictures.forEach(file => {
+                formData.append('BranchPictures', file, file.name);
+            });
+        } else {
+            formData.append('BranchPictures', new Blob(), 'placeholder.txt');
+        }
+
+        await updateBranch(branchId, formData);
+
+        setBranch((prevBranch) => ({
+            ...prevBranch,
+            branchPicture: imageUrls,
+        }));
+        URL.revokeObjectURL(previewImage);
+        setPreviewImage(null);
+        setEditMode(false);
     } catch (err) {
-      setError(`Failed to update branch details: ${err.message}`);
+        setError(`Failed to update branch details: ${err.message}`);
     }
-  };
-  
+};
+
+
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
   };
