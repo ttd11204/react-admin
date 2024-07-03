@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider, Checkbox, FormControlLabel } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
@@ -26,6 +26,7 @@ const BranchDetail = () => {
   const [previewImage, setPreviewImage] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [open, setOpen] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
 
   useEffect(() => {
     const getBranchData = async () => {
@@ -73,55 +74,54 @@ const BranchDetail = () => {
 
   const handleSave = async () => {
     try {
-        const branchPictures = image || [];
-        let imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
+      const branchPictures = image || [];
+      let imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
 
-        if (branchPictures.length > 0) {
-            const uploadImageTasks = branchPictures.map(async (image) => {
-                const imageRef = ref(storageDb, `BranchImage/${v4()}`);
-                await uploadBytes(imageRef, image);
-                const url = await getDownloadURL(imageRef);
-                return url;
-            });
-
-            const newImageUrls = await Promise.all(uploadImageTasks);
-            imageUrls = [...imageUrls, ...newImageUrls];
-        }
-
-        const branchData = {
-            ...branch,
-            branchPicture: JSON.stringify(imageUrls),
-        };
-
-        const formData = new FormData();
-        Object.keys(branchData).forEach(key => {
-            formData.append(key, branchData[key]);
+      if (branchPictures.length > 0) {
+        const uploadImageTasks = branchPictures.map(async (image) => {
+          const imageRef = ref(storageDb, `BranchImage/${v4()}`);
+          await uploadBytes(imageRef, image);
+          const url = await getDownloadURL(imageRef);
+          return url;
         });
 
-        imageUrls.forEach((url, index) => {
-            formData.append(`ExistingImages[${index}]`, url);
+        const newImageUrls = await Promise.all(uploadImageTasks);
+        imageUrls = [...imageUrls, ...newImageUrls];
+      }
+
+      const branchData = {
+        ...branch,
+        branchPicture: JSON.stringify(imageUrls),
+      };
+
+      const formData = new FormData();
+      Object.keys(branchData).forEach(key => {
+        formData.append(key, branchData[key]);
+      });
+
+      imageUrls.forEach((url, index) => {
+        formData.append(`ExistingImages[${index}]`, url);
+      });
+
+      if (branchPictures.length > 0) {
+        branchPictures.forEach(file => {
+          formData.append('BranchPictures', file, file.name);
         });
+      }
 
-        // Chỉ thêm branchPictures vào formData nếu branchPictures không rỗng
-        if (branchPictures.length > 0) {
-            branchPictures.forEach(file => {
-                formData.append('BranchPictures', file, file.name);
-            });
-        }
+      await updateBranch(branchId, formData);
 
-        await updateBranch(branchId, formData);
-
-        setBranch((prevBranch) => ({
-            ...prevBranch,
-            branchPicture: imageUrls,
-        }));
-        previewImage.forEach(url => URL.revokeObjectURL(url));
-        setPreviewImage([]);
-        setEditMode(false);
+      setBranch((prevBranch) => ({
+        ...prevBranch,
+        branchPicture: imageUrls,
+      }));
+      previewImage.forEach(url => URL.revokeObjectURL(url));
+      setPreviewImage([]);
+      setEditMode(false);
     } catch (err) {
-        setError(`Failed to update branch details: ${err.message}`);
+      setError(`Failed to update branch details: ${err.message}`);
     }
-};
+  };
 
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
@@ -148,24 +148,26 @@ const BranchDetail = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex === branch.branchPicture.length - 1 ? 0 : prevIndex + 1));
   };
 
-  const handleDeleteImage = async (index) => {
+  const handleImageSelection = (index) => {
+    setSelectedImages((prevSelected) => {
+      if (prevSelected.includes(index)) {
+        return prevSelected.filter((i) => i !== index);
+      } else {
+        return [...prevSelected, index];
+      }
+    });
+  };
+
+  const handleDeleteSelectedImages = async () => {
     try {
       const existPicture = branch.branchPicture;
-      console.log(`Existing images: ${existPicture.join(', ')}`);
-  
-      const imageToDelete = branch.branchPicture[index];
-      console.log(`Deleting image URL: ${imageToDelete}`);
-  
-      const imageRefToDelete = ref(storageDb, imageToDelete);
-      console.log(`Deleting image ref: ${imageRefToDelete}`);
-  
-      await deleteObject(imageRefToDelete);
-  
-      const updatedImages = branch.branchPicture.filter((_, i) => i !== index);
+      const imageRefsToDelete = selectedImages.map((index) => ref(storageDb, existPicture[index]));
+
+      await Promise.all(imageRefsToDelete.map((imageRef) => deleteObject(imageRef)));
+
+      const updatedImages = existPicture.filter((_, index) => !selectedImages.includes(index));
       const updatedBranch = { ...branch, branchPicture: JSON.stringify(updatedImages) };
-  
-      console.log(`Updated images: ${updatedImages.join(', ')}`);
-  
+
       const formData = new FormData();
       formData.append('branchId', branch.branchId);
       formData.append('branchAddress', branch.branchAddress);
@@ -177,19 +179,19 @@ const BranchDetail = () => {
       formData.append('closeTime', branch.closeTime);
       formData.append('openDay', branch.openDay);
       formData.append('status', branch.status);
-  
-      // Add remaining existing images to form data
-      updatedImages.forEach((url, index) => {
-        formData.append(`ExistingImages`, url);
+
+      updatedImages.forEach((url) => {
+        formData.append('ExistingImages', url);
       });
-  
+
       await updateBranch(branchId, formData);
-  
+
       setBranch(updatedBranch);
+      setSelectedImages([]);
       setCurrentImageIndex(0);
       setOpen(false);
     } catch (err) {
-      setError(`Failed to delete image: ${err.message}`);
+      setError(`Failed to delete images: ${err.message}`);
     }
   };
 
@@ -267,15 +269,6 @@ const BranchDetail = () => {
                       style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
                       onClick={() => handleOpenModal(index)}
                     />
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent modal from opening
-                        handleDeleteImage(index);
-                      }}
-                      sx={{ position: 'absolute', top: 0, right: 0, padding: '5px' }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
                   </Box>
                 ))}
               </Box>
@@ -358,23 +351,24 @@ const BranchDetail = () => {
                     <Box display="flex" flexWrap="wrap">
                       {Array.isArray(branch.branchPicture) && branch.branchPicture.map((url, index) => (
                         <Box key={index} position="relative" sx={{ margin: '0 5px' }}>
-                          <img
-                            src={url}
-                            alt={`Thumbnail ${index}`}
-                            width="50"
-                            height="50"
-                            style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
-                            onClick={() => handleOpenModal(index)}
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={selectedImages.includes(index)}
+                                onChange={() => handleImageSelection(index)}
+                              />
+                            }
+                            label={
+                              <img
+                                src={url}
+                                alt={`Thumbnail ${index}`}
+                                width="50"
+                                height="50"
+                                style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
+                                onClick={() => handleOpenModal(index)}
+                              />
+                            }
                           />
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent modal from opening
-                              handleDeleteImage(index);
-                            }}
-                            sx={{ position: 'absolute', top: 0, right: 0, padding: '5px' }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
                         </Box>
                       ))}
                     </Box>
@@ -482,10 +476,23 @@ const BranchDetail = () => {
               onClick={handleSave}
               style={{
                 backgroundColor: colors.greenAccent[400],
-                color: colors.primary[900]
+                color: colors.primary[900],
+                marginRight: 8
               }}
             >
               Save
+            </Button>
+          )}
+          {editMode && (
+            <Button
+              variant="contained"
+              onClick={handleDeleteSelectedImages}
+              style={{
+                backgroundColor: colors.redAccent[400],
+                color: colors.primary[900]
+              }}
+            >
+              Delete Selected Images
             </Button>
           )}
         </Box>
