@@ -162,7 +162,7 @@ const BranchDetail = () => {
     try {
       const existPicture = branch.branchPicture;
       const imageRefsToDelete = selectedImages.map((index) => ref(storageDb, existPicture[index]));
-  
+      let imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
       await Promise.all(imageRefsToDelete.map((imageRef) => deleteObject(imageRef)));
   
       const updatedImages = existPicture.filter((_, index) => !selectedImages.includes(index));
@@ -179,20 +179,22 @@ const BranchDetail = () => {
       formData.append('closeTime', branch.closeTime);
       formData.append('openDay', branch.openDay);
       formData.append('status', branch.status);
-  
+
       updatedImages.forEach((url) => {
         formData.append('ExistingImages', url);
       });
+
   
       await updateBranch(branchId, formData);
   
-      setBranch(updatedBranch);
-      setSelectedImages([]);
+      setBranch((prevBranch) => ({
+        ...prevBranch,
+        branchPicture: updatedImages,
+      }));
+      previewImage.forEach(url => URL.revokeObjectURL(url));
+      setPreviewImage([]);
       setCurrentImageIndex(0);
-      setOpen(false);
-  
-      // Update the preview images with the remaining images in existPicture
-      setPreviewImage(updatedImages);
+      setEditMode(false);
     } catch (err) {
       setError(`Failed to delete images: ${err.message}`);
     }
