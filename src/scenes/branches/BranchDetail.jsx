@@ -337,7 +337,7 @@ const BranchDetail = () => {
           </Grid>
           <Grid item xs={12} sm={7}>
             <CardContent sx={{ p: 4 }}>
-              <Typography gutterBottom variant="h4" component="div" color={colors.primary[100]} sx={{ mb: 2 }}>
+              <Typography gutterBottom variant="h3" component="div" color={colors.primary[100]} sx={{ mb: 2 }} display="flex" justifyContent="center">
                 {editMode ? (
                   <TextField
                     fullWidth
@@ -443,65 +443,63 @@ const BranchDetail = () => {
                 </>
               ) : (
                 <>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Branch ID:</strong> {branch.branchId}
                   </Typography>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Branch Address:</strong> {branch.branchAddress}
                   </Typography>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Branch Phone:</strong> {branch.branchPhone}
                   </Typography>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Description:</strong> {branch.description}
                   </Typography>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Open Time:</strong> {branch.openTime}
                   </Typography>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Close Time:</strong> {branch.closeTime}
                   </Typography>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Open Day:</strong> {branch.openDay}
                   </Typography>
-                  <Typography variant="body1" color={colors.primary[200]}>
+                  <Typography variant="body1" color={colors.primary[100]}>
                     <strong>Status:</strong> {branch.status}
                   </Typography>
                 </>
               )}
-              <Typography variant="h6" color={colors.primary[100]} sx={{ mt: 4, mb: 2 }}>
-                Prices:
+              <Divider sx={{ my: 3 }} />
+              <Typography variant="h3" color={colors.primary[100]} sx={{ mt: 2, mb: 2 }} display="flex" justifyContent="center">
+                PRICE
               </Typography>
               {groupedPrices['By day'] && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>By day:</strong>
                   </Typography>
                   <Box sx={{ pl: 2 }}>
-                    <Typography variant="body2" color={colors.primary[200]} gutterBottom>
+                    <Typography variant="h6" color={colors.primary[100]} gutterBottom>
                       <strong>Weekend:</strong> {groupedPrices['By day'].weekend}
                     </Typography>
-                    <Typography variant="body2" color={colors.primary[200]} gutterBottom>
+                    <Typography variant="h6" color={colors.primary[100]} gutterBottom>
                       <strong>Weekday:</strong> {groupedPrices['By day'].weekday}
                     </Typography>
                   </Box>
-                  <Divider sx={{ my: 2 }} />
                 </Box>
               )}
               {groupedPrices['Flex'] && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Flex:</strong> {groupedPrices['Flex']}
                   </Typography>
-                  <Divider sx={{ my: 2 }} />
                 </Box>
               )}
               {groupedPrices['Fix'] && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" color={colors.primary[200]} gutterBottom>
+                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
                     <strong>Fix:</strong> {groupedPrices['Fix']}
                   </Typography>
-                  <Divider sx={{ my: 2 }} />
                 </Box>
               )}
             </CardContent>
