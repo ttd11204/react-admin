@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider, Checkbox, FormControlLabel } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
 import { fetchBranchById, updateBranch, fetchPricesByBranchId } from '../../api/branchApi';
+import { updatePrice } from '../../api/priceApi';
 import Header from '../../components/Header';
 import { storageDb } from '../../firebase';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 } from 'uuid';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import DeleteIcon from '@mui/icons-material/Delete';
 
 const BranchDetail = () => {
   const theme = useTheme();
@@ -27,6 +27,10 @@ const BranchDetail = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [fixPrice, setFixPrice] = useState(0);
+  const [flexPrice, setFlexPrice] = useState(0);
+  const [weekdayPrice, setWeekdayPrice] = useState(0);
+  const [weekendPrice, setWeekendPrice] = useState(0);
 
   useEffect(() => {
     const getBranchData = async () => {
@@ -39,6 +43,20 @@ const BranchDetail = () => {
 
         const pricesData = await fetchPricesByBranchId(branchId);
         setPrices(pricesData);
+
+        pricesData.forEach(price => {
+          if (price.type === 'Fix') {
+            setFixPrice(price.slotPrice);
+          } else if (price.type === 'Flex') {
+            setFlexPrice(price.slotPrice);
+          } else if (price.type === 'By day') {
+            if (price.isWeekend) {
+              setWeekendPrice(price.slotPrice);
+            } else {
+              setWeekdayPrice(price.slotPrice);
+            }
+          }
+        });
       } catch (err) {
         setError('Failed to fetch branch data');
       }
@@ -197,6 +215,47 @@ const BranchDetail = () => {
       setEditMode(false);
     } catch (err) {
       setError(`Failed to delete images: ${err.message}`);
+    }
+  };
+
+  const handlePriceUpdate = async () => {
+    try {
+      const priceData = [
+        {
+          branchId,
+          type: 'Fix',
+          isWeekend: null,
+          slotPrice: parseFloat(fixPrice)
+        },
+        {
+          branchId,
+          type: 'Flex',
+          isWeekend: null,
+          slotPrice: parseFloat(flexPrice)
+        },
+        {
+          branchId,
+          type: 'By day',
+          isWeekend: true,
+          slotPrice: parseFloat(weekendPrice)
+        },
+        {
+          branchId,
+          type: 'By day',
+          isWeekend: false,
+          slotPrice: parseFloat(weekdayPrice)
+        }
+      ];
+
+      for (const price of priceData) {
+        await updatePrice(price.branchId, price.type, price.isWeekend, price.slotPrice);
+      }
+
+      const updatedPrices = await fetchPricesByBranchId(branchId);
+      setPrices(updatedPrices);
+      setError(null);
+    } catch (error) {
+      setError(`Failed to update prices: ${error.message}`);
     }
   };
 
@@ -414,23 +473,13 @@ const BranchDetail = () => {
                     <Box display="flex" flexWrap="wrap">
                       {Array.isArray(branch.branchPicture) && branch.branchPicture.map((url, index) => (
                         <Box key={index} position="relative" sx={{ margin: '0 5px' }}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={selectedImages.includes(index)}
-                                onChange={() => handleImageSelection(index)}
-                              />
-                            }
-                            label={
-                              <img
-                                src={url}
-                                alt={`Thumbnail ${index}`}
-                                width="50"
-                                height="50"
-                                style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
-                                onClick={() => handleOpenModal(index)}
-                              />
-                            }
+                          <img
+                            src={url}
+                            alt={`Thumbnail ${index}`}
+                            width="50"
+                            height="50"
+                            style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
+                            onClick={() => handleOpenModal(index)}
                           />
                         </Box>
                       ))}
@@ -475,35 +524,53 @@ const BranchDetail = () => {
               <Typography variant="h3" color={colors.primary[100]} sx={{ mt: 2, mb: 2 }} display="flex" justifyContent="center">
                 PRICE
               </Typography>
-              {groupedPrices['By day'] && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
-                    <strong>By day:</strong>
-                  </Typography>
-                  <Box sx={{ pl: 2 }}>
-                    <Typography variant="h6" color={colors.primary[100]} gutterBottom>
-                      <strong>Weekend:</strong> {groupedPrices['By day'].weekend}
-                    </Typography>
-                    <Typography variant="h6" color={colors.primary[100]} gutterBottom>
-                      <strong>Weekday:</strong> {groupedPrices['By day'].weekday}
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
-              {groupedPrices['Flex'] && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
-                    <strong>Flex:</strong> {groupedPrices['Flex']}
-                  </Typography>
-                </Box>
-              )}
-              {groupedPrices['Fix'] && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" color={colors.primary[100]} gutterBottom>
-                    <strong>Fix:</strong> {groupedPrices['Fix']}
-                  </Typography>
-                </Box>
-              )}
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h5" color={colors.primary[100]} gutterBottom>
+                  Update Price
+                </Typography>
+                <TextField
+                  fullWidth
+                  label="Fix Price"
+                  value={fixPrice}
+                  onChange={(e) => setFixPrice(e.target.value)}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Flex Price"
+                  value={flexPrice}
+                  onChange={(e) => setFlexPrice(e.target.value)}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Weekday Price"
+                  value={weekdayPrice}
+                  onChange={(e) => setWeekdayPrice(e.target.value)}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Weekend Price"
+                  value={weekendPrice}
+                  onChange={(e) => setWeekendPrice(e.target.value)}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={handlePriceUpdate}
+                  style={{
+                    backgroundColor: colors.greenAccent[400],
+                    color: colors.primary[900]
+                  }}
+                >
+                  Update Prices
+                </Button>
+              </Box>
             </CardContent>
           </Grid>
         </Grid>
@@ -531,7 +598,6 @@ const BranchDetail = () => {
       </Modal>
     </Box>
   );
-  
 };
 
 export default BranchDetail;

@@ -45,5 +45,18 @@
     }
   };
 
-
- 
+// Function to update price
+export const updatePrice = async (branchId, type, isWeekend, slotPrice) => {
+  try {
+    const response = await axios.put(`${url}/Prices/UpdatePrice`, {
+      branchId,
+      type,
+      isWeekend,
+      slotPrice
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating price:', error);
+    throw error;
+  }
+};
