@@ -162,12 +162,12 @@ const BranchDetail = () => {
     try {
       const existPicture = branch.branchPicture;
       const imageRefsToDelete = selectedImages.map((index) => ref(storageDb, existPicture[index]));
-
+  
       await Promise.all(imageRefsToDelete.map((imageRef) => deleteObject(imageRef)));
-
+  
       const updatedImages = existPicture.filter((_, index) => !selectedImages.includes(index));
       const updatedBranch = { ...branch, branchPicture: JSON.stringify(updatedImages) };
-
+  
       const formData = new FormData();
       formData.append('branchId', branch.branchId);
       formData.append('branchAddress', branch.branchAddress);
@@ -179,17 +179,20 @@ const BranchDetail = () => {
       formData.append('closeTime', branch.closeTime);
       formData.append('openDay', branch.openDay);
       formData.append('status', branch.status);
-
+  
       updatedImages.forEach((url) => {
         formData.append('ExistingImages', url);
       });
-
+  
       await updateBranch(branchId, formData);
-
+  
       setBranch(updatedBranch);
       setSelectedImages([]);
       setCurrentImageIndex(0);
       setOpen(false);
+  
+      // Update the preview images with the remaining images in existPicture
+      setPreviewImage(updatedImages);
     } catch (err) {
       setError(`Failed to delete images: ${err.message}`);
     }
@@ -233,30 +236,88 @@ const BranchDetail = () => {
   return (
     <Box m="20px">
       <Header title="Branch Detail" subtitle="Details of the branch" />
-      <Card sx={{ maxWidth: 1000, margin: '0 auto', mt: 4, backgroundColor: colors.primary[700], borderRadius: 2 }}>
+      <Card sx={{ margin: '0 auto', mt: 4, backgroundColor: colors.primary[700], borderRadius: 2 }}>
+        <Box display="flex" justifyContent="space-between" m={2}>
+          <Button
+            variant="contained"
+            onClick={handleBack}
+            style={{
+              backgroundColor: colors.blueAccent[500],
+              color: colors.primary[900],
+              marginRight: 8
+            }}
+          >
+            Back
+          </Button>
+          <Box>
+            <Button
+              variant="contained"
+              onClick={handleEditToggle}
+              style={{
+                backgroundColor: colors.greenAccent[400],
+                color: colors.primary[900],
+                marginRight: 8
+              }}
+            >
+              {editMode ? 'Cancel' : 'Edit'}
+            </Button>
+            {editMode && (
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                style={{
+                  backgroundColor: colors.greenAccent[400],
+                  color: colors.primary[900],
+                  marginRight: 8
+                }}
+              >
+                Save
+              </Button>
+            )}
+            {editMode && (
+              <Button
+                variant="contained"
+                onClick={handleDeleteSelectedImages}
+                style={{
+                  backgroundColor: colors.redAccent[400],
+                  color: colors.primary[900]
+                }}
+              >
+                Delete Selected Images
+              </Button>
+            )}
+          </Box>
+        </Box>
         <Grid container>
-          <Grid item xs={12} sm={5} position="relative">
-            <IconButton
-              onClick={handlePrevImage}
-              sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 1 }}
-            >
-              <ArrowBackIosIcon />
-            </IconButton>
-            <CardMedia
-              component="img"
-              alt="Branch"
-              height="100%"
-              image={currentImageUrl}
-              title="Branch"
-              sx={{ borderRadius: '8px 0 0 8px', height: '100%', objectFit: 'cover' }}
-              onClick={() => handleOpenModal(currentImageIndex)}
-            />
-            <IconButton
-              onClick={handleNextImage}
-              sx={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)', zIndex: 1 }}
-            >
-              <ArrowForwardIosIcon />
-            </IconButton>
+          <Grid item xs={12} sm={5} display="flex" flexDirection="column" alignItems="center" position="relative">
+            <Box display="flex" alignItems="center" width="100%">
+              <IconButton
+                onClick={handlePrevImage}
+                sx={{ zIndex: 1 }}
+              >
+                <ArrowBackIosIcon />
+              </IconButton>
+              <CardMedia
+                component="img"
+                alt="Branch"
+                image={currentImageUrl}
+                title="Branch"
+                sx={{ 
+                  borderRadius: '8px', 
+                  objectFit: 'cover', 
+                  width: '600px', 
+                  height: '500px', 
+                  
+                }}
+                onClick={() => handleOpenModal(currentImageIndex)}
+              />
+              <IconButton
+                onClick={handleNextImage}
+                sx={{ zIndex: 1 }}
+              >
+                <ArrowForwardIosIcon />
+              </IconButton>
+            </Box>
             {Array.isArray(branch.branchPicture) && (
               <Box display="flex" justifyContent="center" mt={2} flexWrap="wrap">
                 {branch.branchPicture.map((url, index) => (
@@ -267,7 +328,7 @@ const BranchDetail = () => {
                       width="50"
                       height="50"
                       style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
-                      onClick={() => handleOpenModal(index)}
+                      onClick={() => setCurrentImageIndex(index)}
                     />
                   </Box>
                 ))}
@@ -408,7 +469,6 @@ const BranchDetail = () => {
                   </Typography>
                 </>
               )}
-
               <Typography variant="h6" color={colors.primary[100]} sx={{ mt: 4, mb: 2 }}>
                 Prices:
               </Typography>
@@ -447,57 +507,7 @@ const BranchDetail = () => {
             </CardContent>
           </Grid>
         </Grid>
-        <Box display="flex" justifyContent="center" m={2}>
-          <Button
-            variant="contained"
-            onClick={handleBack}
-            style={{
-              backgroundColor: colors.blueAccent[500],
-              color: colors.primary[900],
-              marginRight: 8
-            }}
-          >
-            Back
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleEditToggle}
-            style={{
-              backgroundColor: colors.greenAccent[400],
-              color: colors.primary[900],
-              marginRight: 8
-            }}
-          >
-            {editMode ? 'Cancel' : 'Edit'}
-          </Button>
-          {editMode && (
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              style={{
-                backgroundColor: colors.greenAccent[400],
-                color: colors.primary[900],
-                marginRight: 8
-              }}
-            >
-              Save
-            </Button>
-          )}
-          {editMode && (
-            <Button
-              variant="contained"
-              onClick={handleDeleteSelectedImages}
-              style={{
-                backgroundColor: colors.redAccent[400],
-                color: colors.primary[900]
-              }}
-            >
-              Delete Selected Images
-            </Button>
-          )}
-        </Box>
       </Card>
-
       <Modal
         open={open}
         onClose={handleCloseModal}
@@ -521,6 +531,7 @@ const BranchDetail = () => {
       </Modal>
     </Box>
   );
+  
 };
 
 export default BranchDetail;
