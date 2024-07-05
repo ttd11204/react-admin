@@ -80,9 +80,9 @@ const Courts = () => {
   };
 
   const handleView = (courtId) => {
-    navigate(`/admin/TimeSlots?courtId=${courtId}`);
+    navigate(`/admin/TimeSlots?courtId=${courtId}&branchId=${branchIdQuery}`);
   };
-
+  
   const handleEdit = (court) => {
     setCourtData(court);
     setCurrentCourtId(court.courtId);
