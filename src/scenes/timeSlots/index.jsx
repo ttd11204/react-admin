@@ -46,7 +46,9 @@ const TimeSlots = () => {
 
   const handleModalChange = (e) => {
     const { name, value } = e.target;
-    if (name in slotData.timeSlot) {
+    if (name === "slotDate") {
+      setSlotData({ ...slotData, slotDate: value });
+    } else if (name in slotData.timeSlot) {
       setSlotData({ ...slotData, timeSlot: { ...slotData.timeSlot, [name]: value } });
     } else {
       setSlotData({ ...slotData, [name]: value });
@@ -181,6 +183,7 @@ const TimeSlots = () => {
             margin="normal"
             label="Start Time"
             name="slotStartTime"
+            
             value={slotData.timeSlot.slotStartTime}
             onChange={handleModalChange}
           />
@@ -189,6 +192,7 @@ const TimeSlots = () => {
             margin="normal"
             label="End Time"
             name="slotEndTime"
+            
             value={slotData.timeSlot.slotEndTime}
             onChange={handleModalChange}
           />
