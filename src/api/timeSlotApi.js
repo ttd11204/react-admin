@@ -65,3 +65,15 @@ export  const fetchUnavailableSlots = async (date, branchId) => {
     throw error;
   }
 };
+
+
+//change slot
+export const changeSlot = async (slotId, updatedSlot) => {
+  try {
+    const response = await axios.put(`${url}/TimeSlots/changeSlot/${slotId}`, updatedSlot);
+    return response.data;
+  } catch (error) {
+    console.error('Error changing time slot:', error);
+    throw error;
+  }
+};
