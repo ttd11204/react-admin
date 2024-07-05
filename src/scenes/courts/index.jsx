@@ -1,32 +1,9 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Typography,
-  useTheme,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Select,
-  MenuItem,
-  TextField,
-  InputBase,
-  IconButton,
-  Modal,
-} from "@mui/material";
+import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, TextField, InputBase, IconButton, Modal } from "@mui/material";
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
-import {
-  fetchCourts,
-  createCourt,
-  updateCourtById,
-  deleteCourtById,
-} from "../../api/courtApi";
+import { fetchCourts, createCourt, updateCourtById, deleteCourtById } from "../../api/courtApi";
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
