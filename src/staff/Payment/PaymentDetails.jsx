@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Grid } from '@mui/material';
+import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Grid, Modal, MenuItem, Select } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -8,6 +8,7 @@ import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
 import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
 import { reserveSlots, createBookingFlex, deleteBookingInFlex } from '../../api/bookingApi';
+import { fetchCourts } from '../../api/courtApi';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import * as signalR from '@microsoft/signalr';
 
@@ -46,6 +47,20 @@ const PaymentDetail = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [connection, setConnection] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [courts, setCourts] = useState([]);
+  const [selectedCourts, setSelectedCourts] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentSlotIndex, setCurrentSlotIndex] = useState(null);
+
+  useEffect(() => {
+    if (branchId) {
+      const loadCourts = async () => {
+        const data = await fetchCourts(1, 100, branchId);
+        setCourts(data.items);
+      };
+      loadCourts();
+    }
+  }, [branchId]);
 
   //đấm nhau với signalR
   useEffect(() => {
@@ -94,7 +109,6 @@ const PaymentDetail = () => {
     }
   }, [connection]);
 
-
   // gửi slot để backend signalr nó check
   const sendUnavailableSlotCheck = async () => {
     if (connection) {
@@ -119,7 +133,6 @@ const PaymentDetail = () => {
       alert('No connection to server yet.');
     }
   };
-
 
   useEffect(() => {
     if (userChecked && locationUserInfo) {
@@ -174,10 +187,81 @@ const PaymentDetail = () => {
     try {
 
       await sendUnavailableSlotCheck();
-     
-        if (availableSlot !== 0 && bookingId) {
-          const bookingForm = bookingRequests.map((request) => ({
-            courtId: null,
+
+      if (availableSlot !== 0 && bookingId) {
+        const bookingForm = bookingRequests.map((request, index) => ({
+          courtId: selectedCourts[index] || null,
+          branchId: branchId,
+          slotDate: request.slotDate,
+          timeSlot: {
+            slotStartTime: request.timeSlot.slotStartTime,
+            slotEndTime: request.timeSlot.slotEndTime,
+          },
+        }));
+
+        const booking = await addTimeSlotIfExistBooking(bookingForm, bookingId);
+        navigate("/confirm", {
+          state: {
+            bookingId: bookingId,
+            bookingForm: bookingForm,
+            userInfo: userInfo,
+          }
+        });
+        return;
+      }
+
+      if (type === 'flexible' && availableSlot === 0) {
+        let id = null;
+        try {
+          setIsLoading(true);
+          const bookingForm = bookingRequests.map((request, index) => ({
+            courtId: selectedCourts[index] || null,
+            branchId: branchId,
+            slotDate: request.slotDate,
+            timeSlot: {
+              slotStartTime: request.timeSlot.slotStartTime,
+              slotEndTime: request.timeSlot.slotEndTime,
+            },
+          }));
+          console.log('Booking Form:', bookingForm);
+          console.log('numberOfSlot:', numberOfSlot);
+          const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
+
+          id = createBookingTypeFlex.bookingId;
+          const booking = await reserveSlots(userInfo.userId, bookingForm);
+
+          console.log('Booking:', booking);
+
+          // If reservation is successful, continue to the next step or navigate
+          setActiveStep((prevActiveStep) => prevActiveStep + 1);
+          const tokenResponse = await generatePaymentToken(booking.bookingId);
+          const token = tokenResponse.token;
+          const paymentResponse = await processPayment(token);
+          const paymentUrl = paymentResponse;
+
+          window.location.href = paymentUrl;
+          return;
+        } catch (error) {
+          console.error('Error processing payment:', error);
+          setErrorMessage('Error processing payment. Please try again.');
+          if (id) {
+            try {
+              await deleteBookingInFlex(id);
+              console.log('Booking rolled back successfully');
+            } catch (deleteError) {
+              console.error('Error rolling back booking:', deleteError);
+            }
+          }
+          setIsLoading(false);
+        }
+
+      }
+
+      if (activeStep === 0) {
+        setIsLoading(true); // Show loading page
+        try {
+          const bookingForm = bookingRequests.map((request, index) => ({
+            courtId: selectedCourts[index] || null,
             branchId: branchId,
             slotDate: request.slotDate,
             timeSlot: {
@@ -186,102 +270,30 @@ const PaymentDetail = () => {
             },
           }));
 
-          const booking = await addTimeSlotIfExistBooking(bookingForm, bookingId);
-          navigate("/confirm", {
-            state: {
-              bookingId: bookingId,
-              bookingForm: bookingForm,
-              userInfo: userInfo,
-            }
-          });
-          return;
+          console.log('Formatted Requests:', bookingForm);
+
+          const booking = await reserveSlots(userInfo.userId, bookingForm);
+          const bookingId = booking.bookingId;
+          const tokenResponse = await generatePaymentToken(bookingId);
+          const token = tokenResponse.token;
+          const paymentResponse = await processPayment(token);
+          const paymentUrl = paymentResponse;
+
+          window.location.href = paymentUrl;
+        } catch (error) {
+          console.error('Error processing payment:', error);
+          setErrorMessage('Error processing payment. Please try again.');
+          setIsLoading(false); // Hide loading page if there's an error
         }
+      } else {
+        setActiveStep((prevActiveStep) => prevActiveStep + 1);
+      }
 
-        if (type === 'flexible' && availableSlot === 0) {
-          let id = null;
-          try {
-            setIsLoading(true);
-            const bookingForm = bookingRequests.map((request) => ({
-              courtId: null,
-              branchId: branchId,
-              slotDate: request.slotDate,
-              timeSlot: {
-                slotStartTime: request.timeSlot.slotStartTime,
-                slotEndTime: request.timeSlot.slotEndTime,
-              },
-            }));
-            console.log('Booking Form:', bookingForm);
-            console.log('numberOfSlot:', numberOfSlot);
-            const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
-
-            id = createBookingTypeFlex.bookingId;
-            const booking = await reserveSlots(userInfo.userId, bookingForm);
-
-            console.log('Booking:', booking);
-
-            // If reservation is successful, continue to the next step or navigate
-            setActiveStep((prevActiveStep) => prevActiveStep + 1);
-            const tokenResponse = await generatePaymentToken(booking.bookingId);
-            const token = tokenResponse.token;
-            const paymentResponse = await processPayment(token);
-            const paymentUrl = paymentResponse;
-
-            window.location.href = paymentUrl;
-            return;
-          } catch (error) {
-            console.error('Error processing payment:', error);
-            setErrorMessage('Error processing payment. Please try again.');
-            if (id) {
-              try {
-                await deleteBookingInFlex(id);
-                console.log('Booking rolled back successfully');
-              } catch (deleteError) {
-                console.error('Error rolling back booking:', deleteError);
-              }
-            }
-            setIsLoading(false);
-          }
-
-        }
-
-        if (activeStep === 0) {
-          setIsLoading(true); // Show loading page
-          try {
-            const bookingForm = bookingRequests.map((request) => ({
-              courtId: null,
-              branchId: branchId,
-              slotDate: request.slotDate,
-              timeSlot: {
-                slotStartTime: request.timeSlot.slotStartTime,
-                slotEndTime: request.timeSlot.slotEndTime,
-              },
-            }));
-
-            console.log('Formatted Requests:', bookingForm);
-
-            const booking = await reserveSlots(userInfo.userId, bookingForm);
-            const bookingId = booking.bookingId;
-            const tokenResponse = await generatePaymentToken(bookingId);
-            const token = tokenResponse.token;
-            const paymentResponse = await processPayment(token);
-            const paymentUrl = paymentResponse;
-
-            window.location.href = paymentUrl;
-          } catch (error) {
-            console.error('Error processing payment:', error);
-            setErrorMessage('Error processing payment. Please try again.');
-            setIsLoading(false); // Hide loading page if there's an error
-          }
-        } else {
-          setActiveStep((prevActiveStep) => prevActiveStep + 1);
-        }
-      
     } catch (error) {
       console.error('Error sending time slot to server:', error);
       setErrorMessage('Error sending time slot to server. Please try again.');
     }
   };
-
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
@@ -376,6 +388,20 @@ const PaymentDetail = () => {
                         <Typography variant="body1" color="black">
                           <strong>Price:</strong> {request.price} USD {/* Added to display slot price */}
                         </Typography>
+                        <FormControl fullWidth>
+                          <Select
+                            value={selectedCourts[index] || ''}
+                            displayEmpty
+                            onChange={(e) => setSelectedCourts({ ...selectedCourts, [index]: e.target.value })}
+                          >
+                            <MenuItem value="">
+                              <em>Choose Court</em>
+                            </MenuItem>
+                            {courts.map(court => (
+                              <MenuItem key={court.courtId} value={court.courtId}>{court.courtName}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </Box>
                     ))}
                     <Divider sx={{ marginY: '10px' }} />
