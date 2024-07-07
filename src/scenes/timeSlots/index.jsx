@@ -172,7 +172,7 @@ const TimeSlots = () => {
           <TextField
             fullWidth
             margin="normal"
-            label="Slot Date (Ngày chơi)"
+            label="Slot Date"
             name="slotDate"
             type="date"
             value={slotData.slotDate}

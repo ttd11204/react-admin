@@ -187,7 +187,7 @@ const Users = () => {
                   marginLeft: 8
                 }}
               >
-                Create New
+                Create New Staff
               </Button>
             )}
           </Box>
@@ -195,7 +195,8 @@ const Users = () => {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
-                  {['ID', 'User Name', 'Email', 'Phone Number', 'Phone Confirmed', '2FA Enabled', 'Role', 'Action', 'Access']
+                  {['ID', 'User Name', 'Email', 'Phone Number', 'Phone Confirmed', '2FA Enabled', 'Role']
+                    .concat(userRole === 'Admin' ? ['Action', 'Access'] : [])
                     .map(header => (
                       <TableCell key={header} style={{ color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000' }}>
                         {header}
@@ -214,30 +215,34 @@ const Users = () => {
                       <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.phoneNumberConfirmed ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.twoFactorEnabled ? 'Yes' : 'No'}</TableCell>
                       <TableCell style={{ color: row.banned ? colors.redAccent[600] : theme.palette.text.primary }}>{row.role}</TableCell>
-                      <TableCell align="center">
-                        <IconButton onClick={() => handleViewUser(row.id)} style={{ color: colors.greenAccent[400] }}>
-                          <GrView />
-                        </IconButton>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Button
-                          onClick={() => handleBanToggle(row.id, row.banned)}
-                          variant="contained"
-                          size="small"
-                          style={{
-                            marginLeft: 8,
-                            backgroundColor: row.banned ? colors.redAccent[400] : colors.greenAccent[400],
-                            color: colors.primary[900]
-                          }}
-                        >
-                          {row.banned ? 'Unban' : 'Ban'}
-                        </Button>
-                      </TableCell>
+                      {userRole === 'Admin' && (
+                        <>
+                          <TableCell>
+                            <IconButton onClick={() => handleViewUser(row.id)} style={{ color: colors.greenAccent[400] }}>
+                              <GrView />
+                            </IconButton>
+                          </TableCell>
+                          <TableCell align="left">
+                            <Button
+                              onClick={() => handleBanToggle(row.id, row.banned)}
+                              variant="contained"
+                              size="small"
+                              style={{
+                                marginLeft: 8,
+                                backgroundColor: row.banned ? colors.redAccent[400] : colors.greenAccent[400],
+                                color: colors.primary[900]
+                              }}
+                            >
+                              {row.banned ? 'Unban' : 'Ban'}
+                            </Button>
+                          </TableCell>
+                        </>
+                      )}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" style={{ color: theme.palette.text.primary }}>
+                    <TableCell colSpan={userRole === 'Admin' ? 9 : 7} align="center" style={{ color: theme.palette.text.primary }}>
                       No data available
                     </TableCell>
                   </TableRow>

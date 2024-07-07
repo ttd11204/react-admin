@@ -6,7 +6,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
-import { fetchBookings, deleteBooking, fetchUserEmailById } from "../../api/bookingApi"; // Thêm fetchUserEmailById
+import { fetchBookings, deleteBooking, fetchUserEmailById } from "../../api/bookingApi";
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -31,7 +31,6 @@ const Bookings = () => {
       try {
         const data = await fetchBookings(page + 1, pageSize, searchQuery);
 
-        // Lấy email cho mỗi booking
         const bookingsWithEmail = await Promise.all(data.items.map(async (booking) => {
           const email = await fetchUserEmailById(booking.id);
           return { ...booking, email };
@@ -87,19 +86,6 @@ const Bookings = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    const yellow = colors.yellow ? colors.yellow[700] : "#FFFF00";
-    const red = colors.redAccent ? colors.redAccent[700] : "#FF0000";
-    switch (status) {
-      case "Pending":
-        return yellow;
-      case "Cancelled":
-        return red;
-      default:
-        return "inherit";
-    }
-  };
-
   return (
     <Box m="20px">
       <Header title="BOOKINGS" subtitle="List of Bookings" />
@@ -128,13 +114,13 @@ const Bookings = () => {
               <TableHead>
                 <TableRow style={{ backgroundColor: colors.blueAccent[700] }}>
                   <TableCell>Booking ID</TableCell>
-                  <TableCell>User Email</TableCell> {/* Đổi tên cột thành User Email */}
+                  <TableCell>User Email</TableCell>
                   <TableCell>Booking Date</TableCell>
                   <TableCell>Booking Type</TableCell>
                   <TableCell>Number of Slots</TableCell>
                   <TableCell>Total Price</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell align="center">Action</TableCell>
+                  {userRole !== 'Staff' && <TableCell align="center">Action</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -142,24 +128,26 @@ const Bookings = () => {
                   bookingsData.map((row) => (
                     <TableRow key={row.bookingId}>
                       <TableCell>{row.bookingId}</TableCell>
-                      <TableCell>{row.email}</TableCell> {/* Hiển thị email thay vì user ID */}
+                      <TableCell>{row.email}</TableCell>
                       <TableCell>{new Date(row.bookingDate).toLocaleString()}</TableCell>
                       <TableCell>{row.bookingType}</TableCell>
                       <TableCell>{row.numberOfSlot}</TableCell>
                       <TableCell>{row.totalPrice}</TableCell>
-                      <TableCell style={{ color: getStatusColor(row.status) }}>{row.status}</TableCell>
-                      <TableCell align="center">
-                        <Box display="flex" justifyContent="center" alignItems="center">
-                          <Button
-                            onClick={() => handleDelete(row.bookingId)}
-                            variant="contained"
-                            size="small"
-                            style={{ backgroundColor: colors.redAccent[400], color: colors.primary[900] }}
-                          >
-                            Delete
-                          </Button>
-                        </Box>
-                      </TableCell>
+                      <TableCell>{row.status}</TableCell>
+                      {userRole !== 'Staff' && (
+                        <TableCell align="center">
+                          <Box display="flex" justifyContent="center" alignItems="center">
+                            <Button
+                              onClick={() => handleDelete(row.bookingId)}
+                              variant="contained"
+                              size="small"
+                              style={{ backgroundColor: colors.redAccent[400], color: colors.primary[900] }}
+                            >
+                              Delete
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 ) : (

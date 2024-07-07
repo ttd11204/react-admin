@@ -2,20 +2,12 @@ import axios from 'axios';
 
 const url = 'https://courtcaller.azurewebsites.net/api';
 
-export const fetchPayments = async (pageNumber = 1, pageSize = 10) => {
+export const fetchPayments = async () => {
   try {
-    const response = await axios.get(`${url}/Payments`, {
-      params: {
-        pageNumber,
-        pageSize
-      }
-    });
+    const response = await axios.get(`${url}/Payments`);
     if (response.data && Array.isArray(response.data)) {
-      const items = response.data;
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
       return {
-        items,
-        totalCount
+        items: response.data
       };
     } else {
       throw new Error('Invalid API response structure');
