@@ -118,7 +118,7 @@ const PaymentDetailFixed = () => {
                 <Grid item xs={12} md={6}>
                   <Box sx={{ backgroundColor: "#E0E0E0", padding: '20px', borderRadius: 2 }}>
                     <Typography variant="h5" gutterBottom color="black">
-                      Invoice
+                      Bill
                     </Typography>
                     <Typography variant="h6" color="black">
                       <strong>Branch ID:</strong> {branchId}
