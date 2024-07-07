@@ -58,3 +58,25 @@ export const deleteCourtById = async (id) => {
     throw error;
   }
 };
+
+// Fetch available courts
+export const fetchAvailableCourts = async (branchId, slotDate, slotStartTime, slotEndTime) => {
+  try {
+    const requestBody = {
+      courtId: null,
+      branchId,
+      slotDate,
+      timeSlot: {
+        slotDate,
+        slotStartTime,
+        slotEndTime,
+      },
+    };
+
+    const response = await axios.post(`${url}/Courts/AvailableCourts`, requestBody);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching available courts:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Grid, Modal, MenuItem, Select } from '@mui/material';
+import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Grid, MenuItem, Select } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -8,7 +8,7 @@ import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
 import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
 import { reserveSlots, createBookingFlex, deleteBookingInFlex } from '../../api/bookingApi';
-import { fetchCourts } from '../../api/courtApi';
+import { fetchCourts, fetchAvailableCourts } from '../../api/courtApi';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import * as signalR from '@microsoft/signalr';
 
@@ -48,6 +48,7 @@ const PaymentDetail = () => {
   const [connection, setConnection] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [courts, setCourts] = useState([]);
+  const [availableCourts, setAvailableCourts] = useState({});
   const [selectedCourts, setSelectedCourts] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [currentSlotIndex, setCurrentSlotIndex] = useState(null);
@@ -62,54 +63,33 @@ const PaymentDetail = () => {
     }
   }, [branchId]);
 
-  //đấm nhau với signalR
-  useEffect(() => {
-    const newConnection = new HubConnectionBuilder()
-      .withUrl("https://courtcaller.azurewebsites.net/timeslothub", {
-        skipNegotiation: true,
-        transport: signalR.HttpTransportType.WebSockets
-      })
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Information)
-      .build();
-
-    newConnection.onreconnecting((error) => {
-      console.log(`Connection lost due to error "${error}". Reconnecting.`);
-      setIsConnected(false);
-    });
-
-    newConnection.onreconnected((connectionId) => {
-      console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
-      setIsConnected(true);
-    });
-
-    newConnection.onclose((error) => {
-      console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
-      setIsConnected(false);
-    });
-
-    console.log('Initializing connection...');
-    setConnection(newConnection);
-  }, []);
-
-  useEffect(() => {
-    if (connection) {
-      const startConnection = async () => {
-        try {
-          await connection.start();
-          console.log('SignalR Connected.');
-          setIsConnected(true);
-        } catch (error) {
-          console.log('Error starting connection:', error);
-          setIsConnected(false);
-          setTimeout(startConnection, 5000);
-        }
-      };
-      startConnection();
+  const handleCourtChange = async (index, slotDate, slotStartTime, slotEndTime) => {
+    try {
+      const availableCourtsData = await fetchAvailableCourts(branchId, slotDate, slotStartTime, slotEndTime);
+      setAvailableCourts((prevState) => ({
+        ...prevState,
+        [index]: availableCourtsData
+      }));
+    } catch (error) {
+      console.error('Error fetching available courts:', error);
     }
-  }, [connection]);
+  };
 
-  // gửi slot để backend signalr nó check
+  const handleCourtSelection = (index, courtId) => {
+    setSelectedCourts((prevState) => ({
+      ...prevState,
+      [index]: courtId
+    }));
+  };
+
+  useEffect(() => {
+    if (branchId && sortedBookingRequests.length > 0) {
+      sortedBookingRequests.forEach((request, index) => {
+        handleCourtChange(index, request.slotDate, request.timeSlot.slotStartTime, request.timeSlot.slotEndTime);
+      });
+    }
+  }, [branchId, sortedBookingRequests]);
+
   const sendUnavailableSlotCheck = async () => {
     if (connection) {
       const lastRequest = bookingRequests[bookingRequests.length - 1];
@@ -185,7 +165,6 @@ const PaymentDetail = () => {
       return;
     }
     try {
-
       await sendUnavailableSlotCheck();
 
       if (availableSlot !== 0 && bookingId) {
@@ -254,7 +233,6 @@ const PaymentDetail = () => {
           }
           setIsLoading(false);
         }
-
       }
 
       if (activeStep === 0) {
@@ -288,7 +266,6 @@ const PaymentDetail = () => {
       } else {
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
       }
-
     } catch (error) {
       console.error('Error sending time slot to server:', error);
       setErrorMessage('Error sending time slot to server. Please try again.');
@@ -346,7 +323,6 @@ const PaymentDetail = () => {
               </Box>
             )}
 
-            {/* Payment method and bill information */}
             <Box sx={{ marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
@@ -369,7 +345,7 @@ const PaymentDetail = () => {
                       Bill
                     </Typography>
                     <Typography variant="h6" color="black">
-                      <strong>Branch ID:</strong> {branchId} {/* Added to display branch ID */}
+                      <strong>Branch ID:</strong> {branchId} {/* Thêm để hiển thị branch ID */}
                     </Typography>
                     <Typography variant="h6" color="black" sx={{ marginTop: '20px' }}>
                       <strong>Time Slot:</strong>
@@ -386,18 +362,18 @@ const PaymentDetail = () => {
                           <strong>End Time:</strong> {request.timeSlot.slotEndTime}
                         </Typography>
                         <Typography variant="body1" color="black">
-                          <strong>Price:</strong> {request.price} USD {/* Added to display slot price */}
+                          <strong>Price:</strong> {request.price} USD {/* Thêm để hiển thị giá slot */}
                         </Typography>
                         <FormControl fullWidth>
                           <Select
                             value={selectedCourts[index] || ''}
                             displayEmpty
-                            onChange={(e) => setSelectedCourts({ ...selectedCourts, [index]: e.target.value })}
+                            onChange={(e) => handleCourtSelection(index, e.target.value)}
                           >
                             <MenuItem value="">
                               <em>Choose Court</em>
                             </MenuItem>
-                            {courts.map(court => (
+                            {availableCourts[index] && availableCourts[index].map(court => (
                               <MenuItem key={court.courtId} value={court.courtId}>{court.courtName}</MenuItem>
                             ))}
                           </Select>
@@ -406,7 +382,7 @@ const PaymentDetail = () => {
                     ))}
                     <Divider sx={{ marginY: '10px' }} />
                     <Typography variant="h6" color="black">
-                      <strong>Total Price:</strong> {totalPrice} USD {/* Added to display total price */}
+                      <strong>Total Price:</strong> {totalPrice} USD {/* Thêm để hiển thị tổng giá */}
                     </Typography>
                   </Box>
                 </Grid>
@@ -415,7 +391,7 @@ const PaymentDetail = () => {
           </>
         );
       case 1:
-        return <LoadingPage />; // Show loading page
+        return <LoadingPage />; // Hiển thị trang loading
       default:
         return 'Unknown step';
     }
