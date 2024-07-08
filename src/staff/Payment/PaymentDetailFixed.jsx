@@ -41,6 +41,8 @@ const PaymentDetailFixed = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  console.log('bookdata: ', branchId, bookingRequests, totalPrice, numberOfMonths, daysOfWeek, startDate, bookingRequests[0].slotDate, slotStartTime, slotEndTime);
+
   const handleNext = async () => {
     if (activeStep === 0) {
       setIsLoading(true);
@@ -53,6 +55,7 @@ const PaymentDetailFixed = () => {
           formattedStartDate,
           userId,
           branchId,
+          bookingRequests[0].slotDate,
           slotStartTime,
           slotEndTime
         );
