@@ -53,6 +53,57 @@ const PaymentDetail = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [currentSlotIndex, setCurrentSlotIndex] = useState(null);
 
+    //đấm nhau với signalR
+    useEffect(() => {
+      const newConnection = new HubConnectionBuilder()
+        .withUrl("https://localhost:7104/timeslothub", {
+          skipNegotiation: true,
+          transport: signalR.HttpTransportType.WebSockets
+        })
+        .withAutomaticReconnect()
+        .configureLogging(LogLevel.Information)
+        .build();
+  
+      newConnection.onreconnecting((error) => {
+        console.log(`Connection lost due to error "${error}". Reconnecting.`);
+        setIsConnected(false);
+      });
+  
+      newConnection.onreconnected((connectionId) => {
+        console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
+        setIsConnected(true);
+      });
+  
+      newConnection.onclose((error) => {
+        console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
+        setIsConnected(false);
+      });
+  
+      console.log('Initializing connection...');
+      setConnection(newConnection);
+    }, []);
+  
+    useEffect(() => {
+      if (connection) {
+        const startConnection = async () => {
+          try {
+            await connection.start();
+            console.log('SignalR Connected.');
+            setIsConnected(true);
+          } catch (error) {
+            console.log('Error starting connection:', error);
+            setIsConnected(false);
+            setTimeout(startConnection, 5000);
+          }
+        };
+        startConnection();
+      }
+    }, [connection]);
+  
+  
+    // gửi slot để backend signalr nó check
+    
+
   useEffect(() => {
     if (branchId) {
       const loadCourts = async () => {
