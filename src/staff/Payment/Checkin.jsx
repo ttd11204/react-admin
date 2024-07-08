@@ -26,7 +26,7 @@ const Checkin = () => {
                 console.log('Booking ID:', bookingData.BookingId);
                 console.log('QR Code Base64:', base64Data);
                 
-                const response = await axios.post('https://courtcaller.azurewebsites.net/api/Bookings/checkin/qr', {
+                const response = await axios.post('https://courtcaller.azurewebsites.net/api/TimeSlots/checkin/qr', {
                     QRCodeData: data.text 
                 });
                 setResult(response.data);

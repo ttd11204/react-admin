@@ -168,6 +168,7 @@ const ReserveSlot = () => {
     setLoading(false);
   };
 
+
   const handleNextWeek = async () => {
     setLoading(true);
     const newWeekStart = dayjs(startOfWeek).add(1, 'week').format('YYYY-MM-DD');
@@ -230,7 +231,9 @@ const ReserveSlot = () => {
   
 useEffect(() => {
   const newConnection = new HubConnectionBuilder()
-      .withUrl("https://courtcaller.azurewebsites.net/timeslothub")
+      .withUrl("https://localhost:7104/timeslothub", {
+        transport: signalR.HttpTransportType.ServerSentEvents 
+      })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information) 
       .build();
