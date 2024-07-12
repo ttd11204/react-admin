@@ -51,8 +51,10 @@ const PaymentDetail = () => {
   const [courts, setCourts] = useState([]);
   const [availableCourts, setAvailableCourts] = useState({});
   const [selectedCourts, setSelectedCourts] = useState({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [currentSlotIndex, setCurrentSlotIndex] = useState(null);
+  const [signalRCourt, setSignalRCourt] = useState(null);
+  const [eventCourt, setEventCourt] = useState(0);
+
+
   //fetch chỉ 1 lần
   const isFetchCourt = useRef(false);
 
@@ -60,7 +62,6 @@ const PaymentDetail = () => {
     useEffect(() => {
       const newConnection = new HubConnectionBuilder()
         .withUrl("https://courtcaller.azurewebsites.net/timeslothub", {
-          skipNegotiation: true,
           transport: signalR.HttpTransportType.WebSockets
         })
         .withAutomaticReconnect()
@@ -80,6 +81,12 @@ const PaymentDetail = () => {
       newConnection.onclose((error) => {
         console.log(`Connection closed due to error "${error}". Try refreshing this page to restart the connection.`);
         setIsConnected(false);
+      });
+
+      newConnection.on("RefreshCourt", () => {
+        console.log("RefreshCourt event received.");
+        
+        setEventCourt(prev => prev + 1);
       });
   
       console.log('Initializing connection...');
@@ -144,12 +151,14 @@ const PaymentDetail = () => {
       });
       isFetchCourt.current = true;
     }
-  }, [branchId]);
+  }, [eventCourt]);
 
   const sendUnavailableSlotCheck = async () => {
     if (connection) {
       const lastRequest = bookingRequests[bookingRequests.length - 1];
+     
       const slotCheckModel = {
+        courtId: signalRCourt,
         branchId: branchId,
         slotDate: lastRequest.slotDate,
         timeSlot: {
@@ -264,9 +273,7 @@ const PaymentDetail = () => {
 
           id = createBookingTypeFlex.bookingId;
           const booking = await reserveSlots(userInfo.userId, bookingForm);
-
-          console.log('Booking:', booking);
-
+        
           // If reservation is successful, continue to the next step or navigate
           setActiveStep((prevActiveStep) => prevActiveStep + 1);
           const tokenResponse = await generatePaymentToken(booking.bookingId);
@@ -303,10 +310,10 @@ const PaymentDetail = () => {
               slotEndTime: request.timeSlot.slotEndTime,
             },
           }));
-
-          console.log('Formatted Requests:', bookingForm);
-
+          setSignalRCourt(bookingForm.courtId);
           const booking = await reserveSlots(userInfo.userId, bookingForm);
+         
+          console.log('Booking:', booking);
           const bookingId = booking.bookingId;
           const tokenResponse = await generatePaymentToken(bookingId);
           const token = tokenResponse.token;
