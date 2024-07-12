@@ -64,34 +64,34 @@ export const PaymentConfirmed = ({
             <Box sx={{ textAlign: 'left' }}>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
-                  <Typography variant="body1" color="black">
+                  {/* <Typography variant="body1" color="black">
                     <strong>Email:</strong>
-                  </Typography>
+                  </Typography> */}
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body1" color="black" sx={{ textAlign: 'right' }}>
+                  {/* <Typography variant="body1" color="black" sx={{ textAlign: 'right' }}>
                     {userInfo.email || 'N/A'}
-                  </Typography>
+                  </Typography> */}
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body1" color="black">
+                  {/* <Typography variant="body1" color="black">
                     <strong>Branch ID:</strong>
-                  </Typography>
+                  </Typography> */}
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body1" color="black" sx={{ textAlign: 'right' }}>
+                  {/* <Typography variant="body1" color="black" sx={{ textAlign: 'right' }}>
                     {branchId}
-                  </Typography>
+                  </Typography> */}
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body1" color="black">
+                  {/* <Typography variant="body1" color="black">
                     <strong>Court ID:</strong>
-                  </Typography>
+                  </Typography> */}
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body1" color="black" sx={{ textAlign: 'right' }}>
+                  {/* <Typography variant="body1" color="black" sx={{ textAlign: 'right' }}>
                     {courtId}
-                  </Typography>
+                  </Typography> */}
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body1" color="black">

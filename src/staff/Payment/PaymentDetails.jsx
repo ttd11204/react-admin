@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useRef} from 'react';
 import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button, TextField, Stepper, Step, StepLabel, Typography, Divider, Grid, MenuItem, Select } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -30,6 +30,7 @@ const theme = createTheme({
 const steps = ['Payment Details', 'Payment Confirmation'];
 
 const PaymentDetail = () => {
+
   const location = useLocation();
   const navigate = useNavigate();
   const { branchId, bookingRequests, totalPrice, userChecked, userInfo: locationUserInfo, type, availableSlot, bookingId, numberOfSlot } = location.state || {};
@@ -52,11 +53,13 @@ const PaymentDetail = () => {
   const [selectedCourts, setSelectedCourts] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [currentSlotIndex, setCurrentSlotIndex] = useState(null);
+  //fetch chỉ 1 lần
+  const isFetchCourt = useRef(false);
 
     //đấm nhau với signalR
     useEffect(() => {
       const newConnection = new HubConnectionBuilder()
-        .withUrl("https://localhost:7104/timeslothub", {
+        .withUrl("https://courtcaller.azurewebsites.net/timeslothub", {
           skipNegotiation: true,
           transport: signalR.HttpTransportType.WebSockets
         })
@@ -134,12 +137,14 @@ const PaymentDetail = () => {
   };
 
   useEffect(() => {
-    if (branchId && sortedBookingRequests.length > 0) {
+    if (branchId && sortedBookingRequests.length > 0 && !isFetchCourt.current) {
       sortedBookingRequests.forEach((request, index) => {
         handleCourtChange(index, request.slotDate, request.timeSlot.slotStartTime, request.timeSlot.slotEndTime);
+        console.log ("branch", branchId , "sort là ", sortedBookingRequests);
       });
+      isFetchCourt.current = true;
     }
-  }, [branchId, sortedBookingRequests]);
+  }, [branchId]);
 
   const sendUnavailableSlotCheck = async () => {
     if (connection) {

@@ -231,7 +231,7 @@ const ReserveSlot = () => {
   
 useEffect(() => {
   const newConnection = new HubConnectionBuilder()
-      .withUrl("https://localhost:7104/timeslothub", {
+      .withUrl("https://courtcaller.azurewebsites.net/timeslothub", {
         transport: signalR.HttpTransportType.ServerSentEvents 
       })
       .withAutomaticReconnect()
