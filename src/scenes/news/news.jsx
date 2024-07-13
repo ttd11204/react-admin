@@ -37,10 +37,8 @@ const News = () => {
     const getNewsData = async () => {
       try {
         const data = await fetchNews(page + 1, pageSize, searchQuery);
-        // Lọc những bài viết có trạng thái là "Deleted"
-        const filteredData = data.items.filter(news => news.status !== 'Deleted');
-        setNewsData(filteredData);
-        setRowCount(data.totalCount - filteredData.length); // Cập nhật số lượng bài viết sau khi lọc
+        setNewsData(data.items);
+        setRowCount(data.totalCount);
       } catch (err) {
         console.error('Failed to fetch news data', err);
       }
@@ -78,10 +76,8 @@ const News = () => {
     try {
       await deleteNews(newsId);
       const data = await fetchNews(page + 1, pageSize, searchQuery);
-      // Lọc những bài viết có trạng thái là "Deleted"
-      const filteredData = data.items.filter(news => news.status !== 'Deleted');
-      setNewsData(filteredData);
-      setRowCount(data.totalCount - filteredData.length); // Cập nhật số lượng bài viết sau khi lọc
+      setNewsData(data.items);
+      setRowCount(data.totalCount);
     } catch (error) {
       console.error('Failed to delete news:', error);
       alert('Failed to delete news. Please try again.');
@@ -137,10 +133,8 @@ const News = () => {
       setPreviewImage(null);
 
       const data = await fetchNews(page + 1, pageSize, searchQuery);
-      // Lọc những bài viết có trạng thái là "Deleted"
-      const filteredData = data.items.filter(news => news.status !== 'Deleted');
-      setNewsData(filteredData);
-      setRowCount(data.totalCount - filteredData.length); // Cập nhật số lượng bài viết sau khi lọc
+      setNewsData(data.items);
+      setRowCount(data.totalCount);
     } catch (error) {
       console.error('Error creating news:', error);
       alert('Failed to create news. Please try again.');
@@ -282,7 +276,6 @@ const News = () => {
             onChange={(e) => setStatus(e.target.value)}
             margin="dense"
           >
-            
             <MenuItem value="Active">Active</MenuItem>
             <MenuItem value="Deleted">Deleted</MenuItem>
           </Select>
