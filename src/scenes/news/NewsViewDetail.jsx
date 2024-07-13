@@ -43,12 +43,12 @@ const NewsViewDetail = () => {
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-      if (file.size > 5 * 1024 * 1024) { // Limit 5MB
+      if (file.size > 5 * 1024 * 1024) { // Giới hạn 5MB
         console.error('File size exceeds 5MB');
         return;
       }
       setImage(file);
-      setImageRef(ref(storageDb, `NewsImage/${v4()}`));
+      setImageRef(ref(storageDb, `NewsImages/${v4()}`));
       const previewImage1 = URL.createObjectURL(file);
       setPreviewImage(previewImage1);
     } else {
@@ -58,39 +58,58 @@ const NewsViewDetail = () => {
 
   const handleSave = async () => {
     try {
+      console.log('News ID:', id); // Thêm log để kiểm tra id
       let imageUrl = news.image;
       if (image && imageRef) {
         if (news.image) {
           const oldPath = news.image.split('court-callers.appspot.com/o/')[1].split('?')[0];
           const imagebefore = ref(storageDb, decodeURIComponent(oldPath));
           await deleteObject(imagebefore);
+          console.log('Deleted old image from storage:', oldPath);
         }
-
+  
         const snapshot = await uploadBytes(imageRef, image);
         imageUrl = await getDownloadURL(imageRef);
+        console.log('Uploaded new image and got URL:', imageUrl);
       }
-
+  
       const updatedNews = {
-        ...news,
-        image: imageUrl,
+        newId: news.newId,
+        title: news.title,
+        content: news.content,
+        publicationDate: news.publicationDate,
         status: news.status === 'Active' || news.status === 'Deleted' ? news.status : 'Active',
+        isHomepageSlideshow: news.isHomepageSlideshow,
+        image: imageUrl,
+        imageFile: image  // Thêm trường này để gửi tệp ảnh
       };
-
+  
+      console.log('Updated news data:', updatedNews);
+  
       await updateNews(id, updatedNews);
+
+       // Update the state with the new image URL immediately
+       setNews((prevNews) => ({
+        ...prevNews,
+        image: imageUrl
+      }));
+
       URL.revokeObjectURL(previewImage);
       setPreviewImage(null);
       setEditMode(false);
     } catch (err) {
       setError(`Failed to update news details: ${err.message}`);
+      console.error('Failed to update news details:', err);
     }
   };
+  
 
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
   };
 
   const handleBack = () => {
-    navigate(-1); // Navigate back to the previous page
+    navigate(-1); // Quay lại trang trước
   };
 
   if (!news) {

@@ -72,22 +72,34 @@ export const deleteNews = async (newsId) => {
 export const updateNews = async (newsId, newsData) => {
   try {
     const formData = new FormData();
-    if (newsData.image) {
-      formData.append('NewsImage', newsData.image);
+    if (newsData.imageFile) {
+      formData.append('NewsImage', newsData.imageFile);
     }
 
-    const response = await axios.put(`${url}/News/EditNews`, formData, {
-      params: {
-        id: newsId,
-        Title: newsData.title,
-        Content: newsData.content,
-        Status: newsData.status,
-        IsHomepageSlideshow: newsData.isHomepageSlideshow
-      },
+    // Add other fields to formData
+    formData.append('Title', newsData.title);
+    formData.append('Content', newsData.content);
+    formData.append('Status', newsData.status);
+    formData.append('IsHomepageSlideshow', newsData.isHomepageSlideshow);
+
+    if (newsData.imageUrl) {
+      formData.append('Image', newsData.imageUrl);
+    }
+
+    // Logging the form data
+    console.log("FormData entries:");
+    for (let pair of formData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+
+    const response = await axios.put(`${url}/News/EditNews?id=${newsId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
+
+    // Logging the response
+    console.log("API response:", response.data);
 
     return response.data;
   } catch (error) {
