@@ -33,6 +33,8 @@ import FlexibleBooking from "./staff/calendar/flex/FlexibleBooking";
 import FixedBooking from "./staff/calendar/fixed/Fix";
 import PaymentDetailFixed from "./staff/Payment/PaymentDetailFixed";
 import BranchDetail from "./scenes/branches/BranchDetail";
+import News from "./scenes/news/news";
+import NewsViewDetail from "./scenes/news/NewsViewDetail";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -66,6 +68,8 @@ function App() {
             <Route path="BranchDetail/:branchId" element={<BranchDetail />} />
             <Route path="TimeSlots" element={<TimeSlots />} />
             <Route path="Bookings" element={<Bookings />} />
+            <Route path="News" element={<News />} />
+            <Route path="NewsViewDetail/:id" element={<NewsViewDetail />} />
             <Route path="faq" element={<FAQ />} />
             <Route path="bar" element={<Bar />} />
             <Route path="pie" element={<Pie />} />
