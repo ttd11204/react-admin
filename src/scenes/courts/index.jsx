@@ -3,7 +3,7 @@ import { Box, Button, Typography, useTheme, Table, TableBody, TableCell, TableCo
 import ReactPaginate from "react-paginate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
-import { fetchCourts, createCourt, updateCourtById, deleteCourtById } from "../../api/courtApi";
+import { fetchCourtByBranchId, createCourt, updateCourtById, deleteCourtById } from "../../api/courtApi";
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -40,11 +40,11 @@ const Courts = () => {
       setError("Branch ID is required to view courts.");
       return;
     }
-
+  
     const getCourtsData = async () => {
       try {
-        const data = await fetchCourts(page + 1, pageSize, searchId);
-        const filteredData = data.items.filter(
+        const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
+        const filteredData = data.filter(
           (court) => court.branchId === branchIdQuery
         );
         const numberedData = filteredData.map((item, index) => ({
@@ -59,6 +59,7 @@ const Courts = () => {
     };
     getCourtsData();
   }, [page, pageSize, branchIdQuery, searchId]);
+  
 
   const handlePageClick = (event) => {
     const newPage = event.selected;
@@ -93,8 +94,8 @@ const Courts = () => {
   const handleDelete = async (courtId) => {
     try {
       await deleteCourtById(courtId);
-      const data = await fetchCourts(page + 1, pageSize, searchId);
-      const filteredData = data.items.filter(
+      const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
+      const filteredData = data.filter(
         (court) => court.branchId === branchIdQuery
       );
       const numberedData = filteredData.map((item, index) => ({
@@ -107,11 +108,12 @@ const Courts = () => {
       setError(`Failed to delete court: ${err.message}`);
     }
   };
+  
 
   const handleSearch = async () => {
     try {
-      const data = await fetchCourts(page + 1, pageSize, searchId);
-      const filteredData = data.items.filter(
+      const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
+      const filteredData = data.filter(
         (court) => court.branchId === branchIdQuery
       );
       const numberedData = filteredData.map((item, index) => ({
@@ -124,6 +126,7 @@ const Courts = () => {
       setError(`Failed to fetch court data: ${err.message}`);
     }
   };
+  
 
   const handleKeyDown = (event) => {
     if (event.key === "Enter") {
@@ -144,8 +147,8 @@ const Courts = () => {
         await createCourt(courtData);
       }
       setModalOpen(false);
-      const data = await fetchCourts(page + 1, pageSize, searchId);
-      const filteredData = data.items.filter(
+      const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
+      const filteredData = data.filter(
         (court) => court.branchId === branchIdQuery
       );
       const numberedData = filteredData.map((item, index) => ({
@@ -166,6 +169,7 @@ const Courts = () => {
       setError(`Failed to save court: ${err.message}`);
     }
   };
+  
 
   return (
     <Box m="20px">

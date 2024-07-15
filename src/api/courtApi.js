@@ -80,3 +80,19 @@ export const fetchAvailableCourts = async (branchId, slotDate, slotStartTime, sl
     throw error;
   }
 };
+
+export const fetchCourtByBranchId = async (branchId, pageNumber = 1, pageSize = 10, searchQuery = '') => {
+  try {
+    const params = { pageNumber, pageSize, searchQuery, branchId };
+    const response = await axios.get(`${url}/Courts/GetCourtsByBranchId`, { params });
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else {
+      throw new Error('Invalid API response structure');
+    }
+  } catch (error) {
+    console.error('Error fetching branches data:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
