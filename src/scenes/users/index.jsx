@@ -71,6 +71,17 @@ const Users = () => {
     getTeamData(page, pageSize, searchQuery);
   }, [page, pageSize, searchQuery, getTeamData]);
 
+  useEffect(() => {
+    const validateEmailAsync = async () => {
+      if (newUser.email) {
+        const emailValidationResult = await validateEmail(newUser.email);
+        setEmailValidation(emailValidationResult);
+      }
+    };
+
+    validateEmailAsync();
+  }, [newUser.email]);
+
   const handlePageClick = useCallback((event) => {
     const newPage = event.selected;
     setPage(newPage);
@@ -115,17 +126,16 @@ const Users = () => {
   const handleCreateUserChange = useCallback((e) => {
     const { name, value } = e.target;
     setNewUser((prevState) => ({ ...prevState, [name]: value }));
-
+  
     if (name === 'fullName') {
       setUsernameValidation(validateFullName(value));
-    } else if (name === 'email') {
-      setEmailValidation(validateEmail(value));
     } else if (name === 'password') {
       setPasswordValidation(validatePassword(value));
     } else if (name === 'confirmPassword') {
       setConfirmPasswordValidation(validateConfirmPassword(newUser.password, value));
     }
   }, [newUser.password]);
+  
 
   const handleCreateUserSubmit = useCallback(async (e) => {
     e.preventDefault();
