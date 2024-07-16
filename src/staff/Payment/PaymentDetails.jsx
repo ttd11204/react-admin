@@ -394,10 +394,10 @@ const PaymentDetail = () => {
                       <PaymentIcon sx={{ marginRight: '8px' }} /> Payment Method
                     </Typography>
                     <FormControl component="fieldset">
-                      <FormLabel component="legend" sx={{ color: 'black' }}>Select Payment Method</FormLabel>
+                      <FormLabel component="legend" sx={{ color: 'black' }}>Payment Method</FormLabel>
                       <RadioGroup aria-label="payment method" name="paymentMethod">
-                        <FormControlLabel value="cash" control={<Radio />} label="Cash" sx={{ color: 'black' }} />
-                        <FormControlLabel value="creditCard" control={<Radio />} label="Credit Card" sx={{ color: 'black' }} />
+                        {/* <FormControlLabel value="cash" control={<Radio />} label="Cash" sx={{ color: 'black' }} /> */}
+                        <FormControlLabel value="creditCard" control={<Radio />} label="Credit Card" sx={{ color: 'black' }} checked />
                       </RadioGroup>
                     </FormControl>
                   </Box>
