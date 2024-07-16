@@ -153,6 +153,33 @@ const PaymentDetail = () => {
     }
   }, [eventCourt]);
 
+  const sendAvailableSlotCheck = async () => {
+    if (connection) {
+      const lastRequest = bookingRequests[bookingRequests.length - 1];
+     
+      const slotCheckModel = {
+        
+        branchId: branchId,
+        slotDate: lastRequest.slotDate,
+        timeSlot: {
+          slotDate: lastRequest.slotDate,
+          slotStartTime: lastRequest.timeSlot.slotStartTime,
+          slotEndTime: lastRequest.timeSlot.slotEndTime,
+        }
+      };
+     
+      
+      try {
+        await connection.send('RefreshCourt', slotCheckModel);
+        console.log('Data sent to server:', slotCheckModel);
+      } catch (e) {
+        console.log('Error sending data to server:', e);
+      }
+    } else {
+      alert('No connection to server yet.');
+    }
+  };
+
   const sendUnavailableSlotCheck = async () => {
     if (connection) {
       const lastRequest = bookingRequests[bookingRequests.length - 1];
@@ -314,6 +341,7 @@ const PaymentDetail = () => {
           const booking = await reserveSlots(userInfo.userId, bookingForm);
          
           console.log('Booking:', booking);
+          await sendAvailableSlotCheck();
           const bookingId = booking.bookingId;
           const tokenResponse = await generatePaymentToken(bookingId);
           const token = tokenResponse.token;
