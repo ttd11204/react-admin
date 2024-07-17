@@ -6,6 +6,7 @@ import { tokens } from "../../theme";
 import { fetchCourtByBranchId, createCourt, updateCourtById, deleteCourtById } from "../../api/courtApi";
 import Header from "../../components/Header";
 import SearchIcon from "@mui/icons-material/Search";
+import { validateRequired } from "../formValidation";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 
@@ -28,6 +29,7 @@ const Courts = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentCourtId, setCurrentCourtId] = useState(null);
+  const [errors, setErrors] = useState({});
   const [courtData, setCourtData] = useState({
     branchId: branchIdQuery,
     courtName: "",
@@ -137,9 +139,31 @@ const Courts = () => {
   const handleModalChange = (e) => {
     const { name, value } = e.target;
     setCourtData({ ...courtData, [name]: value });
+
+     // Kiểm tra và xóa lỗi tương ứng nếu có
+    if (errors[name]) {
+    const updatedErrors = { ...errors };
+    if (validateRequired(value).isValid) {
+      delete updatedErrors[name];
+    } else {
+      updatedErrors[name] = validateRequired(value).message;
+    }
+    setErrors(updatedErrors);
+  }
   };
 
   const handleModalSave = async () => {
+    const validationErrors = {};
+
+    if (!validateRequired(courtData.courtName).isValid) {
+      validationErrors.courtName = validateRequired(courtData.courtName).message;
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     try {
       if (isEditing) {
         await updateCourtById(currentCourtId, courtData);
@@ -351,6 +375,8 @@ const Courts = () => {
             name="courtName"
             value={courtData.courtName}
             onChange={handleModalChange}
+            error={!!errors.courtName}
+            helperText={errors.courtName}
           />
           {/* <TextField
             fullWidth
