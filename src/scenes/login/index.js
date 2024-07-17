@@ -87,6 +87,10 @@ const Login = () => {
     }
   };
 
+  const handleForgotPassword = () => {
+    navigate("/forgot-pass");
+  }
+
   return (
     <div className="login-component">
       <div className="container" id="container">
