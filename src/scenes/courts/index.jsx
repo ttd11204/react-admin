@@ -228,7 +228,7 @@ const Courts = () => {
                   <TableCell>Court ID</TableCell>
                   <TableCell>Branch ID</TableCell>
                   <TableCell>Court Name</TableCell>
-                  <TableCell>Court Picture</TableCell>
+                  {/* <TableCell>Court Picture</TableCell> */}
                   <TableCell>Status</TableCell>
                   <TableCell align="center">Action</TableCell>
                 </TableRow>
@@ -240,7 +240,7 @@ const Courts = () => {
                       <TableCell>{row.courtId}</TableCell>
                       <TableCell>{row.branchId}</TableCell>
                       <TableCell>{row.courtName}</TableCell>
-                      <TableCell>{row.courtPicture}</TableCell>
+                      {/* <TableCell>{row.courtPicture}</TableCell> */}
                       <TableCell>{row.status}</TableCell>
                       <TableCell align="center">
                         <Box
@@ -352,14 +352,14 @@ const Courts = () => {
             value={courtData.courtName}
             onChange={handleModalChange}
           />
-          <TextField
+          {/* <TextField
             fullWidth
             margin="normal"
             label="Court Picture"
             name="courtPicture"
             value={courtData.courtPicture}
             onChange={handleModalChange}
-          />
+          /> */}
           <TextField
             fullWidth
             margin="normal"
