@@ -478,8 +478,8 @@ const BranchDetail = () => {
                             alt={`Thumbnail ${index}`}
                             width="50"
                             height="50"
-                            style={{ cursor: 'pointer', border: currentImageIndex === index ? '2px solid red' : 'none' }}
-                            onClick={() => handleOpenModal(index)}
+                            style={{ cursor: 'pointer', border: selectedImages.includes(index) ? '2px solid red' : 'none' }}
+                            onClick={() => handleImageSelection(index)}
                           />
                         </Box>
                       ))}
