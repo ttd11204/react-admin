@@ -59,8 +59,11 @@ const NewsViewDetail = () => {
   const handleSave = async () => {
     try {
       console.log('News ID:', id); // Thêm log để kiểm tra id
-      let imageUrl = news.image;
+      let imageUrl = news.image; // Giữ URL ảnh cũ
+  
+      // Nếu có ảnh mới được cung cấp
       if (image && imageRef) {
+        // Nếu có ảnh hiện tại, xóa ảnh cũ
         if (news.image) {
           const oldPath = news.image.split('court-callers.appspot.com/o/')[1].split('?')[0];
           const imagebefore = ref(storageDb, decodeURIComponent(oldPath));
@@ -68,40 +71,54 @@ const NewsViewDetail = () => {
           console.log('Deleted old image from storage:', oldPath);
         }
   
+        // Tải lên ảnh mới
         const snapshot = await uploadBytes(imageRef, image);
         imageUrl = await getDownloadURL(imageRef);
         console.log('Uploaded new image and got URL:', imageUrl);
+  
+        // Cập nhật chi tiết tin tức với ảnh mới
+        await updateNews(id, {
+          newId: news.newId,
+          title: news.title,
+          content: news.content,
+          publicationDate: news.publicationDate,
+          status: news.status === 'Active' || news.status === 'Deleted' ? news.status : 'Active',
+          isHomepageSlideshow: news.isHomepageSlideshow,
+          image: imageUrl,
+          imageFile: image
+        });
+  
+        // Cập nhật trạng thái với URL ảnh mới ngay lập tức
+        setNews((prevNews) => ({
+          ...prevNews,
+          image: imageUrl
+        }));
+      } else {
+        // Cập nhật chi tiết tin tức mà không thay đổi ảnh
+        await updateNews(id, {
+          newId: news.newId,
+          title: news.title,
+          content: news.content,
+          publicationDate: news.publicationDate,
+          status: news.status === 'Active' || news.status === 'Deleted' ? news.status : 'Active',
+          isHomepageSlideshow: news.isHomepageSlideshow,
+          image: imageUrl,
+          imageFile: null
+        });
       }
   
-      const updatedNews = {
-        newId: news.newId,
-        title: news.title,
-        content: news.content,
-        publicationDate: news.publicationDate,
-        status: news.status === 'Active' || news.status === 'Deleted' ? news.status : 'Active',
-        isHomepageSlideshow: news.isHomepageSlideshow,
-        image: imageUrl,
-        imageFile: image  // Thêm trường này để gửi tệp ảnh
-      };
+      if (previewImage) {
+        URL.revokeObjectURL(previewImage);
+        setPreviewImage(null);
+      }
   
-      console.log('Updated news data:', updatedNews);
-  
-      await updateNews(id, updatedNews);
-
-       // Update the state with the new image URL immediately
-       setNews((prevNews) => ({
-        ...prevNews,
-        image: imageUrl
-      }));
-
-      URL.revokeObjectURL(previewImage);
-      setPreviewImage(null);
       setEditMode(false);
     } catch (err) {
       setError(`Failed to update news details: ${err.message}`);
       console.error('Failed to update news details:', err);
     }
   };
+  
   
 
   const handleEditToggle = () => {

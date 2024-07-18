@@ -7,7 +7,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { fetchReviews, updateReview, deleteReview, createReview, fetchUserEmailById } from "../../api/reviewApi";
+import { fetchReviews, updateReview, deleteReview, fetchUserEmailById } from "../../api/reviewApi";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 
@@ -18,10 +18,8 @@ const Reviews = () => {
   const [userEmails, setUserEmails] = useState({});
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [currentReview, setCurrentReview] = useState({ reviewId: "", reviewText: "", rating: 5, id: "", branchId: "" });
-  const [newReview, setNewReview] = useState({ reviewText: "", rating: 5, id: "", branchId: "" });
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -111,19 +109,6 @@ const Reviews = () => {
     setSearchParams({ pageNumber: 1, pageSize, searchQuery });
   };
 
-  const handleCreateNew = async () => {
-    try {
-      await createReview(newReview);
-      setOpenCreateModal(false);
-      const reviewsData = await fetchReviews(page, pageSize, searchQuery);
-      setReviewsData(reviewsData.items);
-      setRowCount(reviewsData.totalCount);
-      setNewReview({ reviewText: "", rating: 5, id: "", branchId: "" });
-    } catch (err) {
-      setError(`Failed to create new review: ${err.message}`);
-    }
-  };
-
   const handlePageClick = (event) => {
     const newPage = event.selected + 1;
     setSearchParams({ pageNumber: newPage, pageSize, searchQuery });
@@ -156,13 +141,6 @@ const Reviews = () => {
                 <SearchIcon />
               </IconButton>
             </Box>
-            <Button 
-              variant="contained" 
-              style={{ marginLeft: 8, backgroundColor: colors.greenAccent[400], color: colors.primary[900] }} 
-              onClick={() => setOpenCreateModal(true)}
-            >
-              Create New
-            </Button>
           </Box>
 
           <TableContainer component={Paper}>
@@ -242,65 +220,6 @@ const Reviews = () => {
           )}
         </Box>
       )}
-      <Modal open={openCreateModal} onClose={() => setOpenCreateModal(false)}>
-        <Box sx={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 400,
-                bgcolor: 'background.paper',
-                border: '2px solid #000',
-                boxShadow: 24,
-                p: 4,
-              }}>
-          <Typography variant="h6" mb={2}>
-            Create New Review
-          </Typography>
-          <TextField 
-            fullWidth 
-            variant="outlined" 
-            label="Review Text" 
-            value={newReview.reviewText} 
-            onChange={(e) => setNewReview({ ...newReview, reviewText: e.target.value })} 
-            margin="normal" 
-          />
-          <TextField 
-            fullWidth 
-            variant="outlined" 
-            label="Rating" 
-            type="number" 
-            value={newReview.rating} 
-            onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })} 
-            margin="normal" 
-          />
-          <TextField 
-            fullWidth 
-            variant="outlined" 
-            label="Branch ID" 
-            value={newReview.branchId} 
-            onChange={(e) => setNewReview({ ...newReview, branchId: e.target.value })} 
-            margin="normal" 
-          />
-          <TextField 
-            fullWidth 
-            variant="outlined" 
-            label="User ID" 
-            value={newReview.id} 
-            onChange={(e) => setNewReview({ ...newReview, id: e.target.value })} 
-            margin="normal" 
-          />
-          <Box display="flex" justifyContent="space-between" mt={2}>
-            <Button variant="contained" color="secondary" onClick={() => setOpenCreateModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" onClick={handleCreateNew}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-
       <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
         <Box sx={{
                 position: 'absolute',
@@ -348,6 +267,7 @@ const Reviews = () => {
             value={currentReview.id} 
             onChange={(e) => handleFieldChange("id", e.target.value )} 
             margin="normal" 
+            disabled 
           />
           <Box display="flex" justifyContent="space-between" mt={2}>
             <Button variant="contained" color="secondary" onClick={() => setOpenEditModal(false)}>
