@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { forgetPassword } from "../../api/userApi";
-// import "./style.scss";
+
+import "./forgetPassCss.css";
 import ClipLoader from "react-spinners/ClipLoader";
-import { validateEmail } from "../formValidation";
+import { validateEmailForgetPass } from "../formValidation";
 
 const ForgotPass = () => {
   const [email, setEmail] = useState("");
@@ -22,14 +23,14 @@ const ForgotPass = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-   const emailValidation = await validateEmail(email);
+   const emailValidation = await validateEmailForgetPass(email);
 
     setEmailValidation(emailValidation);
 
     if (!emailValidation.isValid) {
       setMessage("Please try again");
       setMessageType("error");
-      return;
+    
     }
 
     setLoading(true);
@@ -42,9 +43,16 @@ const ForgotPass = () => {
       } else {
         setError(response.message);
         setSuccess("");
+        console.log("error in forget password", response.message);
       }
     } catch (error) {
-      console.log("error in forget password", error);
+        if (error.response && error.response.data && error.response.data.message) {
+            console.log("Error fetching email:", error.response.data.message);
+            setError(error.response.data.message);
+          } else {
+            console.log("Error fetching email:", error.message);
+            setError("An unexpected error occurred");
+          }
     } finally {
       setLoading(false);
     }
@@ -63,7 +71,7 @@ const ForgotPass = () => {
           )}
           <form className="forgot-form" onSubmit={handleSubmit}>
             <div className="form-group">
-              <p style={{ marginBottom: 10, fontSize: "larger" }}>Email</p>
+              
               <input
                 className={
                   emailValidation.isValid ? "forgot-input" : "error-input"
@@ -76,9 +84,7 @@ const ForgotPass = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required="Please enter your email"
               />
-              {emailValidation.message && (
-                <p className="errorVal">{emailValidation.message}</p>
-              )}
+             
             </div>
             <button className="forgot-submit-btn" type="submit">
               {loading ? (
@@ -93,7 +99,7 @@ const ForgotPass = () => {
             <p style={{ fontSize: "large" }} className="signup-link">
               Don't have an account?
               <Link style={{ textDecoration: "none" }} to="/login">
-                <a href="#" className="signup-link link">
+                <a href="#" className="link">
                   {" "}
                   Sign up now
                 </a>
