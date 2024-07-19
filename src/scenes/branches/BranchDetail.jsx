@@ -87,59 +87,68 @@ const BranchDetail = () => {
     const newPreviews = validPictureTypes.map(file => URL.createObjectURL(file));
     setImage(prevImages => [...prevImages, ...validPictureTypes]);
     setImageRef(prevImageRefs => [...prevImageRefs, ...validPictureTypes.map(() => ref(storageDb, `BranchImage/${v4()}`))]);
-    setPreviewImage(prevPreviews => [...prevPreviews, ...newPreviews]);
+    setPreviewImage([...newPreviews]);
   };
 
   const handleSave = async () => {
     try {
-      const branchPictures = image || [];
-      let imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
-
-      if (branchPictures.length > 0) {
-        const uploadImageTasks = branchPictures.map(async (image) => {
+      let imageUrls = [];
+      try {
+        imageUrls = Array.isArray(branch.branchPicture) ? branch.branchPicture : JSON.parse(branch.branchPicture || '[]');
+      } catch (e) {
+        imageUrls = [];
+      }
+  
+      if (image.length > 0) {
+        const uploadImageTasks = image.map(async (file, index) => {
           const imageRef = ref(storageDb, `BranchImage/${v4()}`);
-          await uploadBytes(imageRef, image);
+          await uploadBytes(imageRef, file);
           const url = await getDownloadURL(imageRef);
           return url;
         });
-
+  
         const newImageUrls = await Promise.all(uploadImageTasks);
-        imageUrls = [...imageUrls, ...newImageUrls];
+  
+        // Kết hợp URL mới với URL cũ, loại bỏ các URL trùng lặp.
+        imageUrls = [...new Set([...imageUrls, ...newImageUrls])];
       }
-
+  
       const branchData = {
         ...branch,
         branchPicture: JSON.stringify(imageUrls),
       };
-
+  
       const formData = new FormData();
       Object.keys(branchData).forEach(key => {
         formData.append(key, branchData[key]);
       });
-
+  
       imageUrls.forEach((url, index) => {
         formData.append(`ExistingImages[${index}]`, url);
       });
-
-      if (branchPictures.length > 0) {
-        branchPictures.forEach(file => {
+  
+      if (image.length > 0) {
+        image.forEach(file => {
           formData.append('BranchPictures', file, file.name);
         });
       }
-
+  
       await updateBranch(branchId, formData);
-
+  
       setBranch((prevBranch) => ({
         ...prevBranch,
         branchPicture: imageUrls,
       }));
       previewImage.forEach(url => URL.revokeObjectURL(url));
       setPreviewImage([]);
+      setImage([]);
       setEditMode(false);
     } catch (err) {
       setError(`Failed to update branch details: ${err.message}`);
     }
   };
+  
+
 
   const handleEditToggle = () => {
     setEditMode((prevState) => !prevState);
