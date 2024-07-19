@@ -10,7 +10,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { fetchReviews, updateReview, deleteReview, fetchUserEmailById } from "../../api/reviewApi";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
-import { validateRating } from "../formValidation";
+import { validateRating, validateRequired } from "../formValidation";
 
 const Reviews = () => {
   const theme = useTheme();
@@ -74,6 +74,14 @@ const Reviews = () => {
       [field]: value,
     }));
 
+    if (field === "reviewText") {
+      const validation = validateRequired(value);
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        reviewText: validation.isValid ? "" : validation.message,
+      }));
+    }
+
     if (field === "rating") {
       const validation = validateRating(value);
       setErrors((prevErrors) => ({
@@ -85,7 +93,12 @@ const Reviews = () => {
 
   const handleSave = async () => {
     const validationErrors = {};
-
+  
+    const reviewTextValidation = validateRequired(currentReview.reviewText);
+    if (!reviewTextValidation.isValid) {
+      validationErrors.reviewText = reviewTextValidation.message;
+    }
+  
     const ratingValidation = validateRating(currentReview.rating);
     if (!ratingValidation.isValid) {
       validationErrors.rating = ratingValidation.message;
@@ -95,14 +108,15 @@ const Reviews = () => {
       setErrors(validationErrors);
       return;
     }
+  
     try {
       const payload = {
         reviewText: currentReview.reviewText,
         rating: currentReview.rating,
-        id: currentReview.id,
+        userId: currentReview.id,
         branchId: currentReview.branchId,
       };
-
+  
       await updateReview(currentReview.reviewId, payload);
       setOpenEditModal(false);
       const reviewsData = await fetchReviews(page, pageSize, searchQuery);
@@ -263,6 +277,8 @@ const Reviews = () => {
             value={currentReview.reviewText} 
             onChange={(e) => handleFieldChange("reviewText", e.target.value)} 
             margin="normal" 
+            error={!!errors.reviewText}
+            helperText={errors.reviewText}
           />
           <TextField 
             fullWidth 
