@@ -86,20 +86,11 @@ export const fetchCourtByBranchId = async (branchId, pageNumber = 1, pageSize = 
     const params = { pageNumber, pageSize, searchQuery, branchId };
     const response = await axios.get(`${url}/Courts/GetCourtsByBranchId`, { params });
 
-    if (response.data && response.data.data) {
+    if (response.data && Array.isArray(response.data.data)) {
+      
       const items = response.data.data;
       const totalCount = response.data.total || 0;
-      console.log('áhjdsdi');
-      return {
-        items,
-        totalCount
-      };
       
-    } else if (Array.isArray(response.data)) {
-      // Handle case where response data is directly an array
-      const items = response.data;
-      const totalCount = response.data.length;
-      console.log('lplplplplplpl');
       return {
         items,
         totalCount

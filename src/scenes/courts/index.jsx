@@ -45,19 +45,9 @@ const Courts = () => {
   
     const getCourtsData = async () => {
       try {
-        const { items, totalCount } = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
-        console.log('Fetched Items:', items);
-        console.log('Total Count:', totalCount);
-  
-        const filteredData = items.filter(
-          (court) => court.branchId === branchIdQuery
-        );
-        const numberedData = filteredData.map((item, index) => ({
-          ...item,
-          rowNumber: index + 1 + page * pageSize,
-        }));
-        setCourtsData(numberedData);
-        setRowCount(totalCount);
+        const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
+        setCourtsData(data.items);
+        setRowCount(data.totalCount);
       } catch (err) {
         setError(`Failed to fetch courts data: ${err.message}`);
       }
@@ -116,17 +106,11 @@ const Courts = () => {
   
 
   const handleSearch = async () => {
+    setPage(0); // Quay về trang đầu tiên
     try {
       const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
-      const filteredData = data.filter(
-        (court) => court.branchId === branchIdQuery
-      );
-      const numberedData = filteredData.map((item, index) => ({
-        ...item,
-        rowNumber: index + 1 + page * pageSize,
-      }));
-      setCourtsData(numberedData);
-      setRowCount(filteredData.length);
+        setCourtsData(data.items);
+        setRowCount(data.totalCount);
     } catch (err) {
       setError(`Failed to fetch court data: ${err.message}`);
     }
