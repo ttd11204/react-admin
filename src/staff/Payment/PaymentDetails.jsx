@@ -3,7 +3,7 @@ import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Butto
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PaymentIcon from '@mui/icons-material/Payment';
-import { fetchUserDetailByEmail, fetchUserDetail } from '../../api/userApi';
+import { fetchUserDetailByEmail, fetchUserDetail,fetchUserDetailByEmailVer2 } from '../../api/userApi';
 import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
 import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
@@ -222,7 +222,7 @@ const PaymentDetail = () => {
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
-        const detailedUserInfo = await fetchUserDetail(user.id);
+        const detailedUserInfo = await fetchUserDetailByEmailVer2(email);
         if (detailedUserInfo) {
           setUserExists(true);
           setUserInfo({

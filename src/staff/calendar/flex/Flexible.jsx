@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Typography, Button, TextField, FormControl, Select, MenuItem } from "@mui/material";
 import { validateRequired, validateNumber } from "../../../scenes/formValidation";
 import { fetchBranches, fetchBranchById } from '../../../api/branchApi';
-import { fetchUserDetailByEmail, fetchUserDetail } from "../../../api/userApi";
+import { fetchUserDetailByEmail, fetchUserDetail ,fetchUserDetailByEmailVer2} from "../../../api/userApi";
 import { useNavigate } from "react-router-dom";
 import { checkBookingTypeFlex } from "../../../api/bookingApi";
 

@@ -112,8 +112,8 @@ const Login = () => {
             required
           />
           <a href="/forgot-pass">Forgot Password</a>
-          <button type="submit" className="signInBtn">
-            {loading && <ClipLoader size={15} color="#fff" />}
+          <button type="submit" className="signInBtn" style={{ marginTop: "15px" }}>
+            {loading && <ClipLoader width={25} size={25} color="#fff" />}
             {!loading && "Sign In"}
           </button>
           {message && (

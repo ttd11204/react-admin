@@ -67,20 +67,27 @@ a:hover {
   text-decoration: underline;
 }
 
-button {
-  background-color: #28B463;
-  color: #fff;
-  font-size: 14px;
-  padding: 15px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  width: 100%;
-}
+
+  button {
+    background-color: #28B463;
+    color: #fff;
+    font-size: 14px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 338px; 
+    height: 50px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    position: relative;
+   }
+
 
 button:hover {
   background-color: #1D8348;

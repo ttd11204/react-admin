@@ -30,6 +30,16 @@ export const fetchUserDetailByEmail = async (userEmail) => {
   }
 };
 
+export const fetchUserDetailByEmailVer2 = async (email) => {
+  try {
+    const response = await axios.get(`${url}/UserDetails/GetUserDetailByUserEmail/${email}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user data by ID:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
 export const updateUserBanStatus = async (userId, banned) => {
   try {
     const response = await axios.put(`${url}/Users/${userId}/${banned ? 'ban' : 'unban'}`);
