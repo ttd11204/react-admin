@@ -111,7 +111,7 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <a href="#">Forgot Password</a>
+          <a href="/forgot-pass">Forgot Password</a>
           <button type="submit" className="signInBtn">
             {loading && <ClipLoader size={15} color="#fff" />}
             {!loading && "Sign In"}

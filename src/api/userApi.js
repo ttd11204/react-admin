@@ -113,3 +113,17 @@ export const fetchUserEmailById = async (userId) => {
     throw error;
   }
 };
+
+export const forgetPassword = async (email) => {
+  try {
+    const response = await axios.post(`${url}/authentication/forget-password`, { email });
+    if( response.data) {
+      return { message: response.data.message , success : true };
+    } else {
+      throw new Error('Invalid API response structure');
+    }
+  } catch (error) {
+    console.error('Error sending forget password request:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
