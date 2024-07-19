@@ -8,7 +8,7 @@ import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
 import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
 import { reserveSlots, createBookingFlex, deleteBookingInFlex } from '../../api/bookingApi';
-import { fetchCourts, fetchAvailableCourts } from '../../api/courtApi';
+import { fetchCourtByBranchId, fetchAvailableCourts } from '../../api/courtApi';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import * as signalR from '@microsoft/signalr';
 
@@ -117,7 +117,7 @@ const PaymentDetail = () => {
   useEffect(() => {
     if (branchId) {
       const loadCourts = async () => {
-        const data = await fetchCourts(1, 100, branchId);
+        const data = await fetchCourtByBranchId(branchId, 1, 100);
         setCourts(data.items);
       };
       loadCourts();

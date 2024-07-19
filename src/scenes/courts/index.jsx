@@ -100,10 +100,14 @@ const Courts = () => {
 
   const handleSearch = async () => {
     setPage(0); // Quay về trang đầu tiên
+    navigate(
+    `/admin/Courts?pageNumber=1&pageSize=${pageSize}&branchId=${branchIdQuery}&searchId=${searchId}`);
     try {
-      const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
+      const data = await fetchCourtByBranchId(branchIdQuery, 1, pageSize, searchId);
         setCourtsData(data.items);
         setRowCount(data.totalCount);
+        console.log('Row Count:', data.totalCount);
+    console.log('Page Size:', pageSize);
     } catch (err) {
       setError(`Failed to fetch court data: ${err.message}`);
     }
@@ -312,7 +316,7 @@ const Courts = () => {
               nextLabel="next >"
               onPageChange={handlePageClick}
               pageRangeDisplayed={5}
-              pageCount={Math.ceil(rowCount / pageSize)}
+              pageCount={Math.ceil(rowCount / pageSize)} // Số lượng trang dựa trên rowCount và pageSize
               previousLabel="< previous"
               renderOnZeroPageCount={null}
               containerClassName={"pagination"}
