@@ -345,7 +345,7 @@ const PaymentDetail = () => {
           const bookingId = booking.bookingId;
           const tokenResponse = await generatePaymentToken(bookingId);
           const token = tokenResponse.token;
-          const paymentResponse = await processPayment(token);
+          const paymentResponse = await processPayment("Staff",token);
           const paymentUrl = paymentResponse;
 
           window.location.href = paymentUrl;
