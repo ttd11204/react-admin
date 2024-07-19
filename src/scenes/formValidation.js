@@ -69,3 +69,16 @@ export const validateNumber = (value) => {
   if (!isNaN(value) && value.trim() !== '') return { isValid: true, message: '' };
   return { isValid: false, message: 'Must be a number' };
 };
+
+export const validateRating = (rating) => {
+  if (rating === null || rating === undefined || rating === "") {
+    return { isValid: false, message: "Rating is required" };
+  }
+  if (isNaN(rating)) {
+    return { isValid: false, message: "Rating must be a number" };
+  }
+  if (rating < 1 || rating > 5) {
+    return { isValid: false, message: "Rating must be between 1 and 5" };
+  }
+  return { isValid: true, message: "" };
+};
