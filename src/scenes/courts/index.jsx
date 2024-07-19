@@ -45,8 +45,11 @@ const Courts = () => {
   
     const getCourtsData = async () => {
       try {
-        const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
-        const filteredData = data.filter(
+        const { items, totalCount } = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
+        console.log('Fetched Items:', items);
+        console.log('Total Count:', totalCount);
+  
+        const filteredData = items.filter(
           (court) => court.branchId === branchIdQuery
         );
         const numberedData = filteredData.map((item, index) => ({
@@ -54,7 +57,7 @@ const Courts = () => {
           rowNumber: index + 1 + page * pageSize,
         }));
         setCourtsData(numberedData);
-        setRowCount(filteredData.length);
+        setRowCount(totalCount);
       } catch (err) {
         setError(`Failed to fetch courts data: ${err.message}`);
       }

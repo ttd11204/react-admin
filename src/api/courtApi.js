@@ -14,7 +14,7 @@ export const fetchCourts = async (pageNumber = 1, pageSize = 10, searchQuery = '
 
     if (Array.isArray(response.data)) {
       const items = response.data;
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 100;
+      const totalCount = response.data.total || 0;
 
       return {
         items,
@@ -86,8 +86,24 @@ export const fetchCourtByBranchId = async (branchId, pageNumber = 1, pageSize = 
     const params = { pageNumber, pageSize, searchQuery, branchId };
     const response = await axios.get(`${url}/Courts/GetCourtsByBranchId`, { params });
 
-    if (Array.isArray(response.data)) {
-      return response.data;
+    if (response.data && response.data.data) {
+      const items = response.data.data;
+      const totalCount = response.data.total || 0;
+      console.log('áhjdsdi');
+      return {
+        items,
+        totalCount
+      };
+      
+    } else if (Array.isArray(response.data)) {
+      // Handle case where response data is directly an array
+      const items = response.data;
+      const totalCount = response.data.length;
+      console.log('lplplplplplpl');
+      return {
+        items,
+        totalCount
+      };
     } else {
       throw new Error('Invalid API response structure');
     }
