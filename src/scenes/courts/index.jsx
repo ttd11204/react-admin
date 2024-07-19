@@ -90,15 +90,8 @@ const Courts = () => {
     try {
       await deleteCourtById(courtId);
       const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
-      const filteredData = data.filter(
-        (court) => court.branchId === branchIdQuery
-      );
-      const numberedData = filteredData.map((item, index) => ({
-        ...item,
-        rowNumber: index + 1 + page * pageSize,
-      }));
-      setCourtsData(numberedData);
-      setRowCount(filteredData.length);
+      setCourtsData(data.items);
+      setRowCount(data.totalCount);
     } catch (err) {
       setError(`Failed to delete court: ${err.message}`);
     }
@@ -159,15 +152,8 @@ const Courts = () => {
       }
       setModalOpen(false);
       const data = await fetchCourtByBranchId(branchIdQuery, page + 1, pageSize, searchId);
-      const filteredData = data.filter(
-        (court) => court.branchId === branchIdQuery
-      );
-      const numberedData = filteredData.map((item, index) => ({
-        ...item,
-        rowNumber: index + 1 + page * pageSize,
-      }));
-      setCourtsData(numberedData);
-      setRowCount(filteredData.length);
+      setCourtsData(data.items);
+      setRowCount(data.totalCount);
       setCourtData({
         branchId: branchIdQuery,
         courtName: "",
