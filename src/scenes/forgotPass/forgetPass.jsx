@@ -49,9 +49,11 @@ const ForgotPass = () => {
         if (error.response && error.response.data && error.response.data.message) {
             console.log("Error fetching email:", error.response.data.message);
             setError(error.response.data.message);
+            setSuccess("");
           } else {
             console.log("Error fetching email:", error.message);
             setError("An unexpected error occurred");
+            setSuccess("");
           }
     } finally {
       setLoading(false);
