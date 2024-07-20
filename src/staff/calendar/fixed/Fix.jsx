@@ -6,6 +6,8 @@ import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Chec
 import CalendarView from './CalendarView';
 import { fetchPriceByBranchIDType } from '../../../api/priceApi';
 import { fetchUserDetailByEmail, fetchUserDetail } from "../../../api/userApi"; // Import thêm các hàm API để kiểm tra email
+import { fixEndTimeValidation, fixMonthValidation, fixStartTimeValidation } from '../../../scenes/formValidation';
+import '../../../scenes/validate.css';
 
 const theme = createTheme({
   palette: {
@@ -74,6 +76,20 @@ const FixedBooking = () => {
   const [userExists, setUserExists] = useState(false);
   const [userInfo, setUserInfo] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+  const [monthValidation, setMonthValidation] = useState({
+    isValid: true,
+    message: "",
+  });
+  const [startTimeValidation, setStartTimeValidation] = useState({
+    isValid: true,
+    message: "",
+  });
+  const [endTimeValidation, setEndTimeValidation] = useState({
+    isValid: true,
+    message: "",
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -139,6 +155,24 @@ const FixedBooking = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    const monthValidation = fixMonthValidation(numberOfMonths);
+    const startTimeValidation = fixStartTimeValidation(slotStartTime);
+    const endTimeValidation = fixEndTimeValidation(slotStartTime, slotEndTime);
+    setMonthValidation(monthValidation);
+    setStartTimeValidation(startTimeValidation);
+    setEndTimeValidation(endTimeValidation);
+
+    if (
+      !monthValidation.isValid ||
+      !startTimeValidation.isValid ||
+      !endTimeValidation.isValid
+    ) {
+      setMessage("Please try again");
+      setMessageType("error");
+      return;
+    }
+
     const formattedStartDate = startDate.toISOString().split('T')[0];
 
     const totalDays = getTotalDaysForWeekdays(daysOfWeek, numberOfMonths, startDate);
@@ -233,6 +267,11 @@ const FixedBooking = () => {
                           InputLabelProps={{ style: { color: 'black' } }}
                           InputProps={{ style: { color: 'black' } }}
                         />
+                        {monthValidation.message && (
+                            <p className="errorVal">
+                              {monthValidation.message}
+                            </p>
+                          )}
                       </FormControl>
                     </Grid>
                     <Grid item xs={12}>
@@ -273,8 +312,7 @@ const FixedBooking = () => {
                           value={branchId}
                           onChange={(e) => setBranchId(e.target.value)}
                           required
-                          InputLabelProps={{ style: { color: 'black' } }}
-                          InputProps={{ style: { color: 'black' } }}
+                          disabled
                         />
                       </FormControl>
                     </Grid>
@@ -289,6 +327,11 @@ const FixedBooking = () => {
                           InputLabelProps={{ style: { color: 'black' } }}
                           InputProps={{ style: { color: 'black' } }}
                         />
+                        {startTimeValidation.message && (
+                            <p className="errorVal">
+                              {startTimeValidation.message}
+                            </p>
+                          )}
                       </FormControl>
                     </Grid>
                     <Grid item xs={12}>
@@ -302,6 +345,11 @@ const FixedBooking = () => {
                           InputLabelProps={{ style: { color: 'black' } }}
                           InputProps={{ style: { color: 'black' } }}
                         />
+                        {endTimeValidation.message && (
+                            <p className="errorVal">
+                              {endTimeValidation.message}
+                            </p>
+                          )}
                       </FormControl>
                     </Grid>
                     <Grid item xs={12}>
