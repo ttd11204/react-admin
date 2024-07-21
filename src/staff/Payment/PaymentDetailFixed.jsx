@@ -66,7 +66,7 @@ const PaymentDetailFixed = () => {
         console.log('Token Response:', tokenResponse);
         const token = tokenResponse.token;
         console.log('Token:', token);
-        const paymentResponse = await processPayment(token);
+        const paymentResponse = await processPayment("Staff", token);
         console.log('Payment Response:', paymentResponse);
         const paymentUrl = paymentResponse;
         console.log('Payment URL:', paymentUrl);

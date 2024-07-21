@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Checkbox, Grid, Paper, ThemeProvider, createTheme } from "@mui/material";
 import CalendarView from './CalendarView';
 import { fetchPriceByBranchIDType } from '../../../api/priceApi';
-import { fetchUserDetailByEmail, fetchUserDetail } from "../../../api/userApi"; // Import thêm các hàm API để kiểm tra email
+import { fetchUserDetailByEmail, fetchUserDetail, fetchUserDetailByEmailVer2 } from "../../../api/userApi"; // Import thêm các hàm API để kiểm tra email
 import { fixEndTimeValidation, fixMonthValidation, fixStartTimeValidation } from '../../../scenes/formValidation';
 import '../../../scenes/validate.css';
 
@@ -29,13 +29,14 @@ const theme = createTheme({
   },
 });
 
-const calculateDaysInMonth = (year, month) => {
-  return new Date(year, month, 0).getDate();
-};
+
+// const calculateDaysInMonth = (year, month) => {
+//   return new Date(year, month, 0).getDate();
+// };
 
 const getOccurrencesOfDayInMonth = (year, month, day) => {
   let count = 0;
-  const totalDays = calculateDaysInMonth(year, month);
+  const totalDays = 30;
   for (let date = 1; date <= totalDays; date++) {
     const dayOfWeek = new Date(year, month - 1, date).toLocaleDateString('en-US', { weekday: 'long' });
     if (dayOfWeek === day) {
@@ -123,7 +124,7 @@ const FixedBooking = () => {
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
-        const detailedUserInfo = await fetchUserDetail(user.id);
+        const detailedUserInfo = await fetchUserDetailByEmailVer2(email);
         if (detailedUserInfo) {
           setUserExists(true);
           setUserId(user.id); // Cập nhật userId
@@ -153,6 +154,9 @@ const FixedBooking = () => {
     }
   };
 
+  const result = getTotalDaysForWeekdays(daysOfWeek, numberOfMonths, startDate);
+  console.log(result);
+
   const handleSubmit = (event) => {
     event.preventDefault();
 
@@ -172,6 +176,9 @@ const FixedBooking = () => {
       setMessageType("error");
       return;
     }
+
+    
+
 
     const formattedStartDate = startDate.toISOString().split('T')[0];
 
