@@ -108,6 +108,27 @@ export const validateEmailForgetPass = async (email) => {
   }
 };
 
+export const validateYob = (yob) => {
+  const currentYear = new Date().getFullYear();
+  const yobRegex = /^\d{4}$/;
+  if (!yobRegex.test(yob)) {
+    return { isValid: false, message: "Yob must be a number with 4 digits" };
+  }
+
+  if (yob > currentYear - 1) {
+    return {
+      isValid: false,
+      message: "Year of birth must be less than current year!",
+    };
+  }
+
+  if (yob < currentYear - 100) {
+    return { isValid: false, message: "Invalid year of birth!" };
+  }
+
+  return { isValid: true, message: "" };
+};
+
 //flex
 export const flexValidation = (slots) => {
   if (!slots) {

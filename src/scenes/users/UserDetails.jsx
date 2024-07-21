@@ -9,6 +9,7 @@ import './style.css';
 import { storageDb } from '../../firebase';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 } from 'uuid';
+import { validateYob } from '../formValidation';
 
 const UserDetails = () => {
   const theme = useTheme();
@@ -22,6 +23,7 @@ const UserDetails = () => {
   const [image, setImage] = useState(null);
   const [imageRef, setImageRef] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  
 
   useEffect(() => {
     const getUserDetail = async () => {
@@ -46,6 +48,16 @@ const UserDetails = () => {
       ...prevUser,
       [field]: value,
     }));
+
+    if (field === 'yearOfBirth') {
+      const validation = validateYob(value);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      } else {
+        setError(null);
+      }
+    }
   };
 
   const handleProfilePictureChange = (event) => {
@@ -184,6 +196,7 @@ const UserDetails = () => {
                 <Box mb={2}>
                   <Typography variant="h6">Year of Birth</Typography>
                   {editMode ? (
+                    <>
                     <TextField
                       fullWidth
                       type="number"
@@ -204,6 +217,10 @@ const UserDetails = () => {
                         },
                       }}
                     />
+                     {error && (
+                        <Typography color="error" variant="h6">{error}</Typography>
+                      )}
+                    </>
                   ) : (
                     <Typography>{user.yearOfBirth || 'N/A'}</Typography>
                   )}
