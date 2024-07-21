@@ -89,7 +89,7 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
   useEffect(() => {
     const fetchBranchesData = async () => {
       try {
-        const response = await fetchBranches(1, 10);
+        const response = await fetchBranches(1, 100);
         setBranches(response.items);
         setSelectedBranch('');
       } catch (error) {

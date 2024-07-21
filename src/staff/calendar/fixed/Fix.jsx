@@ -29,11 +29,6 @@ const theme = createTheme({
   },
 });
 
-
-// const calculateDaysInMonth = (year, month) => {
-//   return new Date(year, month, 0).getDate();
-// };
-
 const getOccurrencesOfDayInPeriod = (startDate, totalDays, day) => {
   let count = 0;
   for (let i = 0; i < totalDays; i++) {
@@ -51,6 +46,7 @@ const getTotalDaysForWeekdays = (daysOfWeek, numberOfMonths, startDate) => {
   const totalDays = {};
   const daysInPeriod = numberOfMonths * 30;  // Tính tổng số ngày
 
+  //array.forEach(function(currentValue, index, arr), thisValue)
   daysOfWeek.forEach(day => {
     totalDays[day] = getOccurrencesOfDayInPeriod(startDate, daysInPeriod, day);
   });
@@ -172,13 +168,12 @@ console.log(result);
       return;
     }
 
-    
-
-
     const formattedStartDate = startDate.toISOString().split('T')[0];
 
     const totalDays = getTotalDaysForWeekdays(daysOfWeek, numberOfMonths, startDate);
 
+    //array.reduce(callback(accumulator, currentValue, currentIndex, array), initialValue)
+    
     const totalPrice = daysOfWeek.reduce((total, day) => {
       return total + (totalDays[day] * fixedPrice);
     }, 0);

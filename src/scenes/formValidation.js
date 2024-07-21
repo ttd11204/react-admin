@@ -130,6 +130,10 @@ export const fixMonthValidation = (months) => {
       return { isValid: false, message: 'You can only book a maximum of 3 months each time' };
   }
 
+  if (months < 0) {
+    return { isValid: false, message: 'Months cannot be negative' };
+  }
+
   return { isValid: true, message: '' };
 };
 
