@@ -1,11 +1,11 @@
 import axios from 'axios';
-
+import api from './api';
 const url = 'https://courtcaller.azurewebsites.net/api';
 
 export const fetchTeamData = async (pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
     const params = { pageNumber, pageSize, searchQuery };
-    const response = await axios.get(`${url}/Users`, { params });
+    const response = await api.get(`${url}/Users`, { params });
 
     if (response.data && Array.isArray(response.data.data)) {
       const items = response.data.data;
@@ -22,7 +22,7 @@ export const fetchTeamData = async (pageNumber = 1, pageSize = 10, searchQuery =
 
 export const fetchUserDetailByEmail = async (userEmail) => {
   try {
-    const response = await axios.get(`${url}/Users/GetUserDetailByUserEmail/${userEmail}`);
+    const response = await api.get(`${url}/Users/GetUserDetailByUserEmail/${userEmail}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching user data by email:', error.response ? error.response.data : error.message);
@@ -32,7 +32,7 @@ export const fetchUserDetailByEmail = async (userEmail) => {
 
 export const fetchUserDetailByEmailVer2 = async (email) => {
   try {
-    const response = await axios.get(`${url}/UserDetails/GetUserDetailByUserEmail/${email}`);
+    const response = await api.get(`${url}/UserDetails/GetUserDetailByUserEmail/${email}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching user data by ID:', error.response ? error.response.data : error.message);
@@ -42,7 +42,7 @@ export const fetchUserDetailByEmailVer2 = async (email) => {
 
 export const updateUserBanStatus = async (userId, banned) => {
   try {
-    const response = await axios.put(`${url}/Users/${userId}/${banned ? 'ban' : 'unban'}`);
+    const response = await api.put(`${url}/Users/${userId}/${banned ? 'ban' : 'unban'}`);
     return response.data;
   } catch (error) {
     console.error('Error updating user ban status:', error.response ? error.response.data : error.message);
@@ -52,7 +52,7 @@ export const updateUserBanStatus = async (userId, banned) => {
 
 export const createUser = async (userData) => {
   try {
-    const response = await axios.post(`${url}/Users`, userData);
+    const response = await api.post(`${url}/Users`, userData);
     return response.data;
   } catch (error) {
     console.error('Error creating user:', error.response ? error.response.data : error.message);
@@ -63,7 +63,7 @@ export const createUser = async (userData) => {
 export const updateUserDetail = async (userDetailId, userDetails) => {
   try {
     console.log('Sending update request:', { userDetailId, userDetails });
-    const response = await axios.put(`${url}/UserDetails/${userDetailId}`, userDetails);
+    const response = await api.put(`${url}/UserDetails/${userDetailId}`, userDetails);
     console.log('API response status:', response.status);
     console.log('API response data:', response.data);
     return response.data;
@@ -79,7 +79,7 @@ export const updateUserDetail = async (userDetailId, userDetails) => {
 
 export const fetchUserDetail = async (userId) => {
   try {
-    const response = await axios.get(`${url}/UserDetails/${userId}`);
+    const response = await api.get(`${url}/UserDetails/${userId}`);
     return response.data;
   } catch (error) {
     throw new Error(`Failed to fetch user details: ${error.message}`);
@@ -88,7 +88,7 @@ export const fetchUserDetail = async (userId) => {
 
 export const fetchRoleByUserId = async (userId) => {
   try {
-    const response = await axios.get(`${url}/Roles/userId/${userId}`);
+    const response = await api.get(`${url}/Roles/userId/${userId}`);
     return response.data;
   } catch (error) {
     throw new Error(`Failed to fetch user roles: ${error.message}`);
@@ -99,7 +99,7 @@ export const fetchRoleByUserId = async (userId) => {
 export const updateUserRole = async (userId, role) => {
   try {
     console.log('Sending update request:', { userId, role }); 
-    const response = await axios.put(`${url}/Roles/${userId}`,`"${role}"`,
+    const response = await api.put(`${url}/Roles/${userId}`,`"${role}"`,
       {
         headers: {
           'Content-Type': 'application/json'
@@ -116,7 +116,7 @@ export const updateUserRole = async (userId, role) => {
 // Hàm lấy thông tin người dùng bằng user ID
 export const fetchUserEmailById = async (userId) => {
   try {
-    const response = await axios.get(`${url}/Users/${userId}`);
+    const response = await api.get(`${url}/Users/${userId}`);
     return response.data.email;
   } catch (error) {
     console.error('Error fetching user email:', error.response ? error.response.data : error.message);
@@ -126,7 +126,7 @@ export const fetchUserEmailById = async (userId) => {
 
 export const forgetPassword = async (email) => {
   try {
-    const response = await axios.post(`${url}/authentication/forget-password`, { email });
+    const response = await api.post(`${url}/authentication/forget-password`, { email });
     if( response.data) {
       return { message: response.data.message , success : true };
     } else {
@@ -140,7 +140,7 @@ export const forgetPassword = async (email) => {
 
 export const resetPassword = async (email, token, password, confirmPassword) => {
   try {
-    const response = await axios.post(`${url}/authentication/reset-password`, { email, token, password, confirmPassword });
+    const response = await api.post(`${url}/authentication/reset-password`, { email, token, password, confirmPassword });
     if( response.data) {
       return { message: response.data.message , success : true };
     } else {
