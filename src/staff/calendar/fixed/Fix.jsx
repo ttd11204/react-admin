@@ -40,7 +40,6 @@ const getOccurrencesOfDayInPeriod = (startDate, totalDays, day) => {
     const currentDay = new Date(startDate);
     currentDay.setDate(startDate.getDate() + i);
     const dayOfWeek = currentDay.toLocaleDateString('en-US', { weekday: 'long' });
-    console.log('dayOfWeek', dayOfWeek);
     if (dayOfWeek === day) {
       count++;
     }
@@ -51,7 +50,6 @@ const getOccurrencesOfDayInPeriod = (startDate, totalDays, day) => {
 const getTotalDaysForWeekdays = (daysOfWeek, numberOfMonths, startDate) => {
   const totalDays = {};
   const daysInPeriod = numberOfMonths * 30;  // Tính tổng số ngày
-  console.log('daysInPeriod', daysInPeriod);
 
   daysOfWeek.forEach(day => {
     totalDays[day] = getOccurrencesOfDayInPeriod(startDate, daysInPeriod, day);
