@@ -116,7 +116,7 @@ const FixedBooking = () => {
 
   const handleCheck = async () => {
     if (!email) {
-      setErrorMessage('Vui lòng nhập email.');
+      setErrorMessage('Please enter an email address.');
       return;
     }
     try {
@@ -140,16 +140,16 @@ const FixedBooking = () => {
         } else {
           setUserExists(false);
           setUserInfo(null);
-          setErrorMessage('Không tìm thấy chi tiết người dùng.');
+          setErrorMessage('User information not found. Please try again.');
         }
       } else {
         setUserExists(false);
         setUserInfo(null);
-        setErrorMessage('Người dùng không tồn tại. Vui lòng đăng ký.');
+        setErrorMessage('User not found. Please try again.');
       }
     } catch (error) {
-      console.error('Lỗi khi kiểm tra tồn tại của người dùng:', error);
-      setErrorMessage('Lỗi khi kiểm tra tồn tại của người dùng. Vui lòng thử lại.');
+      console.error('Error when checking user existence:', error);
+      setErrorMessage('Error checking user existence. Please try again.');
     }
   };
 
