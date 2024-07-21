@@ -110,7 +110,16 @@ export const validateEmailForgetPass = async (email) => {
 
 //flex
 export const flexValidation = (slots) => {
+  if (!slots) {
+    return { isValid: false, message: 'Input cannot be empty' };
+  }
+
   const slotNumber = Number(slots);
+
+
+  if (!Number.isInteger(slotNumber)) {
+    return { isValid: false, message: 'You must input an integer number' };
+  }
 
   if (isNaN(slotNumber)) {
       return { isValid: false, message: 'You must input a number' };
@@ -151,7 +160,7 @@ export const fixEndTimeValidation = (startTime, endTime) => {
   const timeFormat = /^\d{2}:00:00$/;
 
   if (!timeFormat.test(endTime)) {
-      return { isValid: false, message: 'Following the format hh:00:00' };
+      return { isValid: false, message: 'Following the format hh:mm:ss | example: 10:00:00' };
   }
 
   const startHour = parseInt(startTime.split(':')[0], 10);
