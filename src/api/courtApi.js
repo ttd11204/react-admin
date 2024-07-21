@@ -1,10 +1,10 @@
-import axios from 'axios';
 
+import api from './api';
 const url = 'https://courtcaller.azurewebsites.net/api';
 
 export const fetchCourts = async (pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
-    const response = await axios.get(`${url}/Courts`, {
+    const response = await api.get(`${url}/Courts`, {
       params: {
         pageNumber,
         pageSize,
@@ -31,7 +31,7 @@ export const fetchCourts = async (pageNumber = 1, pageSize = 10, searchQuery = '
 
 export const updateCourtById = async (id, updatedData) => {
   try {
-    const response = await axios.put(`${url}/Courts/${id}`, updatedData);
+    const response = await api.put(`${url}/Courts/${id}`, updatedData);
     return response.data;
   } catch (error) {
     console.error('Error updating court:', error.response ? error.response.data : error.message);
@@ -41,7 +41,7 @@ export const updateCourtById = async (id, updatedData) => {
 
 export const createCourt = async (courtData) => {
   try {
-    const response = await axios.post(`${url}/Courts`, courtData);
+    const response = await api.post(`${url}/Courts`, courtData);
     return response.data;
   } catch (error) {
     console.error('Error creating court:', error.response ? error.response.data : error.message);
@@ -51,7 +51,7 @@ export const createCourt = async (courtData) => {
 
 export const deleteCourtById = async (id) => {
   try {
-    const response = await axios.delete(`${url}/Courts/${id}`);
+    const response = await api.delete(`${url}/Courts/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting court:', error.response ? error.response.data : error.message);
@@ -73,7 +73,7 @@ export const fetchAvailableCourts = async (branchId, slotDate, slotStartTime, sl
       },
     };
 
-    const response = await axios.post(`${url}/Courts/AvailableCourts`, requestBody);
+    const response = await api.post(`${url}/Courts/AvailableCourts`, requestBody);
     return response.data;
   } catch (error) {
     console.error('Error fetching available courts:', error.response ? error.response.data : error.message);
@@ -84,7 +84,7 @@ export const fetchAvailableCourts = async (branchId, slotDate, slotStartTime, sl
 export const fetchCourtByBranchId = async (branchId, pageNumber = 1, pageSize = 10, searchQuery = '') => {
   try {
     const params = { pageNumber, pageSize, searchQuery, branchId };
-    const response = await axios.get(`${url}/Courts/GetCourtsByBranchId`, { params });
+    const response = await api.get(`${url}/Courts/GetCourtsByBranchId`, { params });
 
     if (response.data && Array.isArray(response.data.data)) {
       

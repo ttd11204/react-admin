@@ -1,4 +1,4 @@
-import axios from 'axios';
+
 import api from './api';
 const url = 'https://courtcaller.azurewebsites.net/api';
 
