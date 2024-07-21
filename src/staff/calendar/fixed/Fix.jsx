@@ -34,11 +34,13 @@ const theme = createTheme({
 //   return new Date(year, month, 0).getDate();
 // };
 
-const getOccurrencesOfDayInMonth = (year, month, day) => {
+const getOccurrencesOfDayInPeriod = (startDate, totalDays, day) => {
   let count = 0;
-  const totalDays = 30;
-  for (let date = 1; date <= totalDays; date++) {
-    const dayOfWeek = new Date(year, month - 1, date).toLocaleDateString('en-US', { weekday: 'long' });
+  for (let i = 0; i < totalDays; i++) {
+    const currentDay = new Date(startDate);
+    currentDay.setDate(startDate.getDate() + i);
+    const dayOfWeek = currentDay.toLocaleDateString('en-US', { weekday: 'long' });
+    console.log('dayOfWeek', dayOfWeek);
     if (dayOfWeek === day) {
       count++;
     }
@@ -48,21 +50,16 @@ const getOccurrencesOfDayInMonth = (year, month, day) => {
 
 const getTotalDaysForWeekdays = (daysOfWeek, numberOfMonths, startDate) => {
   const totalDays = {};
-  const startMonth = startDate.getMonth() + 1;
-  const startYear = startDate.getFullYear();
+  const daysInPeriod = numberOfMonths * 30;  // Tính tổng số ngày
+  console.log('daysInPeriod', daysInPeriod);
 
-  daysOfWeek.forEach(day => totalDays[day] = 0);
-
-  for (let i = 0; i < numberOfMonths; i++) {
-    const currentMonth = (startMonth + i - 1) % 12 + 1;
-    const currentYear = startYear + Math.floor((startMonth + i - 1) / 12);
-    daysOfWeek.forEach(day => {
-      totalDays[day] += getOccurrencesOfDayInMonth(currentYear, currentMonth, day);
-    });
-  }
+  daysOfWeek.forEach(day => {
+    totalDays[day] = getOccurrencesOfDayInPeriod(startDate, daysInPeriod, day);
+  });
 
   return totalDays;
 };
+
 
 const FixedBooking = () => {
   const [numberOfMonths, setNumberOfMonths] = useState('');
@@ -155,7 +152,7 @@ const FixedBooking = () => {
   };
 
   const result = getTotalDaysForWeekdays(daysOfWeek, numberOfMonths, startDate);
-  console.log(result);
+console.log(result);
 
   const handleSubmit = (event) => {
     event.preventDefault();
