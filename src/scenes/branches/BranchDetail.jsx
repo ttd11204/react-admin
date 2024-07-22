@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider } from '@mui/material';
+import { Box, Button, Typography, TextField, Card, CardContent, CardMedia, Grid, Modal, IconButton, Divider ,Select , FormControl , InputLabel , MenuItem} from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { tokens } from '../../theme';
@@ -12,6 +12,15 @@ import { v4 } from 'uuid';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
+const daysOfWeek = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday'
+];
 const BranchDetail = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -31,6 +40,10 @@ const BranchDetail = () => {
   const [flexPrice, setFlexPrice] = useState(0);
   const [weekdayPrice, setWeekdayPrice] = useState(0);
   const [weekendPrice, setWeekendPrice] = useState(0);
+
+  //drop down 
+  const [startDay, setStartDay] = useState('');
+  const [endDay, setEndDay] = useState('');
 
   useEffect(() => {
     const getBranchData = async () => {
@@ -303,6 +316,21 @@ const BranchDetail = () => {
     return acc;
   }, {});
 
+  const handleStartDayChange = (e) => {
+    const value = e.target.value;
+    setStartDay(value);
+    setEndDay(''); // Reset end day when start day changes
+    handleFieldChange('openDay', `${value} to`);
+  };
+
+  const handleEndDayChange = (e) => {
+    const value = e.target.value;
+    setEndDay(value);
+    handleFieldChange('openDay', `${startDay} to ${value}`);
+  };
+
+  const filteredEndDays = daysOfWeek.slice(daysOfWeek.indexOf(startDay) + 1);
+
   return (
     <Box m="20px">
       <Header title="Branch Detail" subtitle="Details of the branch" />
@@ -375,8 +403,8 @@ const BranchDetail = () => {
                 sx={{ 
                   borderRadius: '8px', 
                   objectFit: 'cover', 
-                  width: '600px', 
-                  height: '500px', 
+                  width: '430px', 
+                  height: '300px', 
                   
                 }}
                 onClick={() => handleOpenModal(currentImageIndex)}
@@ -461,14 +489,37 @@ const BranchDetail = () => {
                     size="small"
                     sx={{ mb: 2 }}
                   />
-                  <TextField
-                    fullWidth
-                    label="Open Day"
-                    value={branch.openDay}
-                    onChange={(e) => handleFieldChange('openDay', e.target.value)}
-                    size="small"
-                    sx={{ mb: 2 }}
-                  />
+                   <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+      <FormControl fullWidth size="small">
+        <InputLabel>Start Day</InputLabel>
+        <Select
+          value={startDay}
+          label="Start Day"
+          onChange={handleStartDayChange}
+        >
+          {daysOfWeek.map((day) => (
+            <MenuItem key={day} value={day}>
+              {day}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <FormControl fullWidth size="small" disabled={!startDay}>
+        <InputLabel>End Day</InputLabel>
+        <Select
+          value={endDay}
+          label="End Day"
+          onChange={handleEndDayChange}
+        >
+          {filteredEndDays.map((day) => (
+            <MenuItem key={day} value={day}>
+              {day}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </Box>
                   <TextField
                     fullWidth
                     label="Status"

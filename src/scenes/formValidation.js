@@ -173,7 +173,7 @@ export const fixMonthValidation = (months) => {
 
 export const fixStartTimeValidation = (startTime) => {
   const timeFormat = /^\d{2}:00:00$/;
-
+console.log(startTime)
   if (!timeFormat.test(startTime)) {
       return { isValid: false, message: 'Following the format hh:00:00' };
   }

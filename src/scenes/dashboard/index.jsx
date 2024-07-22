@@ -6,8 +6,10 @@ import LineChart from '../../components/LineChart';
 import BarChart from '../../components/BarChart';
 import StatBox from '../../components/StatBox';
 import TrafficIcon from '@mui/icons-material/Traffic';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { fetchBranches } from './../../api/branchApi';
 import axios from 'axios';
+
 import api from './../../api/api';
 import {
   fetchDailyRevenue,
@@ -17,58 +19,6 @@ import {
   fetchWeeklyRevenueFromStartOfMonth,
   fetchMonthlyRevenueFromStartOfYear
 } from '../../api/barApi';
-
-const mockWeeklyBookings = [
-  {
-    id: 'Bookings',
-    color: 'hsl(210, 70%, 50%)',
-    data: [
-      { x: 'Monday', y: 20 },
-      { x: 'Tuesday', y: 10 },
-      { x: 'Wednesday', y: 7 },
-      { x: 'Thursday', y: 20 },
-      { x: 'Friday', y: 10 },
-      { x: 'Saturday', y: 11 },
-      { x: 'Sunday', y: 20 },
-    ],
-  },
-];
-
-const mockMonthlyBookings = [
-  {
-    id: 'Bookings',
-    color: 'hsl(348, 70%, 50%)',
-    data: [
-      { x: 'January', y: 20 },
-      { x: 'February', y: 40 },
-      { x: 'March', y: 10 },
-      { x: 'April', y: 20 },
-      { x: 'May', y: 20 },
-      { x: 'June', y: 25 },
-      { x: 'July', y: 10 },
-      { x: 'August', y: 25 },
-      { x: 'September', y: 24 },
-      { x: 'October', y: 17 },
-      { x: 'November', y: 24 },
-      { x: 'December', y: 14 },
-    ],
-  },
-];
-
-const mockRecentTransactions = [
-  { bookingId: 'TXN001', user: 'User1', bookingDate: '2024-07-01', totalPrice: 100 },
-  { bookingId: 'TXN002', user: 'User2', bookingDate: '2024-07-02', totalPrice: 150 },
-  { bookingId: 'TXN003', user: 'User3', bookingDate: '2024-07-03', totalPrice: 200 },
-];
-
-const mockRevenueStats = {
-  daily: 1000,
-  weekly: 7000,
-  monthly: 30000,
-  yearly: 360000,
-};
-
-
 
 
 const Dashboard = () => {
@@ -84,8 +34,8 @@ const Dashboard = () => {
   const [weeklyBookingsCount, setWeeklyBookingsCount] = useState(0);
   const [monthlyBookingsCount, setMonthlyBookingsCount] = useState(0);
   const [monthlyIncrease, setMonthlyIncrease] = useState(0);
-  const [recentTransactions, setRecentTransactions] = useState(mockRecentTransactions);
-
+  
+const [countUser, setCountUser] = useState(0);
   const [selectedBranch, setSelectedBranch] = useState('');
  const [branches, setBranches] = useState([]);
  const [chartType, setChartType] = useState('monthly');
@@ -119,6 +69,9 @@ const Dashboard = () => {
     const lineMonthly = await api.get(`/Bookings/monthly-bookings-from-start-of-year?branchId=${branchId || ''}`);
     setStartMonthlyBookings(lineMonthly.data);
 
+
+    const userCounting = await api.get(`/UserDetails/CountUser`);
+    setCountUser(userCounting.data);
     } catch (error) {
       console.error('Error fetching daily bookings:', error);
     }
@@ -247,7 +200,7 @@ const Dashboard = () => {
         }]
 
       default:
-        return monthlyIncrease;
+        return weeklyIncrease;
     }
   };
 
@@ -285,7 +238,7 @@ const Dashboard = () => {
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
             title={dailyBookingsCount || "N/A"}
-            subtitle="Daily Bookings"
+            subtitle="Today's Bookings"
             progress={dailyIncrease / 100}
             increase={isNaN(dailyIncrease) ? "N/A" : `${dailyIncrease.toFixed(2)}%`}
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
@@ -294,7 +247,7 @@ const Dashboard = () => {
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
             title={weeklyBookingsCount || "N/A"}
-            subtitle="Weekly Bookings"
+            subtitle="This Week's Bookings"
             progress={weeklyIncrease / 100}
             increase={isNaN(weeklyIncrease) ? "N/A" : `${weeklyIncrease.toFixed(2)}%`}
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
@@ -303,7 +256,7 @@ const Dashboard = () => {
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
             title={monthlyBookingsCount || "N/A"}
-            subtitle="Monthly Bookings"
+            subtitle="This Month's Bookings"
             progress={monthlyIncrease / 100}
             increase={isNaN(monthlyIncrease) ? "N/A" : `${monthlyIncrease.toFixed(2)}%`}
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
@@ -311,11 +264,11 @@ const Dashboard = () => {
         </Box>
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
-            title={"Loading..."}
+            title={countUser || "N/A"}
             subtitle="Total User"
-            progress="0.80"
-            increase={growthRate ? `${growthRate.toFixed(2)}%` : "Loading..."}
-            icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
+            // progress="0.80"
+           // increase={growthRate ? `${growthRate.toFixed(2)}%` : "Loading..."}
+            icon={<AccountCircleIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
           />
         </Box>
 
