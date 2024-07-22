@@ -68,17 +68,8 @@ const mockRevenueStats = {
   yearly: 360000,
 };
 
-const mockCourtPopularity = [
-  { court: 'Court 1', count: 150 },
-  { court: 'Court 2', count: 200 },
-  { court: 'Court 3', count: 100 },
-];
 
-const mockFeedback = [
-  { user: 'User1', rating: 4, comment: 'Great court!' },
-  { user: 'User2', rating: 5, comment: 'Excellent service!' },
-  { user: 'User3', rating: 3, comment: 'Average experience.' },
-];
+
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -86,80 +77,90 @@ const Dashboard = () => {
 
   const [startDailyBookings, setStartDailyBookings] = useState([]);
   const [startWeeklyBookings, setStartWeeklyBookings] = useState([]);
+  const [startMonthlyBookings, setStartMonthlyBookings] = useState([]);
   const [dailyBookingsCount, setDailyBookingsCount] = useState(0);
   const [dailyIncrease, setDailyIncrease] = useState(0);
-  const [weeklyBookings, setWeeklyBookings] = useState([]);
-  const [weeklyIncrease, setWeeklyIncrease] = useState(0);
+ const [weeklyIncrease, setWeeklyIncrease] = useState(0);
   const [weeklyBookingsCount, setWeeklyBookingsCount] = useState(0);
-  const [monthlyBookings, setMonthlyBookings] = useState(mockMonthlyBookings);
+  const [monthlyBookingsCount, setMonthlyBookingsCount] = useState(0);
+  const [monthlyIncrease, setMonthlyIncrease] = useState(0);
   const [recentTransactions, setRecentTransactions] = useState(mockRecentTransactions);
+
   const [selectedBranch, setSelectedBranch] = useState('');
-  const [predictedBookings, setPredictedBookings] = useState(null);
-
-  const [branches, setBranches] = useState([]);
-
-  const [revenueStats, setRevenueStats] = useState(mockRevenueStats);
-  const [courtPopularity, setCourtPopularity] = useState(mockCourtPopularity);
-  const [feedback, setFeedback] = useState(mockFeedback);
-  const [chartType, setChartType] = useState('monthly');
+ const [branches, setBranches] = useState([]);
+ const [chartType, setChartType] = useState('monthly');
   const [barType, setBarType] = useState('monthly');
   const [growthRate, setGrowthRate] = useState(0);
   const [barChartData, setBarChartData] = useState([]);
   const [selectedBranchBarChart, setSelectedBranchBarChart] = useState('');
   const [newBarChartData, setNewBarChartData] = useState([]);
 
+  const fetchDailyBookings = async (branchId) => {
+    try {
+      const response = await api.get(`/Bookings/daily-bookings?branchId=${branchId || ''}`);
+    setDailyBookingsCount(response.data.todayCount);
+    setDailyIncrease(response.data.changePercentage);
+
+    const lineDaily = await api.get(`/Bookings/bookings-from-start-of-week?branchId=${branchId || ''}`);
+    setStartDailyBookings(lineDaily.data);
+
+    const weeklyResponse = await api.get(`/Bookings/weekly-bookings?branchId=${branchId || ''}`);
+    
+    setWeeklyIncrease(weeklyResponse.data.changePercentage);
+    setWeeklyBookingsCount(weeklyResponse.data.todayCount);
+
+    const lineWeekly = await api.get(`/Bookings/weekly-bookings-from-start-of-month?branchId=${branchId || ''}`);
+    setStartWeeklyBookings(lineWeekly.data);
+
+    const monthlyResponse = await api.get(`/Bookings/monthly-bookings?branchId=${branchId || ''}`);
+    setMonthlyBookingsCount(monthlyResponse.data.todayCount);
+    setMonthlyIncrease(monthlyResponse.data.changePercentage);
+
+    const lineMonthly = await api.get(`/Bookings/monthly-bookings-from-start-of-year?branchId=${branchId || ''}`);
+    setStartMonthlyBookings(lineMonthly.data);
+
+    } catch (error) {
+      console.error('Error fetching daily bookings:', error);
+    }
+  };
   useEffect(() => {
-    const fetchDailyBookings = async () => {
-      try {
-        const response = await api.get('/Bookings/daily-bookings');
-        setDailyBookingsCount(response.data.todayCount);
-        setDailyIncrease(response.data.changePercentage);
-
-        const lineDaily = await api.get('/Bookings/bookings-from-start-of-week');
-        setStartDailyBookings(lineDaily.data);
-
-        const lineWeekly = await api.get('/Bookings/weekly-bookings-from-start-of-month');
-        setStartWeeklyBookings(lineWeekly.data);
-
-        const weeklyResponse = await api.get('/Bookings/weekly-bookings');
-        setWeeklyBookings(weeklyResponse.data.changePercentage);
-        setWeeklyIncrease(weeklyResponse.data.changePercentage);
-        setWeeklyBookingsCount(weeklyResponse.data.todayCount);
-      } catch (error) {
-        console.error('Error fetching daily bookings:', error);
-      }
-    };
-
-    const fetchBarChartData = async (type) => {
-      try {
-        const branchesData = await fetchBranches();
-        const branchRevenues = await Promise.all(
-          branchesData.items.map(async (branch) => {
-            let revenueData;
-            switch (type) {
-              case 'weekly':
-                revenueData = await fetchWeeklyRevenue(branch.branchId);
-                break;
-              case 'monthly':
-                revenueData = await fetchMonthlyRevenue(branch.branchId);
-                break;
-              case 'daily':
-              default:
-                revenueData = await fetchDailyRevenue(branch.branchId);
-                break;
-            }
-            return { id: branch.branchId, value: revenueData.revenue };
-          })
-        );
-        setBarChartData(branchRevenues);
-      } catch (error) {
-        console.error("Error occurred while fetching branch data", error);
-      }
-    };
-
-    fetchDailyBookings();
-    fetchBarChartData(barType);
+    fetchDailyBookings(null);
+    fetchBarChartData(barType, null);
   }, [barType]);
+
+  const fetchBarChartData = async (type, branchId) => {
+    try {
+      const branchesData = await fetchBranches();
+      const branchRevenues = await Promise.all(
+        branchesData.items.map(async (branch) => {
+          let revenueData;
+          switch (type) {
+            case 'weekly':
+              revenueData = await fetchWeeklyRevenue(branch.branchId, branchId || '');
+              break;
+            case 'monthly':
+              revenueData = await fetchMonthlyRevenue(branch.branchId, branchId || '');
+              break;
+            case 'daily':
+            default:
+              revenueData = await fetchDailyRevenue(branch.branchId, branchId || '');
+              break;
+          }
+          return { id: branch.branchId, value: revenueData.revenue };
+        })
+      );
+      setBarChartData(branchRevenues);
+    } catch (error) {
+      console.error("Error occurred while fetching branch data", error);
+    }
+  };
+  
+  useEffect(() => {
+    if (selectedBranch) {
+      fetchDailyBookings(selectedBranch);
+      fetchBarChartData(barType, selectedBranch);
+    }
+  }, [barType, selectedBranch]);
 
   useEffect(() => {
     const fetchBranchesData = async () => {
@@ -236,8 +237,17 @@ const Dashboard = () => {
           })),
         }];
       case 'monthly':
+        return [{
+          id: 'Monthly Bookings',
+          color: 'hsl(348, 70%, 50%)',
+          data: startMonthlyBookings.map((count, index) => ({
+            x: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][index],
+            y: count,
+          })),
+        }]
+
       default:
-        return monthlyBookings;
+        return monthlyIncrease;
     }
   };
 
@@ -251,7 +261,10 @@ const Dashboard = () => {
         <Select
           labelId="branch-select-label"
           value={selectedBranch}
-          onChange={(e) => setSelectedBranch(e.target.value)}
+          onChange={(e) => {
+            setSelectedBranch(e.target.value);
+            fetchDailyBookings(e.target.value);
+          }}
           displayEmpty
           sx={{ color: "#FFFFFF" }}
         >
@@ -271,34 +284,34 @@ const Dashboard = () => {
         {/* ROW 1 */}
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
-            title={dailyBookingsCount}
+            title={dailyBookingsCount || "N/A"}
             subtitle="Daily Bookings"
-            progress="0.75"
+            progress={dailyIncrease / 100}
             increase={isNaN(dailyIncrease) ? "N/A" : `${dailyIncrease.toFixed(2)}%`}
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
           />
         </Box>
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
-            title={weeklyBookingsCount}
+            title={weeklyBookingsCount || "N/A"}
             subtitle="Weekly Bookings"
-            progress="0.50"
+            progress={weeklyIncrease / 100}
             increase={isNaN(weeklyIncrease) ? "N/A" : `${weeklyIncrease.toFixed(2)}%`}
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
           />
         </Box>
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
-            title={monthlyBookings.reduce((sum, booking) => sum + booking.data.reduce((subSum, d) => subSum + d.y, 0), 0).toString()}
+            title={monthlyBookingsCount || "N/A"}
             subtitle="Monthly Bookings"
-            progress="0.30"
-            increase="+5%"
+            progress={monthlyIncrease / 100}
+            increase={isNaN(monthlyIncrease) ? "N/A" : `${monthlyIncrease.toFixed(2)}%`}
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
           />
         </Box>
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
-            title={predictedBookings ? predictedBookings.toString() : "Loading..."}
+            title={"Loading..."}
             subtitle="Total User"
             progress="0.80"
             increase={growthRate ? `${growthRate.toFixed(2)}%` : "Loading..."}
@@ -324,7 +337,7 @@ const Dashboard = () => {
         </Box>
 
         {/* ROW 3 */}
-        <Box gridColumn="span 6" backgroundColor={colors.primary[400]} p="20px">
+        <Box gridColumn="span 12" backgroundColor={colors.primary[400]} p="20px">
           <ButtonGroup variant="contained" color="primary">
             <Button onClick={() => setBarType('daily')}>Daily</Button>
             <Button onClick={() => setBarType('weekly')}>Weekly</Button>
@@ -336,34 +349,34 @@ const Dashboard = () => {
         </Box>
 
         {/* ROW 4 */}
-        <Box gridColumn="span 6" backgroundColor={colors.primary[400]} p="20px">
-        <FormControl sx={{ minWidth: 200, backgroundColor: "#0D1B34", borderRadius: 1, marginBottom: "20px" }}>
-          <Select
-            labelId="branch-select-bar-label"
-            value={selectedBranchBarChart}
-            onChange={(e) => setSelectedBranchBarChart(e.target.value)}
-            displayEmpty
-            sx={{ color: "#FFFFFF" }}
-          >
-            <MenuItem value="">
-              <em>--Select Branch--</em>
-            </MenuItem>
-            {branches.map((branch) => (
-              <MenuItem key={branch.branchId} value={branch.branchId}>
-                {branch.branchId}
+        <Box gridColumn="span 12" backgroundColor={colors.primary[400]} p="20px">
+          <FormControl sx={{ minWidth: 200, backgroundColor: "#0D1B34", borderRadius: 1, marginBottom: "20px" }}>
+            <Select
+              labelId="branch-select-bar-label"
+              value={selectedBranchBarChart}
+              onChange={(e) => setSelectedBranchBarChart(e.target.value)}
+              displayEmpty
+              sx={{ color: "#FFFFFF" }}
+            >
+              <MenuItem value="">
+                <em>--Select Branch--</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <ButtonGroup variant="contained" color="primary">
-          <Button onClick={() => setBarType('daily')}>Daily</Button>
-          <Button onClick={() => setBarType('weekly')}>Weekly</Button>
-          <Button onClick={() => setBarType('monthly')}>Monthly</Button>
-        </ButtonGroup>
-        <Box height="250px" mt="20px">
-          <BarChart data={newBarChartData} />
+              {branches.map((branch) => (
+                <MenuItem key={branch.branchId} value={branch.branchId}>
+                  {branch.branchName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <ButtonGroup variant="contained" color="primary" >
+            <Button onClick={() => setBarType('daily')}>Daily</Button>
+            <Button onClick={() => setBarType('weekly')}>Weekly</Button>
+            <Button onClick={() => setBarType('monthly')}>Monthly</Button>
+          </ButtonGroup>
+          <Box height="250px" mt="20px">
+            <BarChart data={newBarChartData} />
+          </Box>
         </Box>
-      </Box>
       </Box>
     </Box>
   );
