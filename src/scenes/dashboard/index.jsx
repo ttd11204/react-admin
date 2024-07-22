@@ -9,8 +9,10 @@ import StatBox from '../../components/StatBox';
 import TrafficIcon from '@mui/icons-material/Traffic';
 import axios from 'axios';
 import api from './../../api/api';
-import { fetchDailyRevenue } from './../../api/barApi';
-import { fetchBranches } from '../../api/branchApi';
+import { fetchBranches } from './../../api/branchApi';
+// import { fetchDailyRevenue } from './../../api/barApi';
+// import { fetchDailyRevenue, fetchWeeklyRevenue, fetchMonthlyRevenue } from './../../api/barApi';
+import { fetchDailyRevenue, fetchWeeklyRevenue, fetchMonthlyRevenue, fetchRevenueFromStartOfWeek, fetchWeeklyRevenueFromStartOfMonth, fetchMonthlyRevenueFromStartOfYear } from '../../api/barApi';
 
 
 const mockWeeklyBookings = [
@@ -97,6 +99,7 @@ const Dashboard = () => {
   const [courtPopularity, setCourtPopularity] = useState(mockCourtPopularity);
   const [feedback, setFeedback] = useState(mockFeedback);
   const [chartType, setChartType] = useState('monthly');
+  const [barType, setBarType] = useState('monthly');
   const [growthRate, setGrowthRate] = useState(0);
   const [barChartData, setBarChartData] = useState([]);
 
@@ -122,16 +125,27 @@ const Dashboard = () => {
       }
     };
 
-    const fetchBarChartData = async () => {
+    const fetchBarChartData = async (type) => {
       try {
         const branchesData = await fetchBranches();
         const branchRevenues = await Promise.all(
           branchesData.items.map(async (branch) => {
-            const revenueData = await fetchDailyRevenue(branch.branchId);
+            let revenueData;
+            switch(type) {
+              case 'weekly':
+                revenueData = await fetchWeeklyRevenue(branch.branchId);
+                break;
+              case 'monthly':
+                revenueData = await fetchMonthlyRevenue(branch.branchId);
+                break;
+              case 'daily':
+              default:
+                revenueData = await fetchDailyRevenue(branch.branchId);
+                break;
+            }
             return { id: branch.branchId, value: revenueData.revenue };
           })
         );
-        console.log('Branch Revenues:', branchRevenues); // In ra dữ liệu để kiểm tra
         setBarChartData(branchRevenues);
       } catch (error) {
         console.error("Error occurred while fetching branch data", error);
@@ -139,8 +153,8 @@ const Dashboard = () => {
     };
   
     fetchDailyBookings();
-    fetchBarChartData();
-  }, []);
+    fetchBarChartData(barType);
+  }, [barType]);
 
   useEffect(() => {
     const fetchBranchesData = async () => {
@@ -253,7 +267,7 @@ const Dashboard = () => {
 
         
 
-        {/* ROW 3 */}
+        {/* ROW 2 */}
         <Box gridColumn="span 12" backgroundColor={colors.primary[400]} p="20px">
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
@@ -270,34 +284,15 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        {/* ROW 4 */}
-        {/* <Box gridColumn="span 6" backgroundColor={colors.primary[400]} overflow="auto">
-          <Box display="flex" justifyContent="space-between" alignItems="center" borderBottom={`4px solid ${colors.primary[500]}`} p="15px">
-            <Typography color={colors.grey[100]} variant="h5" fontWeight="600">
-              Recent Transactions
-            </Typography>
-          </Box>
-          {recentTransactions.map((transaction, i) => (
-            <Box key={`${transaction.bookingId}-${i}`} display="flex" justifyContent="space-between" alignItems="center" borderBottom={`4px solid ${colors.primary[500]}`} p="15px">
-              <Box>
-                <Typography color={colors.greenAccent[500]} variant="h5" fontWeight="600">
-                  {transaction.bookingId}
-                </Typography>
-                <Typography color={colors.grey[100]}>{transaction.user}</Typography>
-              </Box>
-              <Box color={colors.grey[100]}>{new Date(transaction.bookingDate).toLocaleDateString()}</Box>
-              <Box backgroundColor={colors.greenAccent[500]} p="5px 10px" borderRadius="4px">
-                ${transaction.totalPrice}
-              </Box>
-            </Box>
-          ))}
-        </Box> */}
+        
 
-        {/* ROW 2 */}
+        {/* ROW 3 */}
         <Box gridColumn="span 6" backgroundColor={colors.primary[400]} p="20px">
-          <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
-            Daily Revenue and Change Percentage
-          </Typography>
+        <ButtonGroup variant="contained" color="primary">
+    <Button onClick={() => setBarType('daily')}>Daily</Button>
+    <Button onClick={() => setBarType('weekly')}>Weekly</Button>
+    <Button onClick={() => setBarType('monthly')}>Monthly</Button>
+  </ButtonGroup>
           <Box height="250px" mt="20px">
             <BarChart data={barChartData} />
           </Box>

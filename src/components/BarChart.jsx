@@ -45,26 +45,6 @@ const BarChart = ({ data }) => {
       valueScale={{ type: 'linear' }}
       indexScale={{ type: 'band', round: true }}
       colors={{ scheme: 'nivo' }}
-      defs={[
-        {
-          id: 'dots',
-          type: 'patternDots',
-          background: 'inherit',
-          color: '#38bcb2',
-          size: 4,
-          padding: 1,
-          stagger: true,
-        },
-        {
-          id: 'lines',
-          type: 'patternLines',
-          background: 'inherit',
-          color: '#eed312',
-          rotation: -45,
-          lineWidth: 6,
-          spacing: 10,
-        },
-      ]}
       borderColor={{
         from: 'color',
         modifiers: [['darker', '1.6']],
@@ -86,6 +66,7 @@ const BarChart = ({ data }) => {
         legend: 'value',
         legendPosition: 'middle',
         legendOffset: -40,
+        format: value => `${value}`, // Format values to thousands (k)
       }}
       enableLabel={false}
       labelSkipWidth={12}
@@ -118,6 +99,12 @@ const BarChart = ({ data }) => {
           ],
         },
       ]}
+      valueFormat={value => `${value}`} // Format values to thousands (k)
+      tooltip={({ id, value, color }) => (
+        <strong style={{ color: 'red' }}>
+          {id}: {value}
+        </strong>
+      )}
       role="application"
       barAriaLabel={function (e) {
         return e.id + ': ' + e.formattedValue + ' in id: ' + e.indexValue;
