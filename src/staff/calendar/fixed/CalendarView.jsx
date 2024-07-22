@@ -91,7 +91,9 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
       try {
         const response = await fetchBranches(1, 100);
         setBranches(response.items);
-        setSelectedBranch('');
+        if (response.items.length > 0) {
+          setSelectedBranch(response.items[0].branchId); // Chọn branch đầu tiên
+        }
       } catch (error) {
         console.error('Error fetching branches data:', error);
       }
@@ -191,9 +193,7 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
             displayEmpty
             sx={{ color: "#FFFFFF" }}
           >
-            <MenuItem value="">
-              <em>--Select Branch--</em>
-            </MenuItem>
+            
             {branches.map((branch) => (
               <MenuItem key={branch.branchId} value={branch.branchId}>
                 {branch.branchId}

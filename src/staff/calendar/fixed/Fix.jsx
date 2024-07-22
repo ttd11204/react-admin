@@ -6,7 +6,7 @@ import { Box, Typography, Button, TextField, FormControl, FormControlLabel, Chec
 import CalendarView from './CalendarView';
 import { fetchPriceByBranchIDType } from '../../../api/priceApi';
 import { fetchUserDetailByEmail, fetchUserDetail, fetchUserDetailByEmailVer2 } from "../../../api/userApi"; // Import thêm các hàm API để kiểm tra email
-import { fixEndTimeValidation, fixMonthValidation, fixStartTimeValidation } from '../../../scenes/formValidation';
+import { fixDayOfWeekValidation, fixEndTimeValidation, fixMonthValidation, fixStartTimeValidation } from '../../../scenes/formValidation';
 import '../../../scenes/validate.css';
 
 const theme = createTheme({
@@ -82,6 +82,10 @@ const FixedBooking = () => {
     isValid: true,
     message: "",
   });
+  const [dayOfWeekValidation, setDayOfWeekValidation] = useState({
+    isValid: true,
+    message: "",
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -154,14 +158,17 @@ console.log(result);
     const monthValidation = fixMonthValidation(numberOfMonths);
     const startTimeValidation = fixStartTimeValidation(slotStartTime);
     const endTimeValidation = fixEndTimeValidation(slotStartTime, slotEndTime);
+    const dayOfWeekValidation = fixDayOfWeekValidation(daysOfWeek);
     setMonthValidation(monthValidation);
     setStartTimeValidation(startTimeValidation);
     setEndTimeValidation(endTimeValidation);
+    setDayOfWeekValidation(dayOfWeekValidation);
 
     if (
       !monthValidation.isValid ||
       !startTimeValidation.isValid ||
-      !endTimeValidation.isValid
+      !endTimeValidation.isValid ||
+      !dayOfWeekValidation.isValid
     ) {
       setMessage("Please try again");
       setMessageType("error");
@@ -288,6 +295,11 @@ console.log(result);
                           sx={{ color: 'black' }}
                         />
                       ))}
+                      {dayOfWeekValidation.message && (
+                          <p className="errorVal">
+                            {dayOfWeekValidation.message}
+                          </p>
+                        )}
                     </Grid>
                     <Grid item xs={12}>
                       <Typography sx={{ color: 'black' }}>Start Date:</Typography>

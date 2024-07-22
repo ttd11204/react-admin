@@ -234,7 +234,7 @@ const Reviews = () => {
           {rowCount > 0 && (
             <Box display="flex" justifyContent="space-between" alignItems="center" mt="20px">
               <Select value={pageSize} onChange={handlePageSizeChange}>
-                {[10, 15, 20, 25, 50].map((size) => (
+                {[10, 15, 20].map((size) => (
                   <MenuItem key={size} value={size}>
                     {size}
                   </MenuItem>

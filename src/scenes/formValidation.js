@@ -129,6 +129,7 @@ export const validateYob = (yob) => {
   return { isValid: true, message: "" };
 };
 
+
 //flex
 export const flexValidation = (slots) => {
   if (!slots) {
@@ -155,6 +156,13 @@ export const flexValidation = (slots) => {
 
 
 //fix
+export const fixDayOfWeekValidation = (day) => {
+  if (day.length == 0) {
+      return {isValid: false, message: 'You need to choose day of week'};
+  }
+  return  {isValid: true, message: '' };
+}
+
 export const fixMonthValidation = (months) => {
   if (months > 3) {
       return { isValid: false, message: 'You can only book a maximum of 3 months each time' };

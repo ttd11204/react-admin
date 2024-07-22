@@ -112,8 +112,8 @@ const PaymentDetailFixed = () => {
                     <FormControl component="fieldset">
                       <FormLabel component="legend" sx={{ color: 'black' }}>Choose Payment Method</FormLabel>
                       <RadioGroup aria-label="payment method" name="paymentMethod">
-                        <FormControlLabel value="cash" control={<Radio />} label="Cash" sx={{ color: 'black' }} />
-                        <FormControlLabel value="creditCard" control={<Radio />} label="Credit Card" sx={{ color: 'black' }} />
+                        {/* <FormControlLabel value="cash" control={<Radio />} label="Cash" sx={{ color: 'black' }} /> */}
+                        <FormControlLabel value="creditCard" control={<Radio />} label="Credit Card" sx={{ color: 'black' }} checked />
                       </RadioGroup>
                     </FormControl>
                   </Box>

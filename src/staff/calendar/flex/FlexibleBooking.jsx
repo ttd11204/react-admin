@@ -157,6 +157,11 @@ const FlexibleBooking = () => {
   };
 
   const handleContinue = () => {
+
+    if(selectedSlots == 0){
+      alert('You need to choose slot(s) first');
+      return;
+    }
     
     const bookingRequests = selectedSlots.map((slot) => {
       const { day, slot: timeSlot } = slot;
