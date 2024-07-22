@@ -45,6 +45,18 @@ export const deleteBooking = async (id) => {
   }
 };
 
+//cancel a booking by ID
+export const cancelBooking = async (id) => {
+  try {
+    const response = await api.delete(`${url}/Bookings/cancel/${id}`);
+    return response;
+  } catch (error) {
+    console.error('Error deleting booking:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+
 // Reserve slots for a user
 export const reserveSlots = async (userId, bookings) => {
   try {
