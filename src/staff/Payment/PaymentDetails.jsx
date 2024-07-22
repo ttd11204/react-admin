@@ -7,10 +7,13 @@ import { fetchUserDetailByEmail, fetchUserDetail,fetchUserDetailByEmailVer2 } fr
 import { generatePaymentToken, processPayment } from '../../api/paymentApi';
 import LoadingPage from './LoadingPage';
 import { addTimeSlotIfExistBooking } from '../../api/timeSlotApi';
-import { reserveSlots, createBookingFlex, deleteBookingInFlex } from '../../api/bookingApi';
+import { reserveSlots, createBookingFlex, deleteBookingInFlex, checkBookingTypeFlex } from '../../api/bookingApi';
 import { fetchCourtByBranchId, fetchAvailableCourts } from '../../api/courtApi';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import * as signalR from '@microsoft/signalr';
+import './style.css';
+import Modal from "react-modal";
+Modal.setAppElement("#root");
 
 const theme = createTheme({
   components: {
@@ -54,7 +57,16 @@ const PaymentDetail = () => {
   const [signalRCourt, setSignalRCourt] = useState(null);
   const [eventCourt, setEventCourt] = useState(0);
 
+  const [showNavigateFlex, setShowNavigateFlex] = useState(false);
+  const [availableSlotFlex, setAvailableSlotFlex] = useState(null);
+  const [bookingIdFlex, setBookingIdFlex] = useState(null);
+  const currentDay = new Date().getDate();
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
 
+  const closeNavigateToFlex = () => {
+    setShowNavigateFlex(false);
+  };
   //fetch chỉ 1 lần
   const isFetchCourt = useRef(false);
 
@@ -206,18 +218,51 @@ const PaymentDetail = () => {
     }
   };
 
+  const handleNavigate = () => {
+    navigate("/flex", {state: {
+      email: userInfo.email,
+      userId: userInfo.userId,
+    }});
+  };
+
   useEffect(() => {
     if (userChecked && locationUserInfo) {
       setUserExists(true);
     }
   }, [userChecked, locationUserInfo]);
 
+  console.log('avaislot', availableSlotFlex)
+
+  useEffect(() => {
+    const fetchingFlexSlot = async () => {
+      if (!userInfo) {
+        console.error("User is null");
+        return;
+      }
+
+      try {
+        const availableSlot = await checkBookingTypeFlex(
+          userInfo.userId,
+          branchId
+        );
+        console.log("availableSlot:", availableSlot);
+
+        setAvailableSlotFlex(availableSlot.numberOfSlot); // Update the state
+        setBookingIdFlex(availableSlot.bookingId);
+      } catch (error) {
+        console.error("error fetching available Slot", error);
+      }
+    };
+
+    fetchingFlexSlot();
+  }, [userInfo, branchId]);
+
+  // console.log("userId: user.id", userInfo.userId);
   const handleEmailCheck = async () => {
+
     if (!email) {
       setErrorMessage('Please enter an email.');
-      return;
     }
-
     try {
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
@@ -245,6 +290,10 @@ const PaymentDetail = () => {
         setUserInfo(null);
         setErrorMessage('User does not exist. Please register.');
       }
+      if (availableSlotFlex != 0) {
+        setShowNavigateFlex(true);
+        return;
+      }else{setShowNavigateFlex(false);}
     } catch (error) {
       console.error('Error checking user existence:', error);
       setErrorMessage('Error checking user existence. Please try again.');
@@ -522,6 +571,51 @@ const PaymentDetail = () => {
           </Button>
         </Box>
       </Box>
+          {/* Navigate to Flex */}
+          
+          {showNavigateFlex && (
+          <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+            <div className="card">
+              <h3 className="card__title">Notification!</h3>
+              <p className="card__content">
+                You now already have some remaining slots in booking type flex,
+                we will navigate you. Please click the arrow button under.
+              </p>
+              <div className="card__date">
+                {currentMonth + " " + currentDay + ", " + currentYear}
+              </div>
+              <div className="card__arrow">
+                <svg
+                  onClick={handleNavigate}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  height="15"
+                  width="15"
+                >
+                  <path
+                    fill="#fff"
+                    d="M13.4697 17.9697C13.1768 18.2626 13.1768 18.7374 13.4697 19.0303C13.7626 19.3232 14.2374 19.3232 14.5303 19.0303L20.3232 13.2374C21.0066 12.554 21.0066 11.446 20.3232 10.7626L14.5303 4.96967C14.2374 4.67678 13.7626 4.67678 13.4697 4.96967C13.1768 5.26256 13.1768 5.73744 13.4697 6.03033L18.6893 11.25H4C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75H18.6893L13.4697 17.9697Z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+          
+</Box>
+        )}
     </ThemeProvider>
   );
 };
