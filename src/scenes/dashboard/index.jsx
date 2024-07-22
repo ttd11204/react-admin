@@ -8,6 +8,7 @@ import PieChart from '../../components/PieChart';
 import StatBox from '../../components/StatBox';
 import TrafficIcon from '@mui/icons-material/Traffic';
 import axios from 'axios';
+import api from './../../api/api'
 
 const mockWeeklyBookings = [
   {
@@ -52,11 +53,6 @@ const mockRecentTransactions = [
   { bookingId: 'TXN003', user: 'User3', bookingDate: '2024-07-03', totalPrice: 200 },
 ];
 
-const mockUserStats = {
-  totalUsers: 10,
-  activeUsers: 20,
-  newUsers: 3,
-};
 
 const mockRevenueStats = {
   daily: 1000,
@@ -81,14 +77,17 @@ const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const [dailyBookings, setDailyBookings] = useState([]);
+  const [startDailyBookings, setStartDailyBookings] = useState([]);
+  const [startWeeklyBookings, setStartWeeklyBookings] = useState([]);
   const [dailyBookingsCount, setDailyBookingsCount] = useState(0);
   const [dailyIncrease, setDailyIncrease] = useState(0);
-  const [weeklyBookings, setWeeklyBookings] = useState(mockWeeklyBookings);
+  const [weeklyBookings, setWeeklyBookings] = useState([]);
+  const [weeklyIncrease, setWeeklyIncrease] = useState(0);
+  const [weeklyBookingsCount, setWeeklyBookingsCount] = useState(0);
   const [monthlyBookings, setMonthlyBookings] = useState(mockMonthlyBookings);
   const [recentTransactions, setRecentTransactions] = useState(mockRecentTransactions);
   const [predictedBookings, setPredictedBookings] = useState(null);
-  const [userStats, setUserStats] = useState(mockUserStats);
+ 
   const [revenueStats, setRevenueStats] = useState(mockRevenueStats);
   const [courtPopularity, setCourtPopularity] = useState(mockCourtPopularity);
   const [feedback, setFeedback] = useState(mockFeedback);
@@ -98,13 +97,24 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDailyBookings = async () => {
       try {
-        const response = await axios.get('https://courtcaller.azurewebsites.net/api/Bookings/daily-bookings');
-        setDailyBookings(response.data.data);
-        setDailyBookingsCount(response.data.total);
+        const response = await api.get('/Bookings/daily-bookings');
+        console.log("data là ",response.data)
+        
+        setDailyBookingsCount(response.data.todayCount);
+        setDailyIncrease(response.data.changePercentage);
 
-        const weeklyResponse = await axios.get('https://courtcaller.azurewebsites.net/api/Bookings/weekly-bookings');
-        const weeklyAverage = weeklyResponse.data.total / 7;
-        setDailyIncrease(((response.data.total - weeklyAverage) / weeklyAverage) * 100);
+        const lineDaily = await api.get('/Bookings/bookings-from-start-of-week');
+        setStartDailyBookings(lineDaily.data)
+
+        const lineWeekly =await api.get('/Bookings/weekly-bookings-from-start-of-month');
+        setStartWeeklyBookings(lineWeekly.data)
+
+        const weeklyResponse = await api.get('/Bookings/weekly-bookings');
+        console.log("weekly data là ",weeklyResponse.data)
+        setWeeklyBookings(weeklyResponse.data.changePercentage)
+        setWeeklyIncrease(weeklyResponse.data.changePercentage);
+        setWeeklyBookingsCount(weeklyResponse.data.todayCount);
+        
       } catch (error) {
         console.error('Error fetching daily bookings:', error);
       }
@@ -113,34 +123,27 @@ const Dashboard = () => {
     fetchDailyBookings();
   }, []);
 
-  useEffect(() => {
-    const fetchPrediction = async () => {
-      try {
-        const response = await axios.get('https://localhost:7104/api/Training/weekly-growth');
-        setPredictedBookings(response.data.predictedCount);
-        setGrowthRate(response.data.growthRate);
-        console.log(response.data);
-      } catch (error) {
-        console.error('Error fetching prediction:', error);
-      }
-    };
-
-    fetchPrediction();
-  }, []);
-
+  
   const getChartData = () => {
     switch (chartType) {
       case 'daily':
         return [{
           id: 'Daily Bookings',
           color: 'hsl(210, 70%, 50%)',
-          data: dailyBookings.map((booking) => ({
-            x: new Date(booking.bookingDate).toLocaleDateString(),
-            y: booking.totalPrice,
+          data: startDailyBookings.map((count, index) => ({
+            x: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][index],
+            y: count,
           })),
         }];
-      case 'weekly':
-        return weeklyBookings;
+        case 'weekly':
+          return [{
+            id: 'Weekly Bookings',
+            color: 'hsl(348, 70%, 50%)',
+            data: startWeeklyBookings.map((count, index) => ({
+              x: `Week ${index + 1}`,
+              y: count,
+            })),
+          }];
       case 'monthly':
       default:
         return monthlyBookings;
@@ -158,7 +161,7 @@ const Dashboard = () => {
         {/* ROW 1 */}
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
-            title={dailyBookingsCount.toString()}
+            title={dailyBookingsCount}
             subtitle="Daily Bookings"
             progress="0.75"
             increase={isNaN(dailyIncrease) ? "N/A" : `${dailyIncrease.toFixed(2)}%`}
@@ -167,10 +170,10 @@ const Dashboard = () => {
         </Box>
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
-            title={weeklyBookings.reduce((sum, booking) => sum + booking.data.reduce((subSum, d) => subSum + d.y, 0), 0).toString()}
+            title={weeklyBookingsCount}
             subtitle="Weekly Bookings"
             progress="0.50"
-            increase="+5%"
+            increase={isNaN(weeklyIncrease) ? "N/A" : `${weeklyIncrease.toFixed(2)}%`}
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
           />
         </Box>
@@ -186,50 +189,14 @@ const Dashboard = () => {
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
             title={predictedBookings ? predictedBookings.toString() : "Loading..."}
-            subtitle="Predicted Bookings"
+            subtitle="Total User"
             progress="0.80"
             increase= {growthRate ? `${growthRate.toFixed(2)}%` : "Loading..." }
             icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
           />
         </Box>
 
-        {/* ROW 2 */}
-        <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
-          <StatBox
-            title={userStats.totalUsers.toString()}
-            subtitle="Total Users"
-            progress="0.90"
-            increase="+15%"
-            icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
-          />
-        </Box>
-        <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
-          <StatBox
-            title={userStats.activeUsers.toString()}
-            subtitle="Active Users"
-            progress="0.85"
-            increase="+10%"
-            icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
-          />
-        </Box>
-        <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
-          <StatBox
-            title={userStats.newUsers.toString()}
-            subtitle="New Users"
-            progress="0.70"
-            increase="+20%"
-            icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
-          />
-        </Box>
-        <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
-          <StatBox
-            title={`$${revenueStats.daily}`}
-            subtitle="Daily Revenue"
-            progress="0.80"
-            increase="+12%"
-            icon={<TrafficIcon sx={{ color: colors.greenAccent[600], fontSize: '26px' }} />}
-          />
-        </Box>
+       
 
         {/* ROW 3 */}
         <Box gridColumn="span 12" backgroundColor={colors.primary[400]} p="20px">
@@ -250,18 +217,7 @@ const Dashboard = () => {
 
 
       {/* ROW 4 */}
-      <Box gridColumn="span 6" backgroundColor={colors.primary[400]}>
-        <Box mt="20px" p="0 30px" display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
-              Revenue Breakdown
-            </Typography>
-          </Box>
-        </Box>
-        <Box height="250px" m="-20px 0 0 0">
-          <PieChart data={monthlyBookings} />
-        </Box>
-      </Box>
+      
 
       <Box gridColumn="span 6" backgroundColor={colors.primary[400]} overflow="auto">
         <Box display="flex" justifyContent="space-between" alignItems="center" borderBottom={`4px solid ${colors.primary[500]}`} p="15px">
@@ -285,39 +241,8 @@ const Dashboard = () => {
         ))}
       </Box>
 
-        {/* ROW 5 */}
-        <Box gridColumn="span 6" backgroundColor={colors.primary[400]}>
-          <Box mt="20px" p="0 30px" display="flex" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
-                Court Popularity
-              </Typography>
-            </Box>
-          </Box>
-          <Box height="250px" m="-20px 0 0 0">
-            <BarChart data={courtPopularity} />
-          </Box>
-        </Box>
-
-        <Box gridColumn="span 6" backgroundColor={colors.primary[400]} overflow="auto">
-          <Box display="flex" justifyContent="space-between" alignItems="center" borderBottom={`4px solid ${colors.primary[500]}`} p="15px">
-            <Typography color={colors.grey[100]} variant="h5" fontWeight="600">
-              User Feedback
-            </Typography>
-          </Box>
-          <Box mt="20px">
-            <Typography variant="h6" fontWeight="600" color={colors.grey[100]}>
-              Feedback Count: {feedback.length}
-            </Typography>
-            {feedback.map((feedback, i) => (
-              <Box key={`${feedback.user}-${i}`} p="10px" m="10px" border={`1px solid ${colors.grey[400]}`}>
-                <Typography color={colors.grey[100]}>User: {feedback.user}</Typography>
-                <Typography color={colors.grey[100]}>Rating: {feedback.rating}</Typography>
-                <Typography color={colors.grey[100]}>Comment: {feedback.comment}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
+      
+        
       </Box>
     </Box>
   );
