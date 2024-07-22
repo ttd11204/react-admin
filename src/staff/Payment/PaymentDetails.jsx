@@ -262,11 +262,13 @@ const PaymentDetail = () => {
 
   // console.log("userId: user.id", userInfo.userId);
   const handleEmailCheck = async () => {
-
     if (!email) {
       setErrorMessage('Please enter an email.');
+      return;
     }
+
     try {
+      
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
@@ -282,6 +284,7 @@ const PaymentDetail = () => {
             balance: detailedUserInfo.balance,
             address: detailedUserInfo.address,
           });
+          
           setErrorMessage('');
         } else {
           setUserExists(false);
@@ -293,7 +296,8 @@ const PaymentDetail = () => {
         setUserInfo(null);
         setErrorMessage('User does not exist. Please register.');
       }
-      if (availableSlotFlex != 0) {
+     
+      if (availableSlotFlex !== 0) {
         setShowNavigateFlex(true);
         return;
       }else{setShowNavigateFlex(false);}

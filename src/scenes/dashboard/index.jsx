@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, ButtonGroup, Button, useTheme } from '@mui/material';
+import { Box, Typography, ButtonGroup, Button, useTheme, FormControl, Select, MenuItem  } from '@mui/material';
 import { tokens } from '../../theme';
 import Header from '../../components/Header';
 import LineChart from '../../components/LineChart';
@@ -9,6 +9,8 @@ import StatBox from '../../components/StatBox';
 import TrafficIcon from '@mui/icons-material/Traffic';
 import axios from 'axios';
 import api from './../../api/api'
+
+import { fetchBranches } from '../../api/branchApi';
 
 const mockWeeklyBookings = [
   {
@@ -86,8 +88,9 @@ const Dashboard = () => {
   const [weeklyBookingsCount, setWeeklyBookingsCount] = useState(0);
   const [monthlyBookings, setMonthlyBookings] = useState(mockMonthlyBookings);
   const [recentTransactions, setRecentTransactions] = useState(mockRecentTransactions);
+  const [selectedBranch, setSelectedBranch] = useState('');
   const [predictedBookings, setPredictedBookings] = useState(null);
- 
+  const [branches, setBranches] = useState([]);
   const [revenueStats, setRevenueStats] = useState(mockRevenueStats);
   const [courtPopularity, setCourtPopularity] = useState(mockCourtPopularity);
   const [feedback, setFeedback] = useState(mockFeedback);
@@ -123,6 +126,22 @@ const Dashboard = () => {
     fetchDailyBookings();
   }, []);
 
+  useEffect(() => {
+    const fetchBranchesData = async () => {
+      try {
+        const response = await fetchBranches(1, 10);
+        setBranches(response.items);
+        setSelectedBranch('');
+        console.log('Branches:', response.items);
+      } catch (error) {
+        console.error('Error fetching branches data:', error);
+      }
+    };
+
+    fetchBranchesData();
+  }, []);
+
+
   
   const getChartData = () => {
     switch (chartType) {
@@ -155,9 +174,30 @@ const Dashboard = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="DASHBOARD" subtitle="Manage your badminton court bookings with advanced analytics" />
       </Box>
+      <FormControl sx={{ minWidth: 200, backgroundColor: "#0D1B34", borderRadius: 1, marginBottom: "20px" }}>
+        <Select
+          labelId="branch-select-label"
+          value={selectedBranch}
+          onChange={(e) => setSelectedBranch(e.target.value)}
+          displayEmpty
+          sx={{ color: "#FFFFFF" }}
+        >
+          <MenuItem value="">
+            <em>--Select Branch--</em>
+          </MenuItem>
+          {branches.map((branch) => (
+            <MenuItem key={branch.branchId} value={branch.branchId}>
+              {branch.branchName} {/* Display branchName instead of branchId */}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
       {/* GRID & CHARTS */}
       <Box display="grid" gridTemplateColumns="repeat(12, 1fr)" gridAutoRows="minmax(140px, auto)" gap="20px">
+
+
+
         {/* ROW 1 */}
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox

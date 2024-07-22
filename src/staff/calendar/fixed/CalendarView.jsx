@@ -164,6 +164,23 @@ const CalendarView = ({ selectedBranch, setSelectedBranch, onSlotSelect }) => {
     console.log('UnavailableSlot:', unavailableSlots);
   }, [unavailableSlots]);
 
+  useEffect(() => {
+    if (connection) {
+        const startConnection = async () => {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+                setIsConnected(true);
+            } catch (error) {
+                console.error("SignalR Connection Error:", error);
+                setIsConnected(false);
+                setTimeout(startConnection, 5000);
+            }
+        }
+        startConnection();
+    }
+  }, [connection]);
+
 
   useEffect(() => {
     const fetchBranchesData = async () => {

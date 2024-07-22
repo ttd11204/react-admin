@@ -168,6 +168,23 @@ const FlexibleBooking = () => {
   }, [unavailableSlots]);
 
   useEffect(() => {
+    if (connection) {
+        const startConnection = async () => {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+                setIsConnected(true);
+            } catch (error) {
+                console.error("SignalR Connection Error:", error);
+                setIsConnected(false);
+                setTimeout(startConnection, 5000);
+            }
+        }
+        startConnection();
+    }
+  }, [connection]);
+
+  useEffect(() => {
     const fetchBranchDetails = async () => {
       try {
         const branchDetails = await fetchBranchById(branchId);
