@@ -86,7 +86,9 @@ const PaymentDetail = () => {
       newConnection.on("RefreshCourt", () => {
         console.log("RefreshCourt event received.");
         
+        console.log ("even 1",eventCourt)
         setEventCourt(prev => prev + 1);
+    
       });
   
       console.log('Initializing connection...');
@@ -144,10 +146,11 @@ const PaymentDetail = () => {
   };
 
   useEffect(() => {
-    if (branchId && sortedBookingRequests.length > 0 && !isFetchCourt.current) {
+    console.log ("branch", branchId , "sort là ", sortedBookingRequests , "is fetch court là:" , !isFetchCourt.current);
+    if (branchId && sortedBookingRequests.length > 0 ) {
       sortedBookingRequests.forEach((request, index) => {
-        handleCourtChange(index, request.slotDate, request.timeSlot.slotStartTime, request.timeSlot.slotEndTime);
-        console.log ("branch", branchId , "sort là ", sortedBookingRequests);
+       var fetchavailableCourt = handleCourtChange(index, request.slotDate, request.timeSlot.slotStartTime, request.timeSlot.slotEndTime);
+       console.log("nó chính là: ",fetchAvailableCourts)
       });
       isFetchCourt.current = true;
     }
