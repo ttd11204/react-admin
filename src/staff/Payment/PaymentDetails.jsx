@@ -257,7 +257,7 @@ const PaymentDetail = () => {
       return;
     }
     try {
-      await sendUnavailableSlotCheck();
+     
 
       if (availableSlot !== 0 && bookingId) {
         const bookingForm = bookingRequests.map((request, index) => ({
@@ -278,6 +278,7 @@ const PaymentDetail = () => {
             userInfo: userInfo,
           }
         });
+        await sendUnavailableSlotCheck();
         return;
       }
 
@@ -300,7 +301,7 @@ const PaymentDetail = () => {
 
           id = createBookingTypeFlex.bookingId;
           const booking = await reserveSlots(userInfo.userId, bookingForm);
-        
+          await sendUnavailableSlotCheck();
           // If reservation is successful, continue to the next step or navigate
           setActiveStep((prevActiveStep) => prevActiveStep + 1);
           const tokenResponse = await generatePaymentToken(booking.bookingId);
@@ -342,6 +343,7 @@ const PaymentDetail = () => {
          
           console.log('Booking:', booking);
           await sendAvailableSlotCheck();
+          await sendUnavailableSlotCheck();
           const bookingId = booking.bookingId;
           const tokenResponse = await generatePaymentToken(bookingId);
           const token = tokenResponse.token;
