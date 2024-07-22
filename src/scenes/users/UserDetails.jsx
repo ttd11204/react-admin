@@ -10,6 +10,8 @@ import { storageDb } from '../../firebase';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 } from 'uuid';
 import { validateYob } from '../formValidation';
+import { toast } from 'react-toastify';
+
 
 const UserDetails = () => {
   const theme = useTheme();
@@ -23,6 +25,8 @@ const UserDetails = () => {
   const [image, setImage] = useState(null);
   const [imageRef, setImageRef] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [yearOfBirthError, setYearOfBirthError] = useState(null);
+
   
 
   useEffect(() => {
@@ -52,10 +56,9 @@ const UserDetails = () => {
     if (field === 'yearOfBirth') {
       const validation = validateYob(value);
       if (!validation.isValid) {
-        setError(validation.message);
-        return;
+        setYearOfBirthError(validation.message);
       } else {
-        setError(null);
+        setYearOfBirthError(null);
       }
     }
   };
@@ -78,6 +81,10 @@ const UserDetails = () => {
   };
 
   const handleSave = async () => {
+    if (yearOfBirthError) {
+      toast.error('Please correct the errors before saving.');
+      return;
+    }
     try {
       if (!role && user.role) {
         setRole(user.role);
@@ -216,11 +223,13 @@ const UserDetails = () => {
                           },
                         },
                       }}
-                    />
-                     {error && (
-                        <Typography color="error" variant="h6">{error}</Typography>
-                      )}
-                    </>
+                        />
+                        {yearOfBirthError && (
+                          <Typography color="error" variant="body2">
+                            {yearOfBirthError}
+                          </Typography>
+                        )}
+                      </>
                   ) : (
                     <Typography>{user.yearOfBirth || 'N/A'}</Typography>
                   )}
