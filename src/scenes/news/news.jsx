@@ -220,7 +220,7 @@ const News = () => {
           onChange={handlePageSizeChange}
           margin="dense"
         >
-          {[10, 15, 20, 25, 50].map(size => (
+          {[10, 15, 20].map(size => (
             <MenuItem key={size} value={size}>
               {size}
             </MenuItem>
