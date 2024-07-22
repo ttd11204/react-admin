@@ -55,7 +55,7 @@ const BarChart = ({ data }) => {
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: 'id',
+        legend: '',
         legendPosition: 'middle',
         legendOffset: 32,
       }}
@@ -63,7 +63,7 @@ const BarChart = ({ data }) => {
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: 'value',
+        legend: '',
         legendPosition: 'middle',
         legendOffset: -40,
         format: value => `${value}`, // Format values to thousands (k)
@@ -97,12 +97,15 @@ const BarChart = ({ data }) => {
               },
             },
           ],
+          data: [
+            { label: 'revenue', color: '#e8c1a0'} // Update legend label here
+          ],
         },
       ]}
       valueFormat={value => `${value}`} // Format values to thousands (k)
       tooltip={({ id, value, color }) => (
-        <strong style={{ color: 'red' }}>
-          {id}: {value}
+        <strong style={{ color: color }}>
+          revenue: {value}
         </strong>
       )}
       role="application"

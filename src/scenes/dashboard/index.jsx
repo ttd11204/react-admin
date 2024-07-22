@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, ButtonGroup, Button, useTheme, FormControl, Select, MenuItem  } from '@mui/material';
+import { Box, Typography, ButtonGroup, Button, useTheme, FormControl, Select, MenuItem } from '@mui/material';
 import { tokens } from '../../theme';
 import Header from '../../components/Header';
 import LineChart from '../../components/LineChart';
 import BarChart from '../../components/BarChart';
-import PieChart from '../../components/PieChart';
 import StatBox from '../../components/StatBox';
 import TrafficIcon from '@mui/icons-material/Traffic';
+import { fetchBranches } from './../../api/branchApi';
 import axios from 'axios';
 import api from './../../api/api';
-import { fetchBranches } from './../../api/branchApi';
-// import { fetchDailyRevenue } from './../../api/barApi';
-// import { fetchDailyRevenue, fetchWeeklyRevenue, fetchMonthlyRevenue } from './../../api/barApi';
-import { fetchDailyRevenue, fetchWeeklyRevenue, fetchMonthlyRevenue, fetchRevenueFromStartOfWeek, fetchWeeklyRevenueFromStartOfMonth, fetchMonthlyRevenueFromStartOfYear } from '../../api/barApi';
-
+import {
+  fetchDailyRevenue,
+  fetchWeeklyRevenue,
+  fetchMonthlyRevenue,
+  fetchRevenueFromStartOfWeek,
+  fetchWeeklyRevenueFromStartOfMonth,
+  fetchMonthlyRevenueFromStartOfYear
+} from '../../api/barApi';
 
 const mockWeeklyBookings = [
   {
@@ -102,6 +105,8 @@ const Dashboard = () => {
   const [barType, setBarType] = useState('monthly');
   const [growthRate, setGrowthRate] = useState(0);
   const [barChartData, setBarChartData] = useState([]);
+  const [selectedBranchBarChart, setSelectedBranchBarChart] = useState('');
+  const [newBarChartData, setNewBarChartData] = useState([]);
 
   useEffect(() => {
     const fetchDailyBookings = async () => {
@@ -131,7 +136,7 @@ const Dashboard = () => {
         const branchRevenues = await Promise.all(
           branchesData.items.map(async (branch) => {
             let revenueData;
-            switch(type) {
+            switch (type) {
               case 'weekly':
                 revenueData = await fetchWeeklyRevenue(branch.branchId);
                 break;
@@ -151,7 +156,7 @@ const Dashboard = () => {
         console.error("Error occurred while fetching branch data", error);
       }
     };
-  
+
     fetchDailyBookings();
     fetchBarChartData(barType);
   }, [barType]);
@@ -170,6 +175,45 @@ const Dashboard = () => {
 
     fetchBranchesData();
   }, []);
+
+  useEffect(() => {
+    const fetchNewBarChartData = async () => {
+      if (!selectedBranchBarChart) return;
+
+      const fetchFunction = {
+        daily: fetchRevenueFromStartOfWeek,
+        weekly: fetchWeeklyRevenueFromStartOfMonth,
+        monthly: fetchMonthlyRevenueFromStartOfYear
+      }[barType];
+
+      try {
+        const result = await fetchFunction(selectedBranchBarChart);
+        let labels;
+        switch (barType) {
+          case 'daily':
+            labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            break;
+          case 'weekly':
+            labels = ['W1', 'W2', 'W3', 'W4'];
+            break;
+          case 'monthly':
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            break;
+          default:
+            labels = result.map((_, index) => `Data ${index + 1}`);
+        }
+        const processedData = result.map((value, index) => ({
+          id: labels[index] || `Data ${index + 1}`,
+          value: value !== undefined && value !== null ? value : 0
+        }));
+        setNewBarChartData(processedData);
+      } catch (error) {
+        console.error("Error occurred while fetching revenue data", error);
+      }
+    };
+
+    fetchNewBarChartData();
+  }, [barType, selectedBranchBarChart]);
 
   const getChartData = () => {
     switch (chartType) {
@@ -224,9 +268,6 @@ const Dashboard = () => {
 
       {/* GRID & CHARTS */}
       <Box display="grid" gridTemplateColumns="repeat(12, 1fr)" gridAutoRows="minmax(140px, auto)" gap="20px">
-
-
-
         {/* ROW 1 */}
         <Box gridColumn="span 3" backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
           <StatBox
@@ -265,8 +306,6 @@ const Dashboard = () => {
           />
         </Box>
 
-        
-
         {/* ROW 2 */}
         <Box gridColumn="span 12" backgroundColor={colors.primary[400]} p="20px">
           <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -284,19 +323,47 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        
-
         {/* ROW 3 */}
         <Box gridColumn="span 6" backgroundColor={colors.primary[400]} p="20px">
-        <ButtonGroup variant="contained" color="primary">
-    <Button onClick={() => setBarType('daily')}>Daily</Button>
-    <Button onClick={() => setBarType('weekly')}>Weekly</Button>
-    <Button onClick={() => setBarType('monthly')}>Monthly</Button>
-  </ButtonGroup>
+          <ButtonGroup variant="contained" color="primary">
+            <Button onClick={() => setBarType('daily')}>Daily</Button>
+            <Button onClick={() => setBarType('weekly')}>Weekly</Button>
+            <Button onClick={() => setBarType('monthly')}>Monthly</Button>
+          </ButtonGroup>
           <Box height="250px" mt="20px">
             <BarChart data={barChartData} />
           </Box>
         </Box>
+
+        {/* ROW 4 */}
+        <Box gridColumn="span 6" backgroundColor={colors.primary[400]} p="20px">
+        <FormControl sx={{ minWidth: 200, backgroundColor: "#0D1B34", borderRadius: 1, marginBottom: "20px" }}>
+          <Select
+            labelId="branch-select-bar-label"
+            value={selectedBranchBarChart}
+            onChange={(e) => setSelectedBranchBarChart(e.target.value)}
+            displayEmpty
+            sx={{ color: "#FFFFFF" }}
+          >
+            <MenuItem value="">
+              <em>--Select Branch--</em>
+            </MenuItem>
+            {branches.map((branch) => (
+              <MenuItem key={branch.branchId} value={branch.branchId}>
+                {branch.branchId}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <ButtonGroup variant="contained" color="primary">
+          <Button onClick={() => setBarType('daily')}>Daily</Button>
+          <Button onClick={() => setBarType('weekly')}>Weekly</Button>
+          <Button onClick={() => setBarType('monthly')}>Monthly</Button>
+        </ButtonGroup>
+        <Box height="250px" mt="20px">
+          <BarChart data={newBarChartData} />
+        </Box>
+      </Box>
       </Box>
     </Box>
   );
