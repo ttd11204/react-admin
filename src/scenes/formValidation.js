@@ -132,12 +132,8 @@ export const validateYob = (yob) => {
 
 //flex
 export const flexValidation = (slots) => {
-  if (!slots) {
-    return { isValid: false, message: 'Input cannot be empty' };
-  }
 
   const slotNumber = Number(slots);
-
 
   if (!Number.isInteger(slotNumber)) {
     return { isValid: false, message: 'You must input an integer number' };

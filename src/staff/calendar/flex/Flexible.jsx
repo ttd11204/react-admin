@@ -278,6 +278,7 @@ const Flexible = () => {
                   placeholder="Enter Number of Slots"
                   fullWidth
                   type="number"
+                  required
                   value={numberOfSlot}
                   onChange={(e) => setNumberOfSlot(e.target.value)}
                   error={Boolean(errors.numberOfSlot)}
