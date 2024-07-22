@@ -57,12 +57,13 @@ const Login = () => {
         console.log("Token:", res.token);
         console.log("Role:", userRole);
 
-        toast.success("Login successful!");
 
         // Navigate based on user role
         if (userRole === 'Admin') {
+        toast.success("Login successful!");
           navigate("/admin/Users");
         } else if (userRole === 'Staff') {
+          toast.success("Login successful!");
           navigate("/Users");
         } else {
           navigate("/login");
