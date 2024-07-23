@@ -66,7 +66,7 @@ const BarChart = ({ data }) => {
         legend: '',
         legendPosition: 'middle',
         legendOffset: -40,
-        format: value => `${value}`, // Format values to thousands (k)
+        format: value => `${value}k`, // Format values to thousands (k)
       }}
       enableLabel={false}
       labelSkipWidth={12}
@@ -102,9 +102,9 @@ const BarChart = ({ data }) => {
           ],
         },
       ]}
-      valueFormat={value => `${value}`} // Format values to thousands (k)
+      valueFormat={value => `${value}k`} // Format values to thousands (k)
       tooltip={({ id, value, color }) => (
-        <strong style={{ color: color }}>
+        <strong style={{ color: 'red' }}>
           revenue: {value}
         </strong>
       )}

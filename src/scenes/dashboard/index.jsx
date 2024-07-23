@@ -321,11 +321,11 @@ const [countUser, setCountUser] = useState(0);
               ))}
             </Select>
           </FormControl>
-          <ButtonGroup variant="contained" color="primary" >
+          {/* <ButtonGroup variant="contained" color="primary" >
             <Button onClick={() => setBarType('daily')}>Daily</Button>
             <Button onClick={() => setBarType('weekly')}>Weekly</Button>
             <Button onClick={() => setBarType('monthly')}>Monthly</Button>
-          </ButtonGroup>
+          </ButtonGroup> */}
           <Box height="250px" mt="20px">
             <BarChart data={newBarChartData} />
           </Box>

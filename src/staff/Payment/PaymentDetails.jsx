@@ -354,9 +354,9 @@ const PaymentDetail = () => {
           console.log('Booking Form:', bookingForm);
           console.log('numberOfSlot:', numberOfSlot);
           const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
-console.log("createBookingTypeFlex nè hehehe",createBookingTypeFlex)
+          console.log("createBookingTypeFlex nè hehehe",createBookingTypeFlex)
           id = createBookingTypeFlex.bookingId;
-          //const booking = await reserveSlots(userInfo.userId, bookingForm);
+          const booking = await reserveSlots(userInfo.userId, bookingForm);
           await sendUnavailableSlotCheck();
           // If reservation is successful, continue to the next step or navigate
           setActiveStep((prevActiveStep) => prevActiveStep + 1);
