@@ -123,6 +123,18 @@ const PaymentDetail = () => {
         startConnection();
       }
     }, [connection]);
+
+    useEffect(() => {
+      if (availableSlotFlex !== null) {
+        console.log('availableSlotFlex at point 1:', availableSlotFlex);
+        console.log('Type of availableSlotFlex at point 1:', typeof availableSlotFlex);
+        if (availableSlotFlex !== 0) {
+          setShowNavigateFlex(true);
+        } else {
+          setShowNavigateFlex(false);
+        }
+      }
+    }, [availableSlotFlex]);
   
   
     // gửi slot để backend signalr nó check
@@ -225,6 +237,7 @@ const PaymentDetail = () => {
     navigate("/flex", {state: {
       email: userInfo.email,
       userId: userInfo.userId,
+      branchId
     }});
   };
 
@@ -259,6 +272,7 @@ const PaymentDetail = () => {
 
     fetchingFlexSlot();
   }, [userInfo, branchId]);
+  console.log('availableSlotFlexSlot', availableSlotFlex)
 
   // console.log("userId: user.id", userInfo.userId);
   const handleEmailCheck = async () => {
@@ -266,9 +280,8 @@ const PaymentDetail = () => {
       setErrorMessage('Please enter an email.');
       return;
     }
-
+  
     try {
-      
       const userData = await fetchUserDetailByEmail(email);
       if (userData && userData.length > 0) {
         const user = userData[0];
@@ -284,7 +297,6 @@ const PaymentDetail = () => {
             balance: detailedUserInfo.balance,
             address: detailedUserInfo.address,
           });
-          
           setErrorMessage('');
         } else {
           setUserExists(false);
@@ -296,16 +308,13 @@ const PaymentDetail = () => {
         setUserInfo(null);
         setErrorMessage('User does not exist. Please register.');
       }
-     
-      if (availableSlotFlex !== 0) {
-        setShowNavigateFlex(true);
-        return;
-      }else{setShowNavigateFlex(false);}
     } catch (error) {
       console.error('Error checking user existence:', error);
       setErrorMessage('Error checking user existence. Please try again.');
     }
   };
+  
+  console.log("check", showNavigateFlex)
 
   const handleNext = async () => {
     if (activeStep === 0 && !userExists) {
@@ -313,7 +322,6 @@ const PaymentDetail = () => {
       return;
     }
     try {
-     
 
       if (availableSlot !== 0 && bookingId) {
         const bookingForm = bookingRequests.map((request, index) => ({
