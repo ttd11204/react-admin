@@ -297,7 +297,7 @@ const PaymentDetail = () => {
         setErrorMessage('User does not exist. Please register.');
       }
      
-      if (availableSlotFlex !== 0) {
+      if (availableSlotFlex !== 0 && type !== 'flexible') {
         setShowNavigateFlex(true);
         return;
       }else{setShowNavigateFlex(false);}
@@ -351,7 +351,7 @@ const PaymentDetail = () => {
               slotEndTime: request.timeSlot.slotEndTime,
             },
           }));
-          console.log('Booking Form:', bookingForm);
+          console.log('Booking Faorm:', bookingForm);
           console.log('numberOfSlot:', numberOfSlot);
           const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
           console.log("createBookingTypeFlex nè hehehe",createBookingTypeFlex)
