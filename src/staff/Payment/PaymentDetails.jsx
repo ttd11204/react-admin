@@ -128,7 +128,7 @@ const PaymentDetail = () => {
       if (availableSlotFlex !== null) {
         console.log('availableSlotFlex at point 1:', availableSlotFlex);
         console.log('Type of availableSlotFlex at point 1:', typeof availableSlotFlex);
-        if (availableSlotFlex !== 0) {
+        if (availableSlotFlex !== 0 && type !== 'flexible') {
           setShowNavigateFlex(true);
         } else {
           setShowNavigateFlex(false);
