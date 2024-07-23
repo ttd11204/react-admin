@@ -354,15 +354,15 @@ const PaymentDetail = () => {
           console.log('Booking Form:', bookingForm);
           console.log('numberOfSlot:', numberOfSlot);
           const createBookingTypeFlex = await createBookingFlex(userInfo.userId, numberOfSlot, branchId);
-
+console.log("createBookingTypeFlex nè hehehe",createBookingTypeFlex)
           id = createBookingTypeFlex.bookingId;
-          const booking = await reserveSlots(userInfo.userId, bookingForm);
+          //const booking = await reserveSlots(userInfo.userId, bookingForm);
           await sendUnavailableSlotCheck();
           // If reservation is successful, continue to the next step or navigate
           setActiveStep((prevActiveStep) => prevActiveStep + 1);
-          const tokenResponse = await generatePaymentToken(booking.bookingId);
+          const tokenResponse = await generatePaymentToken(id);
           const token = tokenResponse.token;
-          const paymentResponse = await processPayment(token);
+          const paymentResponse = await processPayment("Staff",token);
           const paymentUrl = paymentResponse;
 
           window.location.href = paymentUrl;
